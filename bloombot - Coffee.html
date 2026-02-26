@@ -6,6 +6,7 @@
   <title>Coffee — bloombot</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.16.0/d3.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -17,9 +18,10 @@
     html { scroll-behavior: smooth; }
     body { font-family: 'Space Grotesk', sans-serif; background: var(--cream); color: var(--ink); line-height: 1.6; }
 
+    /* ── Nav ── */
     nav { position: sticky; top: 0; z-index: 100; background: var(--ink); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; height: 56px; border-bottom: 3px solid var(--rust); }
     .nav-brand { font-family: 'Space Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--amber); text-decoration: none; letter-spacing: -0.03em; }
-        .nav-links { display:flex; list-style:none; overflow:visible; }
+    .nav-links { display:flex; list-style:none; overflow:visible; }
     .nav-links li { position:relative; }
     .nav-links li>a { display:flex; align-items:center; gap:0.3rem; height:56px; padding:0 0.9rem; color:rgba(255,255,255,0.65); text-decoration:none; font-size:0.78rem; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; white-space:nowrap; transition:color 0.2s,background 0.2s; }
     .nav-links li>a:hover { color:#fff; background:rgba(255,255,255,0.07); }
@@ -31,6 +33,7 @@
     .dropdown li:last-child a { border-bottom:none; }
     .dropdown li a:hover { color:#fff; background:rgba(255,255,255,0.07); }
 
+    /* ── Hero ── */
     .page-hero { background: var(--coffee); color: #fff; padding: 3rem 2rem 2.5rem; position: relative; overflow: hidden; }
     .page-hero::before { content: '☕ ☕ ☕ ☕ ☕ ☕ ☕ ☕ ☕ ☕ ☕ ☕ ☕ ☕ ☕ ☕ ☕ ☕ ☕ ☕'; position: absolute; top: 0.5rem; left: 0; right: 0; font-size: 1.2rem; letter-spacing: 0.4rem; color: rgba(255,255,255,0.08); pointer-events: none; white-space: nowrap; overflow: hidden; }
     .page-hero-inner { max-width: 1100px; margin: 0 auto; position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; flex-wrap: wrap; }
@@ -42,16 +45,41 @@
     .hero-aside { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: rgba(255,255,255,0.4); text-align: right; line-height: 2; letter-spacing: 0.03em; flex-shrink: 0; }
     .hero-aside span { display: block; color: rgba(255,255,255,0.7); font-size: 0.9rem; }
 
-    .generator-wrap { max-width: 1100px; margin: 0 auto; padding: 2.5rem 2rem 3rem; display: grid; gap: 1.5rem; }
-    .generator-label { font-family: 'Space Mono', monospace; font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--slate); display: flex; align-items: center; gap: 0.5rem; }
-    .generator-label::after { content: ''; flex: 1; height: 1px; background: var(--border); max-width: 60px; }
-    .generator-frame { background: #fff; border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px var(--shadow); }
-    .generator-frame iframe { width: 100%; border: none; display: block; height: 640px; }
-    .aside-note { background: var(--warm); border-left: 3px solid var(--coffee); border-radius: 0 8px 8px 0; padding: 1.1rem 1.25rem; font-size: 0.85rem; color: var(--ink); line-height: 1.7; max-width: 640px; font-style: italic; }
-    .aside-note strong { font-style: normal; font-weight: 600; color: var(--coffee); }
+    /* ── Generator layout ── */
+    .generator { max-width: 1100px; margin: 0 auto; padding: 2.5rem 2rem 3rem; display: grid; grid-template-columns: 260px 1fr; gap: 2rem; align-items: start; }
+
+    .controls-panel { position: sticky; top: 72px; background: #fff; border: 1.5px solid var(--border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 12px var(--shadow); }
+    .controls-panel h3 { font-family: 'Space Mono', monospace; font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--slate); margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
+
+    .ctrl-row { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 1rem; }
+    .ctrl-row label { font-size: 0.78rem; font-weight: 500; color: var(--ink); letter-spacing: 0.02em; }
+    .ctrl-row input[type="text"],
+    .ctrl-row input[type="number"] { width: 100%; padding: 0.5rem 0.75rem; border: 1.5px solid var(--border); border-radius: 6px; background: var(--cream); color: var(--ink); font-family: 'Space Mono', monospace; font-size: 0.85rem; transition: border-color 0.2s; }
+    .ctrl-row input:focus { outline: none; border-color: var(--coffee); }
+
+    .btn-primary { width: 100%; padding: 0.65rem 1rem; background: var(--coffee); color: #fff; border: none; border-radius: 8px; font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.03em; cursor: pointer; transition: background 0.2s; margin-top: 0.5rem; }
+    .btn-primary:hover { background: #5a3d2b; }
+
+    .output-panel { background: #fff; border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px var(--shadow); }
+    .output-panel svg { width: 100%; height: auto; display: block; background: var(--cream); }
+
+    /* ── Context section ── */
+    .context-section { background: var(--ink); color: rgba(255,255,255,0.75); padding: 4rem 2rem; }
+    .context-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; }
+    .context-inner h2 { font-family: 'Space Mono', monospace; font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--amber); margin-bottom: 1.5rem; }
+    .context-inner ul { list-style: none; display: flex; flex-direction: column; gap: 0.9rem; }
+    .context-inner ul li { font-size: 0.88rem; line-height: 1.7; padding-left: 1rem; border-left: 2px solid rgba(111,78,55,0.5); }
+    .context-inner ul li strong { color: #fff; }
+    .context-inner p { font-size: 0.88rem; line-height: 1.8; }
+
+    .aside-note { max-width: 1100px; margin: 0 auto; padding: 2rem 2rem 0; }
+    .aside-note-inner { background: var(--warm); border-left: 3px solid var(--coffee); border-radius: 0 8px 8px 0; padding: 1.1rem 1.25rem; font-size: 0.85rem; color: var(--ink); line-height: 1.7; font-style: italic; }
+    .aside-note-inner strong { font-style: normal; font-weight: 600; color: var(--coffee); }
 
     footer { background: var(--ink); color: rgba(255,255,255,0.4); text-align: center; padding: 2.5rem 2rem; font-family: 'Space Mono', monospace; font-size: 0.72rem; letter-spacing: 0.06em; line-height: 2; }
     footer a { color: var(--amber); text-decoration: none; }
+
+    @media (max-width: 800px) { .generator { grid-template-columns: 1fr; } .controls-panel { position: static; } .context-inner { grid-template-columns: 1fr; gap: 2rem; } }
     @media (max-width: 680px) { .nav-links { display: none; } .hero-aside { display: none; } }
   </style>
 </head>
@@ -59,7 +87,7 @@
 
 <nav>
   <a class="nav-brand" href="bloombot-modern.html">bloombot</a>
-    <ul class="nav-links">
+  <ul class="nav-links">
     <li>
       <a href="bloombot-i101.html">I 101 <span class="caret">▼</span></a>
       <ul class="dropdown">
@@ -94,9 +122,9 @@
 <header class="page-hero">
   <div class="page-hero-inner">
     <div>
-      <p class="breadcrumb"><a href="bloombot-modern.html">bloombot</a> / Stories</p>
+      <p class="breadcrumb"><a href="bloombot-modern.html">bloombot</a> / <a href="bloombot-stories.html">Stories</a></p>
       <h1 class="page-title">Coffee</h1>
-      <p class="page-subtitle">A D3.js coffee grounds generator based on a turtle graphics algorithm I wrote an example code. What do coffee grounds look like up close anyway? Also a meditation on weak coffee cooking all day on a wood stove.</p>
+      <p class="page-subtitle">A D3.js coffee grounds generator based on a turtle graphics algorithm I wrote as example code. What do coffee grounds look like up close anyway? Also a meditation on weak coffee cooking all day on a wood stove.</p>
     </div>
     <div class="hero-aside">
       gohwééh
@@ -105,25 +133,122 @@
   </div>
 </header>
 
-<div class="generator-wrap">
-  <p class="generator-label">Generator</p>
-  <div class="generator-frame">
-    <iframe
-      src="bloombot - Coffee_files/intermediate-frame-minified_data/inner-frame-minified_data/inner-frame-minified.html"
-      loading="lazy"
-      title="Coffee Grounds Generator">
-    </iframe>
+<div class="generator">
+  <!-- Controls -->
+  <div class="controls-panel">
+    <h3>Parameters</h3>
+    <div class="ctrl-row">
+      <label for="size">Size</label>
+      <input type="text" id="size" value="40">
+    </div>
+    <div class="ctrl-row">
+      <label for="bump">Bump Length</label>
+      <input type="text" id="bump" value="20">
+    </div>
+    <div class="ctrl-row">
+      <label for="bumps">Num of Bumps</label>
+      <input type="text" id="bumps" value="100">
+    </div>
+    <button class="btn-primary" onclick="run()">Draw Coffee Grounds</button>
   </div>
-  <p class="aside-note">
+
+  <!-- SVG Output -->
+  <div class="output-panel">
+    <svg id="coffeeGrounds" viewBox="0 0 1100 1100" xmlns="http://www.w3.org/2000/svg">
+      <g id="groundGroup"></g>
+    </svg>
+  </div>
+</div>
+
+<div class="aside-note">
+  <div class="aside-note-inner">
     <strong>Nálí</strong> regularly had coffee cooking on his wood stove in his shop. We call it cowboys coffee.
     Weak coffee all day long is an entirely defensible life choice.
-  </p>
+  </div>
+</div>
+
+<div class="context-section">
+  <div class="context-inner">
+    <div>
+      <h2>What is the beauty of drinking weak coffee all day long?</h2>
+      <ul>
+        <li><strong>Steady Energy</strong> — Since weak coffee has less caffeine, it provides a more steady and gentle energy boost without the jitters or the sharp spikes and crashes often associated with stronger coffee.</li>
+        <li><strong>Hydration</strong> — Coffee, even when weak, still contains a significant amount of water, so sipping on it all day contributes to your daily hydration needs.</li>
+        <li><strong>Digestibility</strong> — Weak coffee is generally easier on the stomach and less likely to cause digestive issues, which can be a concern with stronger brews.</li>
+        <li><strong>Taste Enjoyment</strong> — For people who like the flavor of coffee but find strong varieties too intense, weak coffee offers a way to enjoy the taste without being overwhelmed by it.</li>
+        <li><strong>Reduced Anxiety</strong> — High doses of caffeine can sometimes contribute to feelings of anxiety. Lower caffeine levels in weak coffee may help avoid this while still providing enjoyment.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>&nbsp;</h2>
+      <ul>
+        <li><strong>Extended Enjoyment</strong> — With a lighter brew, you can enjoy greater volumes of coffee over a longer period of time without the adverse effects that might come with consuming too much caffeine too quickly.</li>
+        <li><strong>Financial Saving</strong> — Given that you can use less coffee grounds to achieve the desired weaker brew, it can be a more economical choice over time.</li>
+        <li><strong>Social Aspect</strong> — Sipping weak coffee at a leisurely pace can be a great way to enjoy social interactions without the rush that comes with highly caffeinated beverages.</li>
+        <li><strong>Mindful Drinking</strong> — Drinking weak coffee allows for a more mindful experience, as you can savor the nuances of the beverage and appreciate its subtle flavors without the overwhelming impact of higher caffeine levels.</li>
+      </ul>
+      <p style="margin-top:1.5rem; font-size:0.75rem; opacity:0.4; font-family:'Space Mono',monospace;">— GPT-4</p>
+    </div>
+  </div>
 </div>
 
 <footer>
   <div>bloombot &nbsp;·&nbsp; Matthew Francisco &nbsp;·&nbsp; Luddy School of Informatics, Computing &amp; Engineering</div>
   <div>Indiana University &nbsp;·&nbsp; <a href="bloombot-modern.html">Home</a></div>
 </footer>
+
+<script>
+  const svg = d3.select("#coffeeGrounds");
+  const groundGroup = d3.select("#groundGroup");
+
+  const coffeeColors = [
+    '#b9731d', '#b6711c', '#b46f1b', '#b16c19', '#af6a18', '#ac6817', '#a96616', '#a76315',
+    '#a46114', '#a15f13', '#9e5d12', '#9b5b11', '#995810', '#96560f', '#93540e', '#90520d',
+    '#8d500c', '#8a4e0b', '#874b0b', '#84490a', '#814709', '#7e4508', '#7b4308', '#784107',
+    '#753f06', '#713c06', '#6e3a05', '#6b3805', '#683604', '#643404', '#613203', '#5e3003',
+    '#5a2e02', '#572c02', '#532a01', '#502801', '#4d2601', '#492401', '#462200', '#422000'
+  ];
+
+  function ground(cx, cy, size, variance) {
+    var bs = parseInt(document.getElementById("bumps").value);
+    const pathData = [];
+    const numPoints = bs;
+
+    for (let i = 0; i < numPoints; i++) {
+      const angle = (i / numPoints) * Math.PI * 2;
+      const radius = size + (Math.random() * variance);
+      const x = cx + radius * Math.cos(angle);
+      const y = cy + radius * Math.sin(angle);
+      pathData.push([x, y]);
+    }
+
+    const lineFunction = d3.line()
+      .x(d => d[0])
+      .y(d => d[1]);
+
+    groundGroup.append("path")
+      .attr("d", lineFunction(pathData) + " Z")
+      .attr("fill", coffeeColors[Math.floor(Math.random() * coffeeColors.length)])
+      .attr("stroke", "#3a1f0a")
+      .attr("stroke-width", "1.5");
+  }
+
+  function run() {
+    groundGroup.selectAll("path").remove();
+    var s = parseInt(document.getElementById("size").value);
+    var b = parseInt(document.getElementById("bump").value);
+
+    for (let i = 0; i < 75; i++) {
+      const x = Math.random() * (1000 - s * 4) + s * 2;
+      const y = Math.random() * (1000 - s * 4) + s * 2;
+      var t = s + (s * ((Math.random() * 60) / 100));
+      ground(x, y, t, b);
+    }
+  }
+
+  // Auto-draw on load
+  run();
+</script>
 
 </body>
 </html>

@@ -6,6 +6,7 @@
   <title>Lightning — bloombot</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.16.0/d3.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -17,9 +18,10 @@
     html { scroll-behavior: smooth; }
     body { font-family: 'Space Grotesk', sans-serif; background: var(--cream); color: var(--ink); line-height: 1.6; }
 
+    /* ── Nav ── */
     nav { position: sticky; top: 0; z-index: 100; background: var(--ink); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; height: 56px; border-bottom: 3px solid var(--rust); }
     .nav-brand { font-family: 'Space Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--amber); text-decoration: none; letter-spacing: -0.03em; }
-        .nav-links { display:flex; list-style:none; overflow:visible; }
+    .nav-links { display:flex; list-style:none; overflow:visible; }
     .nav-links li { position:relative; }
     .nav-links li>a { display:flex; align-items:center; gap:0.3rem; height:56px; padding:0 0.9rem; color:rgba(255,255,255,0.65); text-decoration:none; font-size:0.78rem; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; white-space:nowrap; transition:color 0.2s,background 0.2s; }
     .nav-links li>a:hover { color:#fff; background:rgba(255,255,255,0.07); }
@@ -31,6 +33,7 @@
     .dropdown li:last-child a { border-bottom:none; }
     .dropdown li a:hover { color:#fff; background:rgba(255,255,255,0.07); }
 
+    /* ── Hero ── */
     .page-hero { background: var(--lightning); color: #fff; padding: 3rem 2rem 2.5rem; position: relative; overflow: hidden; }
     .page-hero::before {
       content: 'Tłʼiish  Tłʼiish  Tłʼiish  Tłʼiish  Tłʼiish  Tłʼiish  Tłʼiish  Tłʼiish';
@@ -48,16 +51,47 @@
     .hero-aside { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: rgba(255,255,255,0.4); text-align: right; line-height: 2; letter-spacing: 0.03em; flex-shrink: 0; }
     .hero-aside span { display: block; color: rgba(255,255,255,0.7); font-size: 0.9rem; }
 
-    .generator-wrap { max-width: 1100px; margin: 0 auto; padding: 2.5rem 2rem 3rem; display: grid; gap: 1.5rem; }
-    .generator-label { font-family: 'Space Mono', monospace; font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--slate); display: flex; align-items: center; gap: 0.5rem; }
-    .generator-label::after { content: ''; flex: 1; height: 1px; background: var(--border); max-width: 60px; }
-    .generator-frame { background: #fff; border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px var(--shadow); }
-    .generator-frame iframe { width: 100%; border: none; display: block; height: 680px; }
-    .aside-note { background: var(--warm); border-left: 3px solid var(--lightning); border-radius: 0 8px 8px 0; padding: 1.1rem 1.25rem; font-size: 0.85rem; color: var(--ink); line-height: 1.7; max-width: 640px; }
-    .aside-note strong { font-weight: 600; }
+    /* ── Generator layout ── */
+    .generator { max-width: 1100px; margin: 0 auto; padding: 2.5rem 2rem 2rem; display: grid; grid-template-columns: 280px 1fr; gap: 2rem; align-items: start; }
 
-    footer { background: var(--ink); color: rgba(255,255,255,0.4); text-align: center; padding: 2.5rem 2rem; font-family: 'Space Mono', monospace; font-size: 0.72rem; letter-spacing: 0.06em; line-height: 2; }
+    .controls-panel { position: sticky; top: 72px; background: #fff; border: 1.5px solid var(--border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 12px var(--shadow); }
+    .controls-panel h3 { font-family: 'Space Mono', monospace; font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--slate); margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
+
+    .ctrl-row { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 1rem; }
+    .ctrl-row label { font-size: 0.78rem; font-weight: 500; color: var(--ink); letter-spacing: 0.02em; }
+    .ctrl-row input[type="number"],
+    .ctrl-row select { width: 100%; padding: 0.5rem 0.75rem; border: 1.5px solid var(--border); border-radius: 6px; background: var(--cream); color: var(--ink); font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; transition: border-color 0.2s; appearance: none; -webkit-appearance: none; }
+    .ctrl-row input:focus,
+    .ctrl-row select:focus { outline: none; border-color: var(--lightning); }
+
+    .btn-primary { width: 100%; padding: 0.65rem 1rem; background: var(--lightning); color: #fff; border: none; border-radius: 8px; font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.03em; cursor: pointer; transition: background 0.2s; margin-top: 0.5rem; }
+    .btn-primary:hover { background: #152b47; }
+
+    .ctrl-hint { font-size: 0.72rem; color: var(--slate); font-style: italic; margin-top: 0.5rem; }
+
+    .output-panel { background: #fff; border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px var(--shadow); min-height: 200px; }
+    .output-inner { padding: 1.5rem; overflow-x: auto; }
+    #svgContainer { display: flex; flex-direction: column; gap: 0; }
+    #svgContainer svg { display: block; cursor: pointer; }
+    #svgContainer svg:hover { opacity: 0.9; }
+
+    /* ── Story / Context section ── */
+    .story-section { max-width: 1100px; margin: 0 auto; padding: 2rem 2rem 0; }
+    .aside-note { background: var(--warm); border-left: 3px solid var(--lightning); border-radius: 0 8px 8px 0; padding: 1.1rem 1.25rem; font-size: 0.85rem; color: var(--ink); line-height: 1.7; }
+
+    .context-section { background: var(--ink); color: rgba(255,255,255,0.75); padding: 4rem 2rem; margin-top: 2.5rem; }
+    .context-inner { max-width: 1100px; margin: 0 auto; }
+    .context-inner h2 { font-family: 'Space Mono', monospace; font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--amber); margin-bottom: 1.25rem; }
+    .context-inner p { font-size: 0.88rem; line-height: 1.85; margin-bottom: 1rem; max-width: 720px; }
+    .context-inner p:last-child { margin-bottom: 0; }
+    .context-inner a { color: var(--amber); }
+    .context-inner sup { font-size: 0.65rem; opacity: 0.6; }
+    .footnote { margin-top: 2rem; font-size: 0.72rem; opacity: 0.4; font-family: 'Space Mono', monospace; }
+
+    footer { background: var(--ink); color: rgba(255,255,255,0.4); text-align: center; padding: 2.5rem 2rem; font-family: 'Space Mono', monospace; font-size: 0.72rem; letter-spacing: 0.06em; line-height: 2; border-top: 1px solid rgba(255,255,255,0.06); }
     footer a { color: var(--amber); text-decoration: none; }
+
+    @media (max-width: 800px) { .generator { grid-template-columns: 1fr; } .controls-panel { position: static; } }
     @media (max-width: 680px) { .nav-links { display: none; } .hero-aside { display: none; } }
   </style>
 </head>
@@ -65,7 +99,7 @@
 
 <nav>
   <a class="nav-brand" href="bloombot-modern.html">bloombot</a>
-    <ul class="nav-links">
+  <ul class="nav-links">
     <li>
       <a href="bloombot-i101.html">I 101 <span class="caret">▼</span></a>
       <ul class="dropdown">
@@ -100,7 +134,7 @@
 <header class="page-hero">
   <div class="page-hero-inner">
     <div>
-      <p class="breadcrumb"><a href="bloombot-modern.html">bloombot</a> / Generators</p>
+      <p class="breadcrumb"><a href="bloombot-modern.html">bloombot</a> / <a href="bloombot-stories.html">Stories</a></p>
       <h1 class="page-title">Lightning</h1>
       <p class="page-subtitle">A beautiful zigzag pattern generator that is a symbol, a design system, and a D3.js artifact.</p>
     </div>
@@ -111,24 +145,158 @@
   </div>
 </header>
 
-<div class="generator-wrap">
-  <p class="generator-label">Generator</p>
-  <div class="generator-frame">
-    <iframe
-      src="bloombot - Lightning_files/intermediate-frame-minified_data/inner-frame-minified_data/inner-frame-minified.html"
-      loading="lazy"
-      title="Zigzag Lightning Generator">
-    </iframe>
+<div class="generator">
+  <!-- Controls -->
+  <div class="controls-panel">
+    <h3>Parameters</h3>
+    <div class="ctrl-row">
+      <label for="widthInput">Width</label>
+      <input type="number" id="widthInput" value="760">
+    </div>
+    <div class="ctrl-row">
+      <label for="heightInput">Height</label>
+      <input type="number" id="heightInput" value="40">
+    </div>
+    <div class="ctrl-row">
+      <label for="zigzagInput">Zigzags</label>
+      <input type="number" id="zigzagInput" value="45">
+    </div>
+    <div class="ctrl-row">
+      <label for="thicknessInput">Thickness</label>
+      <input type="number" id="thicknessInput" value="12">
+    </div>
+    <div class="ctrl-row">
+      <label for="color_select">Color Palette</label>
+      <select id="color_select">
+        <option value="sunrise" selected>Sunrise</option>
+        <option value="blues">Blues</option>
+        <option value="pinks">Pinks</option>
+        <option value="greys">Greys</option>
+        <option value="greens">Greens</option>
+        <option value="purples">Purples</option>
+        <option value="sunset">Sunset</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="generateZigzag()">Generate Lightning</button>
+    <p class="ctrl-hint">Click any zigzag band to download it as SVG.</p>
   </div>
-  <p class="aside-note">
+
+  <!-- Output -->
+  <div class="output-panel">
+    <div class="output-inner">
+      <div id="svgContainer"></div>
+    </div>
+  </div>
+</div>
+
+<div class="story-section">
+  <div class="aside-note">
     One day in second grade, when I got home from school, and my brother wasn't home yet, locked out of the house, I sat on the porch and watched a storm come in. A bolt of lightning started in the sky above me and went over the house and struck in the field behind. In Indiana there is way more lightning than in New Mexico. I haven't been that close to lightning since then, however.
-  </p>
+  </div>
+</div>
+
+<div class="context-section">
+  <div class="context-inner">
+    <h2>What is the meaning and symbolism of the zigzag pattern on Navajo (Diné) rugs?</h2>
+    <p>
+      The zigzag pattern is often featured in Navajo rugs and is commonly referred to as a "lightning" pattern (<em>Tłʼiish</em>) by the Navajo people. In Navajo culture, the zigzag pattern is said to symbolize the lightning bolt, which is a key element in Navajo mythology and spiritual practices.
+    </p>
+    <p>
+      This ceremonial symbolism represents the power, potency, and speed of natural forces that can potentially bring rain, a crucial resource in the arid Southwest where the Navajo Nation is located.
+    </p>
+    <p>
+      However, interpretations can vary widely and the meaning can change based on the context and the particular rug design. Each rug is unique and carries its own cultural and personal significance — it's always best to ask the weaver or a native expert for accurate information.<sup>*</sup>
+    </p>
+    <p>
+      Listen how to pronounce <a href="https://navajowotd.com/word/atsiniltlish/" target="_blank" rel="noopener">atsiniltł'ish</a> (<em>lightning</em> or <em>electricity</em>) in Navajo.
+    </p>
+    <p class="footnote"><sup>*</sup> GPT-4, November 23, 2023</p>
+  </div>
 </div>
 
 <footer>
   <div>bloombot &nbsp;·&nbsp; Matthew Francisco &nbsp;·&nbsp; Luddy School of Informatics, Computing &amp; Engineering</div>
   <div>Indiana University &nbsp;·&nbsp; <a href="bloombot-modern.html">Home</a></div>
 </footer>
+
+<script>
+  let colorPalettes = {
+    "sunrise": ['#fff9f5','#fff5eb','#fff0e0','#ffebd6','#ffe5cc','#ffdfc2','#ffd9b8','#ffd3ae','#ffcda4','#ffc79a','#ffc190','#ffbb86','#ffb57c','#ffaf72','#ffa968','#ffa35e','#ff9d54','#ff974a','#ff9140','#ff8b36','#ff852c'],
+    "blues": ['#ffc0cb','#f8b7ce','#f2afd1','#eba6d4','#e49dd7','#dd95da','#d58cdd','#ce84e0','#c67be2','#bd73e5','#b56ae8','#ab61ea','#a259ed','#9850ef','#8d47f1','#813ef4','#7435f6','#642bf8','#5220fb','#3a13fd','#0000ff'],
+    "pinks": ['#ffe0eb','#ffdbe9','#ffd6e7','#ffd2e5','#ffcde3','#ffc8e1','#ffc3e0','#ffbfde','#ffbadc','#ffb5da','#ffb0d8','#ffabd6','#ffa6d4','#ffa1d2','#ff9bd1','#ff96cf','#ff91cd','#ff8bcb','#ff85c9','#ff80c7','#ff7ac5','#ff73c3','#ff6dc1','#ff66bf','#ff5fbd','#ff57bb'],
+    "greens": ['#ffe0eb','#f6dbe2','#edd5da','#e4d0d2','#dbcbc9','#d2c6c1','#c9c0b9','#c1bbb0','#b8b6a8','#afb1a0','#a6ab98','#9ea690','#95a188','#8d9c81','#849779','#7c9171','#738c6a','#6b8762','#62825b','#5a7d53','#51784c'],
+    "greys": ['#c6a9b3','#bfa4ae','#b89fa8','#b19aa2','#aa959d','#a49097','#9d8c92','#96878c','#8f8287','#897e81','#82797c','#7c7477','#757072','#6f6b6c','#686767','#9dadb5','#9aa5a9','#969d9e','#919593','#8c8e89','#868680','#817f77','#7b786e','#757066','#6f695d','#686356','#625c4e','#5c5546','#554e3f','#4f4838'],
+    "purples": ['#b89ff5','#bd98ea','#c190e0','#c489d6','#c781cc','#c97ac2','#cb72b9','#cd6aaf','#ce62a5','#cf599c','#cf5092','#cf4689','#cf3b80','#cf2f77','#cf1f6e','#2d6c94','#416e96','#507098','#5d739b','#68759e','#7278a2','#7b7aa8','#827dae','#8980b5','#8f83bd','#9386c7','#9689d2','#968ddf','#9491ee','#8e96ff'],
+    "sunset": ['#ffd653','#fece4f','#fdc64a','#fcbe46','#fbb642','#faae3e','#f9a639','#f79e35','#f59531','#f48d2d','#f28428','#f07c24','#ee7320','#ec6a1c','#ea6017','#e75613','#e54c0f','#e2400a','#e03306','#dd2203','#da0000']
+  };
+
+  function createZigZag(width, height, zigzags, thickness) {
+    var viewBoxWidth = width * 1.1;
+    var viewBoxHeight = height + thickness * 2;
+
+    var svg = d3.select("#svgContainer").append("svg")
+      .attr("width", viewBoxWidth)
+      .attr("height", viewBoxHeight)
+      .attr("viewBox", 0 + " " + -thickness + " " + (viewBoxWidth + thickness) + " " + (viewBoxHeight + thickness))
+      .attr("xmlns", "http://www.w3.org/2000/svg")
+      .on("click", function() {
+        var serializer = new XMLSerializer();
+        var svgString = serializer.serializeToString(this);
+        var dataUrl = "data:image/svg+xml," + encodeURIComponent(svgString);
+        var dlLink = document.createElement('a');
+        dlLink.download = 'zigzag.svg';
+        dlLink.href = dataUrl;
+        dlLink.dataset.downloadurl = ["image/svg+xml", dlLink.download, dlLink.href].join(':');
+        document.body.appendChild(dlLink);
+        dlLink.click();
+        document.body.removeChild(dlLink);
+      });
+
+    var zigzag = d3.line()
+      .x(function(d) { return d[0]; })
+      .y(function(d) { return d[1]; });
+
+    var zigzagData = [];
+    for (var i = 0; i < zigzags; i++) {
+      zigzagData.push([(i * width) / zigzags, ((i % 2 === 0) ? 0 : height) + thickness]);
+    }
+
+    svg.append("path")
+      .attr("d", zigzag(zigzagData))
+      .attr("stroke", "black")
+      .attr("stroke-width", thickness)
+      .attr("fill", "none");
+  }
+
+  function generateZigzag() {
+    var width = parseInt(document.getElementById("widthInput").value);
+    var height = parseInt(document.getElementById("heightInput").value);
+    var zigzags = parseInt(document.getElementById("zigzagInput").value);
+    var thickness = parseInt(document.getElementById("thicknessInput").value);
+    var palette = document.getElementById("color_select").value;
+
+    d3.select("#svgContainer").selectAll("*").remove();
+    generateZigZags(12, zigzags, width, height, thickness, palette);
+  }
+
+  function generateZigZags(numZigzags, zigzags, width, height, maxThickness, colorPalette) {
+    for (let i = 0; i < numZigzags; i++) {
+      let thickness = Math.random() * maxThickness;
+      let zigzagsSections = Math.floor(Math.random() * zigzags) + zigzags / 2;
+      createZigZag(width, height, zigzagsSections, thickness);
+
+      let colorIndex = Math.floor(Math.random() * colorPalettes[colorPalette].length);
+      let color = colorPalettes[colorPalette][colorIndex];
+
+      d3.select(`#svgContainer svg:nth-child(${i + 1}) path`)
+        .attr("stroke", color)
+        .attr("stroke-width", thickness);
+    }
+  }
+
+  // Auto-generate on load
+  generateZigzag();
+</script>
 
 </body>
 </html>

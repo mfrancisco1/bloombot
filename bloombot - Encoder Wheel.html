@@ -22,11 +22,17 @@
       padding: 0 2rem; height: 56px; border-bottom: 3px solid var(--rust);
     }
     .nav-brand { font-family: 'Space Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--amber); text-decoration: none; letter-spacing: -0.03em; }
-    .nav-links { display: flex; list-style: none; overflow-x: auto; scrollbar-width: none; }
-    .nav-links::-webkit-scrollbar { display: none; }
-    .nav-links a { display: block; padding: 0 0.9rem; height: 56px; line-height: 56px; color: rgba(255,255,255,0.65); text-decoration: none; font-size: 0.78rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; transition: color 0.2s, background 0.2s; }
-    .nav-links a:hover { color: #fff; background: rgba(255,255,255,0.07); }
-    .nav-links a.active { color: var(--amber); }
+        .nav-links { display:flex; list-style:none; overflow:visible; }
+    .nav-links li { position:relative; }
+    .nav-links li>a { display:flex; align-items:center; gap:0.3rem; height:56px; padding:0 0.9rem; color:rgba(255,255,255,0.65); text-decoration:none; font-size:0.78rem; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; white-space:nowrap; transition:color 0.2s,background 0.2s; }
+    .nav-links li>a:hover { color:#fff; background:rgba(255,255,255,0.07); }
+    .nav-links li>a.active { color:var(--amber); }
+    .caret { font-size:0.55rem; opacity:0.5; }
+    .dropdown { display:none; position:absolute; top:56px; left:0; background:#111; border:1px solid rgba(255,255,255,0.1); border-top:2px solid var(--rust); border-radius:0 0 8px 8px; min-width:200px; list-style:none; z-index:200; box-shadow:0 8px 24px rgba(0,0,0,0.4); }
+    .nav-links li:hover .dropdown { display:block; }
+    .dropdown li a { display:block; padding:0.6rem 1rem; font-size:0.78rem; color:rgba(255,255,255,0.65); border-bottom:1px solid rgba(255,255,255,0.06); white-space:nowrap; text-decoration:none; }
+    .dropdown li:last-child a { border-bottom:none; }
+    .dropdown li a:hover { color:#fff; background:rgba(255,255,255,0.07); }
 
     .page-hero { background: var(--ink); color: #fff; padding: 3.5rem 2rem 3rem; position: relative; overflow: hidden; }
     .page-hero::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.035) 39px, rgba(255,255,255,0.035) 40px), repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.035) 39px, rgba(255,255,255,0.035) 40px); }
@@ -67,19 +73,35 @@
 <body>
 <nav>
   <a class="nav-brand" href="bloombot-modern.html">bloombot</a>
-  <ul class="nav-links">
-    <li><a href="bloombot-modern.html#teaching">Teaching</a></li>
-    <li><a href="bloombot-modern.html#artifacts">Artifacts</a></li>
-    <li><a href="bloombot - Networks.html">Networks</a></li>
-    <li><a href="bloombot - Ethics.html">Ethics</a></li>
-    <li><a href="bloombot - Design.html">Design</a></li>
-    <li><a href="bloombot - Security.html">Security</a></li>
-    <li><a href="bloombot - Diversity.html">Diversity</a></li>
-    <li><a href="bloombot - Data.html">Data</a></li>
-    <li><a href="bloombot - Electricity.html">Electricity</a></li>
-    <li><a href="bloombot - 3D Graph Paper.html">3D Graph Paper</a></li>
-    <li><a href="bloombot - Encoder Wheel.html" class="active">Encoder Wheel</a></li>
-    <li><a href="bloombot - Wild Boars.html">Wild Boars</a></li>
+    <ul class="nav-links">
+    <li>
+      <a href="bloombot-i101.html">I 101 <span class="caret">▼</span></a>
+      <ul class="dropdown">
+        <li><a href="bloombot-i101.html#networks">Networks</a></li>
+        <li><a href="bloombot-i101.html#ethics">Ethics</a></li>
+        <li><a href="bloombot-i101.html#security">Security</a></li>
+        <li><a href="bloombot-i101.html#diversity">Diversity</a></li>
+        <li><a href="bloombot-i101.html#design">Design</a></li>
+        <li><a href="bloombot-i101.html#data">Data</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="bloombot-stories.html">Stories <span class="caret">▼</span></a>
+      <ul class="dropdown">
+        <li><a href="bloombot - Lightning.html">Lightning</a></li>
+        <li><a href="bloombot - Coffee.html">Coffee</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="bloombot-prototyping.html" class="active">Prototyping <span class="caret">▼</span></a>
+      <ul class="dropdown">
+        <li><a href="bloombot - 3D Graph Paper.html">3D Graph Paper</a></li>
+        <li><a href="bloombot - Lattice.html">Lattice</a></li>
+        <li><a href="bloombot - Encoder Wheel.html">Encoder Wheel</a></li>
+        <li><a href="webpage-main/stlM2.html">3D Model Viewer</a></li>
+      </ul>
+    </li>
+    <li><a href="bloombot-scaffolds.html">Scaffolds</a></li>
   </ul>
 </nav>
 <header class="page-hero">

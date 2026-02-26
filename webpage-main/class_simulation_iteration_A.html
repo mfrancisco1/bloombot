@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Classroom Seating with Propensity → Evolving Social Network</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin: 12px; background:#f7fafc; color:#0f172a; }
+  .container { display: flex; gap: 12px; align-items: flex-start; }
+  .pane { background: #fff; border-radius: 8px; padding: 12px; box-shadow: 0 4px 10px rgba(2,6,23,0.06); }
+  .controls { display:flex; flex-direction:column; gap:8px; width: 340px; }
+  label { font-size: 13px; color:#334155; display:flex; justify-content:space-between; }
+  input[type="range"] { width: 100%; }
+  button { padding: 8px 10px; border-radius:6px; border:1px solid #e2e8f0; background:#0ea5a4; color:white; cursor:pointer; }
+  button.secondary { background:#fff; color:#0f172a; border:1px solid #cbd5e1; }
+  #stats { margin-top:8px; font-size:13px; color:#475569; }
+  .pane-title { font-weight:700; margin-bottom:8px; font-size:14px; color:#0f172a; }
+  svg { display:block; background: linear-gradient(180deg,#ffffff,#fbfdff); border-radius:6px; }
+  .seat { cursor:pointer; }
+  .seat.available { fill:#e6eef4; stroke:#c8d7e4; }
+  .seat.occupied { fill:#60a5fa; stroke:#2563eb; }
+  .seat.absent { fill:#f1f5f9; stroke:#e2e8f0; opacity:0.7; }
+  .group-highlight { stroke: #f97316; stroke-width:3px; fill-opacity:0.08; }
+  .info { font-size:13px; color:#0f172a; margin-top:6px; }
+  .small { font-size:12px; color:#64748b; }
+  .legend { display:flex; gap:8px; align-items:center; font-size:12px; color:#475569; margin-top:6px; }
+  .dot { width:12px; height:12px; border-radius:6px; display:inline-block; margin-right:6px; }
+  .controls-row { display:flex; gap:8px; }
+  .summary { margin-top:8px; font-size:13px; }
+</style>
+</head>
+<body>
+<h2>Classroom seating with propensity → evolving social network</h2>
+<p class="small">Students have a propensity trait (0=prefer familiar peers, 1=seek new peers). They choose seats each class based on this trait. Groups form from proximity; network shows accumulated interactions.</p>
+
+<div class="container">
+  <div class="pane controls" style="min-width:340px;">
+    <div class="pane-title">Simulation controls</div>
+
+    <label>Attendance %: <span id="attPercLabel">85</span>%</label>
+    <input id="attendance" type="range" min="10" max="100" step="1" value="85">
+
+    <label>Number of classes to simulate: <span id="nClassesLabel">14</span></label>
+    <input id="nClasses" type="range" min="1" max="30" step="1" value="14">
+
+    <label>Group size (min - max): <span id="groupSizeLabel">3 - 5</span></label>
+    <div style="display:flex; gap:6px;">
+      <input id="groupMin" type="number" min="2" max="10" value="3" style="width:60px;">
+      <input id="groupMax" type="number" min="2" max="10" value="5" style="width:60px;">
+    </div>
+
+    <label>Proximity radius (seats): <span id="radiusLabel">1.5</span></label>
+    <input id="radius" type="range" min="0.5" max="4" step="0.1" value="1.5">
+
+    <label>Rows: <span id="rowsLabel">10</span> Columns: <span id="colsLabel">15</span></label>
+    <div style="display:flex; gap:6px;">
+      <input id="rows" type="number" min="3" max="20" value="10" style="width:80px;">
+      <input id="cols" type="number" min="3" max="20" value="15" style="width:80px;">
+    </div>
+
+    <label>Reseating randomness: <span id="randomLabel">0.15</span></label>
+    <input id="randomness" type="range" min="0" max="0.5" step="0.01" value="0.15">
+
+    <div class="controls-row" style="margin-top:8px;">
+      <button id="stepBtn">Step 1 class</button>
+      <button id="runBtn">Run all classes</button>
+      <button id="resetBtn" class="secondary">Reset</button>
+    </div>
+
+    <div id="stats" class="small">
+      <div>Classes simulated: <span id="simCount">0</span></div>
+      <div>Attending this class: <span id="attCount">0</span> / <span id="capacity">150</span></div>
+    </div>
+
+    <div class="pane-title" style="margin-top:12px;">Selected student</div>
+    <div id="selectedInfo" class="info">Hover a seat or node to see student details.</div>
+
+    <div class="pane-title" style="margin-top:12px;">Notes</div>
+    <div class="small">
+      • Students select seats based on propensity for novelty vs familiarity.<br>
+      • Groups form from adjacent seated students.<br>
+      • Edges accumulate weight for each co-membership.<br>
+      • Betweenness computed using Brandes' algorithm.
+    </div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    <div class="pane" style="width:740px;">
+      <div class="pane-title">Classroom (top view)</div>
+      <svg id="classSvg" width="720" height="420"></svg>
+      <div class="legend">
+        <div><span class="dot" style="background:linear-gradient(90deg,#c7e9ff,#8b5cf6);"></span> Propensity: Low (familiar) → High (novelty)</div>
+      </div>
+    </div>
+
+    <div class="pane" style="width:740px;">
+      <div class="pane-title">Evolving social network (D3 force)</div>
+      <svg id="netSvg" width="720" height="420"></svg>
+      <div class="legend">
+        <div><span class="dot" style="background:#fde68a;"></span> High betweenness</div>
+        <div><span class="dot" style="background:#60a5fa;"></span> Low betweenness</div>
+        <div style="margin-left:8px;">Node size = degree</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pane" style="width:380px;">
+    <div class="pane-title">Top central students</div>
+    <div id="diag" class="small">No classes yet.</div>
+
+    <div style="margin-top:8px;">
+      <b>Top degrees</b>
+      <ol id="topDegree"></ol>
+
+      <b>Top betweenness</b>
+      <ol id="topBetween"></ol>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Combined simulation: propensity-based seat selection + proper visualization */
+
+// ---- Utility functions ----
+function rndInt(min, max) { return Math.floor(Math.random()*(max-min+1))+min; }
+function euclid(a,b){ const dx=a.x-b.x, dy=a.y-b.y; return Math.sqrt(dx*dx+dy*dy); }
+
+// ---- Parameters & state ----
+let params = {
+  rows: 10,
+  cols: 15,
+  seatSpacing: 42,
+  attendancePerc: 0.85,
+  nClasses: 14,
+  groupMin: 3,
+  groupMax: 5,
+  proximityRadius: 1.5,
+  randomness: 0.15
+};
+
+let students = [];   // {id, propensity (0..1), neighbors: Set of ids}
+let seats = [];      // {r,c,x,y,occupiedBy: studentId|null}
+let adjacency = {};  // key "i|j" -> weight (co-memberships)
+let simCount = 0;
+let currentGroups = []; // Store current groups for visualization
+
+// DOM elements
+const classSvg = d3.select("#classSvg");
+const netSvg = d3.select("#netSvg");
+const simCountEl = document.getElementById("simCount");
+const attCountEl = document.getElementById("attCount");
+const capacityEl = document.getElementById("capacity");
+const diagEl = document.getElementById("diag");
+const topDegreeEl = document.getElementById("topDegree");
+const topBetweenEl = document.getElementById("topBetween");
+const selectedInfo = document.getElementById("selectedInfo");
+
+// controls
+const attendanceEl = document.getElementById("attendance");
+const attPercLabel = document.getElementById("attPercLabel");
+const nClassesEl = document.getElementById("nClasses");
+const nClassesLabel = document.getElementById("nClassesLabel");
+const groupMinEl = document.getElementById("groupMin");
+const groupMaxEl = document.getElementById("groupMax");
+const groupSizeLabel = document.getElementById("groupSizeLabel");
+const radiusEl = document.getElementById("radius");
+const radiusLabel = document.getElementById("radiusLabel");
+const rowsEl = document.getElementById("rows");
+const rowsLabel = document.getElementById("rowsLabel");
+const colsEl = document.getElementById("cols");
+const colsLabel = document.getElementById("colsLabel");
+const randomnessEl = document.getElementById("randomness");
+const randomLabel = document.getElementById("randomLabel");
+const stepBtn = document.getElementById("stepBtn");
+const runBtn = document.getElementById("runBtn");
+const resetBtn = document.getElementById("resetBtn");
+
+// D3 force simulation variables
+let forceSim = null;
+let netG = { nodes: [], links: [] };
+
+// initialize UI values
+attendanceEl.addEventListener("input", ()=>{ params.attendancePerc = +attendanceEl.value/100; attPercLabel.textContent = attendanceEl.value;});
+nClassesEl.addEventListener("input", ()=>{ params.nClasses = +nClassesEl.value; nClassesLabel.textContent = nClassesEl.value;});
+groupMinEl.addEventListener("input", ()=>{ params.groupMin = Math.max(2, +groupMinEl.value); groupSizeLabel.textContent = params.groupMin + " - " + params.groupMax;});
+groupMaxEl.addEventListener("input", ()=>{ params.groupMax = Math.max(params.groupMin, +groupMaxEl.value); groupSizeLabel.textContent = params.groupMin + " - " + params.groupMax;});
+radiusEl.addEventListener("input", ()=>{ params.proximityRadius = +radiusEl.value; radiusLabel.textContent = radiusEl.value;});
+rowsEl.addEventListener("input", ()=>{ params.rows = +rowsEl.value; rowsLabel.textContent = params.rows;});
+colsEl.addEventListener("input", ()=>{ params.cols = +colsEl.value; colsLabel.textContent = params.cols;});
+randomnessEl.addEventListener("input", ()=>{ params.randomness = +randomnessEl.value; randomLabel.textContent = randomnessEl.value;});
+
+// update labels initial
+attPercLabel.textContent = attendanceEl.value;
+nClassesLabel.textContent = nClassesEl.value;
+groupSizeLabel.textContent = groupMinEl.value + " - " + groupMaxEl.value;
+radiusLabel.textContent = radiusEl.value;
+rowsLabel.textContent = rowsEl.value;
+colsLabel.textContent = colsEl.value;
+randomLabel.textContent = randomnessEl.value;
+
+// events
+stepBtn.addEventListener("click", ()=> stepOneClass());
+runBtn.addEventListener("click", ()=> runAllClasses());
+resetBtn.addEventListener("click", ()=> resetSimulation());
+
+// initialize
+resetSimulation();
+
+// ---- Core functions ----
+function resetSimulation(){
+  // read rows/cols changes
+  params.rows = +rowsEl.value;
+  params.cols = +colsEl.value;
+  const capacity = params.rows * params.cols;
+  capacityEl.textContent = capacity;
+
+  students = [];
+  seats = [];
+  adjacency = {};
+  simCount = 0;
+  currentGroups = [];
+  simCountEl.textContent = simCount;
+  attCountEl.textContent = 0;
+  diagEl.textContent = 'Reset — ready to simulate.';
+  topDegreeEl.innerHTML = '';
+  topBetweenEl.innerHTML = '';
+  selectedInfo.innerHTML = 'Hover a seat or node to see student details.';
+
+  // create students with propensity trait
+  for(let i=0;i<capacity;i++){
+    // Sample propensity from normal distribution
+    let sample = d3.randomNormal(0.5, 0.18)();
+    const p = Math.min(1, Math.max(0, sample));
+    students.push({ 
+      id: i, 
+      propensity: +p.toFixed(3), 
+      neighbors: new Set()
+    });
+  }
+
+  // create seats grid
+  const pad = 20;
+  const svgW = +classSvg.attr("width");
+  const svgH = +classSvg.attr("height");
+  const seatW = Math.min((svgW - pad*2) / params.cols, (svgH - pad*2) / params.rows);
+  params.seatSpacing = seatW;
+  
+  for(let r=0;r<params.rows;r++){
+    for(let c=0;c<params.cols;c++){
+      const x = pad + c*params.seatSpacing + params.seatSpacing/2;
+      const y = pad + r*params.seatSpacing + params.seatSpacing/2;
+      seats.push({ r: r, c: c, x: x, y: y, occupiedBy: null });
+    }
+  }
+
+  // initial network nodes
+  netG.nodes = students.map(s => ({ id: s.id, degree: 0, betweenness: 0 }));
+  netG.links = [];
+  renderClassroom([]);
+  updateNetwork();
+}
+
+// Get adjacent seats for grouping
+function getAdjacentSeats(seat){
+  const res = [];
+  const maxStep = Math.ceil(params.proximityRadius);
+  for(let dr = -maxStep; dr <= maxStep; dr++){
+    for(let dc = -maxStep; dc <= maxStep; dc++){
+      if(dr === 0 && dc === 0) continue;
+      const rr = seat.r + dr;
+      const cc = seat.c + dc;
+      if(rr < 0 || rr >= params.rows || cc < 0 || cc >= params.cols) continue;
+      const dist = Math.sqrt(dr*dr + dc*dc);
+      if(dist <= params.proximityRadius){
+        const idx = rr * params.cols + cc;
+        const s2 = seats[idx];
+        if(s2) res.push(s2);
+      }
+    }
+  }
+  return res;
+}
+
+// Students choose seats based on propensity
+function assignSeats(attendingStudents){
+  // Clear previous occupancy
+  seats.forEach(s => s.occupiedBy = null);
+  const availableSeats = seats.slice();
+
+  // Shuffle order to avoid bias
+  const order = d3.shuffle(attendingStudents.slice());
+
+  for(const student of order){
+    // Small random choice to encourage exploration
+    const randChoice = Math.random() < params.randomness;
+    let chosen = null;
+    
+    if(randChoice){
+      const idx = Math.floor(Math.random() * availableSeats.length);
+      chosen = availableSeats.splice(idx,1)[0];
+    } else {
+      let bestScore = -Infinity;
+      const bestCandidates = [];
+      
+      for(const seat of availableSeats){
+        const adjSeats = getAdjacentSeats(seat);
+        let known = 0, novel = 0;
+        
+        // Count occupied adjacent seats
+        for(const adj of adjSeats){
+          if(adj.occupiedBy === null) continue;
+          if(student.neighbors.has(adj.occupiedBy)) known++;
+          else novel++;
+        }
+        
+        // Scoring based on propensity
+        const score = student.propensity * novel - (1 - student.propensity) * known + (Math.random() - 0.5)*0.15;
+        
+        if(score > bestScore + 1e-9){
+          bestCandidates.length = 0; 
+          bestCandidates.push(seat); 
+          bestScore = score;
+        } else if(Math.abs(score - bestScore) < 1e-9){
+          bestCandidates.push(seat);
+        }
+      }
+      
+      if(bestCandidates.length === 0){
+        const idx = Math.floor(Math.random() * availableSeats.length);
+        chosen = availableSeats.splice(idx,1)[0];
+      } else {
+        chosen = bestCandidates[Math.floor(Math.random()*bestCandidates.length)];
+        const idx = availableSeats.indexOf(chosen);
+        if(idx >= 0) availableSeats.splice(idx,1);
+      }
+    }
+    chosen.occupiedBy = student.id;
+  }
+
+  return seats.filter(s => s.occupiedBy !== null);
+}
+
+// Form groups from seating arrangement
+function formGroupsFromSeating(occupiedSeats){
+  const seatKey = s => `${s.r}|${s.c}`;
+  const ungrouped = new Set(occupiedSeats.map(s => seatKey(s)));
+  const seatMap = {};
+  for(const s of seats) seatMap[seatKey(s)] = s;
+
+  const groups = [];
+  
+  while(ungrouped.size){
+    const startKey = ungrouped.values().next().value;
+    const startSeat = seatMap[startKey];
+    const desired = rndInt(params.groupMin, params.groupMax);
+
+    const groupSeats = [startSeat];
+    ungrouped.delete(startKey);
+
+    while(groupSeats.length < desired){
+      // Find ungrouped adjacent seats
+      const candidateSet = new Set();
+      for(const gs of groupSeats){
+        const neigh = getAdjacentSeats(gs);
+        for(const n of neigh){
+          const k = seatKey(n);
+          if(ungrouped.has(k)) candidateSet.add(k);
+        }
+      }
+      if(candidateSet.size === 0) break;
+      
+      // Pick one randomly (simplified from propensity-based selection for now)
+      const candidates = Array.from(candidateSet);
+      const chosen = seatMap[candidates[Math.floor(Math.random()*candidates.length)]];
+      groupSeats.push(chosen);
+      ungrouped.delete(seatKey(chosen));
+    }
+
+    groups.push(groupSeats);
+  }
+
+  return groups;
+}
+
+// Update adjacency and neighbor relationships
+function updateAdjacencyFromGroups(groups){
+  for(const groupSeats of groups){
+    const groupMembers = groupSeats.map(s => students[s.occupiedBy]);
+    for(let i=0;i<groupMembers.length;i++){
+      for(let j=i+1;j<groupMembers.length;j++){
+        const a = groupMembers[i].id, b = groupMembers[j].id;
+        const key = a < b ? `${a}|${b}` : `${b}|${a}`;
+        adjacency[key] = (adjacency[key] || 0) + 1;
+        students[a].neighbors.add(b);
+        students[b].neighbors.add(a);
+      }
+    }
+  }
+}
+
+// run single meeting
+function stepOneClass(){
+  // update dynamic params
+  params.attendancePerc = +attendanceEl.value/100;
+  params.groupMin = Math.max(2, +groupMinEl.value);
+  params.groupMax = Math.max(params.groupMin, +groupMaxEl.value);
+  params.proximityRadius = +radiusEl.value;
+  params.randomness = +randomnessEl.value;
+
+  // Sample attending students
+  const attending = students.filter(s => Math.random() < params.attendancePerc);
+  attCountEl.textContent = attending.length;
+
+  // Assign seats
+  const occupiedSeats = assignSeats(attending);
+  
+  // Calculate favorite seat statistics
+  let inFavoriteCount = 0;
+  let lowPropInFav = 0;
+  let highPropInFav = 0;
+  occupiedSeats.forEach(seat => {
+    const student = students[seat.occupiedBy];
+    const seatIndex = seats.indexOf(seat);
+    if(student.favoriteSeat === seatIndex){
+      inFavoriteCount++;
+      if(student.propensity < 0.5) lowPropInFav++;
+      else highPropInFav++;
+    }
+  });
+  
+  // Update diagnostics with favorite seat info
+  diagEl.innerHTML = `${Object.keys(adjacency).length} edges | ${simCount} classes | 
+    <b>${inFavoriteCount}/${attending.length}</b> in favorite seats 
+    (${lowPropInFav} familiar-seeking, ${highPropInFav} novelty-seeking)`;
+  
+  // Form groups
+  const groups = formGroupsFromSeating(occupiedSeats);
+  currentGroups = groups; // Store for visualization
+  
+  // Update relationships
+  updateAdjacencyFromGroups(groups);
+
+  simCount++;
+  simCountEl.textContent = simCount;
+
+  // Render visualizations
+  renderClassroom(occupiedSeats);
+  recomputeNetworkMetrics();
+  updateNetwork();
+}
+
+// run all meetings
+function runAllClasses(){
+  const total = +nClassesEl.value;
+  // Reset relationships
+  adjacency = {};
+  students.forEach(s => s.neighbors = new Set());
+  simCount = 0;
+  simCountEl.textContent = simCount;
+
+  for(let i=0;i<total;i++){
+    stepOneClass();
+  }
+}
+
+// render classroom with group highlights
+function renderClassroom(occupiedSeats){
+  const svg = classSvg;
+  svg.selectAll("*").remove();
+  const g = svg.append("g");
+
+  // seat radius
+  const seatR = Math.min(12, params.seatSpacing*0.35);
+
+  // map of occupied seats
+  const occupiedMap = new Set(occupiedSeats.map(s => `${s.r}|${s.c}`));
+
+  // Draw group highlights first (so they appear behind seats)
+  const color = d3.color("#fb923c");
+  currentGroups.forEach((groupSeats, idx) => {
+    if(groupSeats.length > 1){
+      const hull = d3.polygonHull(groupSeats.map(s => [s.x, s.y]));
+      if(hull){
+        g.append("path")
+         .attr("d", "M" + hull.join("L") + "Z")
+         .attr("class","group-highlight")
+         .attr("fill", color.copy({opacity:0.08}))
+         .attr("stroke", color.formatHex())
+         .attr("stroke-width", 2);
+      }
+    } else if(groupSeats.length === 1) {
+      // Single student group
+      g.append("circle")
+       .attr("cx", groupSeats[0].x)
+       .attr("cy", groupSeats[0].y)
+       .attr("r", seatR*1.6)
+       .attr("fill", color.copy({opacity:0.08}))
+       .attr("stroke", color.formatHex())
+       .attr("stroke-width", 2);
+    }
+  });
+
+  // Draw seats
+  const seatGroups = g.selectAll("g.seatgrp")
+    .data(seats, d => `${d.r}|${d.c}`)
+    .enter()
+    .append("g")
+    .attr("class","seatgrp")
+    .attr("transform", d => `translate(${d.x},${d.y})`)
+    .on("mouseover", (event,d) => {
+      if(d.occupiedBy !== null){
+        const st = students[d.occupiedBy];
+        const deg = getDegree(st.id);
+        const btw = getBetweenness(st.id) || 0;
+        selectedInfo.innerHTML = `<b>Student #${st.id}</b><br>Seat: r${d.r+1}, c${d.c+1}<br>Propensity: ${st.propensity}<br>Degree: ${deg}<br>Betweenness: ${btw.toFixed(4)}`;
+        highlightNetworkNode(st.id);
+      }
+    })
+    .on("mouseout", () => {
+      selectedInfo.innerHTML = 'Hover a seat or node to see student details.';
+      unhighlightNetwork();
+    });
+
+  seatGroups.append("circle")
+    .attr("r", seatR)
+    .attr("fill", d => {
+      if(d.occupiedBy === null) return "#f1f5f9";
+      const p = students[d.occupiedBy].propensity;
+      // Color scale from blue (low propensity) to purple (high propensity)
+      const colorScale = d3.interpolateRgb("#60a5fa", "#8b5cf6");
+      return colorScale(p);
+    })
+    .attr("class", d => occupiedMap.has(`${d.r}|${d.c}`) ? "seat occupied" : "seat absent")
+    .attr("stroke-width", 1.25)
+    .attr("stroke", d => d.occupiedBy !== null ? "#1e40af" : "#94a3b8");
+
+  seatGroups.append("text")
+    .text(d => d.occupiedBy !== null ? d.occupiedBy : "")
+    .attr("y", 5)
+    .attr("text-anchor","middle")
+    .attr("font-size", Math.max(9, seatR*0.6))
+    .attr("fill", d => d.occupiedBy !== null ? "#fff" : "#334155")
+    .attr("pointer-events","none");
+}
+
+// ---- network management & metrics ----
+function recomputeNetworkMetrics(){
+  // build adjacency list
+  const N = students.length;
+  const adjList = Array.from({length:N}, ()=>[]);
+  Object.keys(adjacency).forEach(k=>{
+    const [a,b] = k.split("|").map(Number);
+    adjList[a].push(b);
+    adjList[b].push(a);
+  });
+
+  // compute degree
+  netG.nodes.forEach(n=>{
+    n.degree = adjList[n.id].length;
+  });
+
+  // compute betweenness centrality
+  const betw = brandesBetweenness(adjList);
+  netG.nodes.forEach(n=> n.betweenness = betw[n.id] || 0);
+
+  // update top lists
+  const nodesCopy = netG.nodes.slice();
+  nodesCopy.sort((a,b)=> (b.degree - a.degree) || (b.betweenness - a.betweenness));
+  topDegreeEl.innerHTML = '';
+  nodesCopy.slice(0,8).forEach(n=>{
+    const li = document.createElement("li");
+    li.textContent = `#${n.id} — deg ${n.degree}`;
+    topDegreeEl.appendChild(li);
+  });
+
+  nodesCopy.sort((a,b)=> b.betweenness - a.betweenness);
+  topBetweenEl.innerHTML = '';
+  nodesCopy.slice(0,8).forEach(n=>{
+    const li = document.createElement("li");
+    li.textContent = `#${n.id} — btw ${n.betweenness.toFixed(3)}`;
+    topBetween.appendChild(li);
+  });
+}
+
+// Brandes algorithm
+function brandesBetweenness(adj){
+  const n = adj.length;
+  const CB = new Array(n).fill(0);
+  const S = [];
+  const P = new Array(n);
+  const sigma = new Array(n);
+  const dist = new Array(n);
+  const Q = [];
+
+  for(let s=0;s<n;s++){
+    // initialize
+    for(let i=0;i<n;i++){ P[i]=[]; sigma[i]=0; dist[i]=-1; }
+    sigma[s]=1; dist[s]=0;
+    S.length=0;
+    Q.length=0;
+    Q.push(s);
+
+    // BFS
+    while(Q.length){
+      const v = Q.shift();
+      S.push(v);
+      adj[v].forEach(w=>{
+        if(dist[w] < 0){
+          dist[w] = dist[v] + 1;
+          Q.push(w);
+        }
+        if(dist[w] === dist[v] + 1){
+          sigma[w] += sigma[v];
+          P[w].push(v);
+        }
+      });
+    }
+
+    const delta = new Array(n).fill(0);
+    // accumulate
+    while(S.length){
+      const w = S.pop();
+      for(const v of P[w]){
+        delta[v] += (sigma[v] / sigma[w]) * (1 + delta[w]);
+      }
+      if(w !== s) CB[w] += delta[w];
+    }
+  }
+
+  // normalize for undirected graphs
+  for(let i=0;i<n;i++) CB[i] = CB[i] / 2.0;
+  return CB;
+}
+
+// build netG.links from adjacency
+function rebuildLinksFromAdj(){
+  const links = [];
+  Object.entries(adjacency).forEach(([k,v])=>{
+    const [a,b] = k.split("|").map(Number);
+    links.push({ source: a, target: b, weight: v });
+  });
+  netG.links = links;
+}
+
+// update network visualization
+function updateNetwork(){
+  rebuildLinksFromAdj();
+
+  // prepare nodes and links
+  const nodes = netG.nodes.map(n => ({ 
+    id: n.id, 
+    degree: n.degree || 0, 
+    betweenness: n.betweenness || 0,
+    propensity: students[n.id].propensity 
+  }));
+  const links = netG.links.map(l => ({ 
+    source: l.source, 
+    target: l.target, 
+    weight: l.weight 
+  }));
+
+  // clear svg
+  netSvg.selectAll("*").remove();
+
+  const width = +netSvg.attr("width");
+  const height = +netSvg.attr("height");
+
+  // scales
+  const degExtent = d3.extent(nodes, d=>d.degree);
+  const rScale = d3.scaleSqrt().domain([degExtent[0]||0, degExtent[1]||1]).range([4,16]);
+
+  const btwExtent = d3.extent(nodes, d=>d.betweenness);
+  const colorScale = d3.scaleLinear().domain([btwExtent[0]||0, btwExtent[1]||1]).range(["#60a5fa","#fde68a"]);
+
+  // create simulation
+  if(forceSim) forceSim.stop();
+  forceSim = d3.forceSimulation(nodes)
+    .force("link", d3.forceLink(links).id(d=>d.id).distance(d=> 60 - Math.min(50, (d.weight || 1)*3) ).strength(0.6))
+    .force("charge", d3.forceManyBody().strength(-60))
+    .force("center", d3.forceCenter(width/2, height/2))
+    .force("collide", d3.forceCollide().radius(d=> rScale(d.degree)+4))
+    .alpha(0.8)
+    .alphaTarget(0);
+
+  const g = netSvg.append("g");
+
+  const link = g.append("g")
+    .attr("stroke-opacity", 0.8)
+    .selectAll("line")
+    .data(links)
+    .enter()
+    .append("line")
+    .attr("stroke-width", d => Math.max(1, Math.log2(d.weight+1)))
+    .attr("stroke", "#94a3b8");
+
+  const node = g.append("g")
+    .selectAll("g")
+    .data(nodes)
+    .enter()
+    .append("g")
+    .call(drag(forceSim));
+
+  node.append("circle")
+    .attr("r", d => Math.max(4, rScale(d.degree||0)))
+    .attr("fill", d => colorScale(d.betweenness||0))
+    .attr("stroke", "#0f172a")
+    .attr("stroke-width", 0.6)
+    .on("mouseover", (event,d)=>{
+      const st = students[d.id];
+      const deg = d.degree || 0;
+      const btw = d.betweenness || 0;
+      const seat = seats.find(s => s.occupiedBy === d.id);
+      let seatInfo = seat ? `r${seat.r+1}, c${seat.c+1}` : 'not seated';
+      selectedInfo.innerHTML = `<b>Student #${d.id}</b><br>Current seat: ${seatInfo}<br>Propensity: ${st.propensity}<br>Degree: ${deg}<br>Betweenness: ${btw.toFixed(4)}`;
+      if(seat) highlightSeat(seat);
+    })
+    .on("mouseout", ()=>{
+      selectedInfo.innerHTML = 'Hover a seat or node to see student details.';
+      unhighlightSeat();
+    });
+
+  node.append("text")
+    .text(d => d.id)
+    .attr("font-size",8)
+    .attr("dx",6)
+    .attr("dy",3);
+
+  forceSim.on("tick", ()=>{
+    link
+      .attr("x1", d=>d.source.x)
+      .attr("y1", d=>d.source.y)
+      .attr("x2", d=>d.target.x)
+      .attr("y2", d=>d.target.y);
+
+    node.attr("transform", d => `translate(${d.x},${d.y})`);
+  });
+
+  // zoom support
+  netSvg.call(d3.zoom().on("zoom", (event)=> g.attr("transform", event.transform)));
+
+  // diagnostics
+  diagEl.textContent = `${Object.keys(adjacency).length} unique edges; ${simCount} meetings simulated.`;
+}
+
+// drag behavior
+function drag(sim){
+  function dragstarted(event,d){
+    if(!event.active) sim.alphaTarget(0.2).restart();
+    d.fx = d.x; d.fy = d.y;
+  }
+  function dragged(event,d){
+    d.fx = event.x; d.fy = event.y;
+  }
+  function dragended(event,d){
+    if(!event.active) sim.alphaTarget(0);
+    d.fx = null; d.fy = null;
+  }
+  return d3.drag().on("start",dragstarted).on("drag",dragged).on("end",dragended);
+}
+
+// ---- helpers to get metrics ----
+function getDegree(id){
+  let deg = 0;
+  Object.keys(adjacency).forEach(k=>{
+    const [a,b] = k.split("|").map(Number);
+    if(a===id || b===id) deg++;
+  });
+  return deg;
+}
+
+let lastBetwCache = null;
+function getBetweenness(id){
+  if(!lastBetwCache){
+    recomputeNetworkMetrics();
+    lastBetwCache = {};
+    netG.nodes.forEach(n=> lastBetwCache[n.id] = n.betweenness);
+  }
+  return lastBetwCache[id] || 0;
+}
+
+// highlight functions
+function highlightSeat(seat){
+  classSvg.selectAll("g.seatgrp").select("circle")
+    .attr("stroke-width", d => (d.r === seat.r && d.c === seat.c) ? 3 : 1.25);
+}
+
+function unhighlightSeat(){
+  classSvg.selectAll("g.seatgrp").select("circle").attr("stroke-width", 1.25);
+}
+
+function highlightNetworkNode(id){
+  netSvg.selectAll("g").selectAll("circle").attr("stroke-width", d => d.id===id ? 2.4 : 0.6);
+}
+
+function unhighlightNetwork(){
+  netSvg.selectAll("g").selectAll("circle").attr("stroke-width", 0.6);
+}
+
+// clear caches when adjacency changes
+function clearCaches(){
+  lastBetwCache = null;
+}
+
+// Wrap stepOneClass to clear caches
+const originalStep = stepOneClass;
+stepOneClass = function(){
+  originalStep();
+  clearCaches();
+};
+
+</script>
+</body>
+</html>

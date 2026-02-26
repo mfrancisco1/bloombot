@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Analysis Tool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #222;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #222;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        
+        .controls {
+            background: #333;
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        label {
+            color: #ccc;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        input, select, button {
+            padding: 8px 12px;
+            border: 1px solid #555;
+            background: #444;
+            color: white;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        input[type="range"] {
+            width: 150px;
+        }
+        
+        button {
+            background: #555;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+        
+        button:hover {
+            background: #666;
+            transform: translateY(-1px);
+        }
+        
+        .main-content {
+            display: flex;
+            height: 600px;
+        }
+        
+        #network-svg {
+            flex: 1;
+            border-right: 1px solid #ddd;
+            background: white;
+        }
+        
+        .stats-panel {
+            width: 350px;
+            padding: 20px;
+            background: #fafafa;
+            overflow-y: auto;
+        }
+        
+        .stats-section {
+            margin-bottom: 25px;
+        }
+        
+        .stats-section h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 16px;
+            border-bottom: 2px solid #222;
+            padding-bottom: 5px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 14px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .stat-label {
+            color: #666;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            color: #222;
+        }
+        
+        .node {
+            cursor: pointer;
+            stroke: #222;
+            stroke-width: 1.5;
+        }
+        
+        .node:hover {
+            stroke-width: 3;
+        }
+        
+        .link {
+            stroke: #999;
+            stroke-opacity: 0.4;
+            stroke-width: 1;
+        }
+        
+        .link.highlighted {
+            stroke: #ff6b6b;
+            stroke-opacity: 1;
+            stroke-width: 2;
+        }
+        
+        .node-label {
+            font-size: 10px;
+            fill: #333;
+            pointer-events: none;
+            text-anchor: middle;
+            display: none;
+        }
+        
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+        
+        #node-count-display {
+            color: #888;
+            font-weight: normal;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Network Analysis Tool</h1>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="node-count">Nodes: <span id="node-count-display">20</span></label>
+                <input type="range" id="node-count" min="4" max="150" value="20">
+            </div>
+            
+            <div class="control-group">
+                <label for="network-type">Network Type</label>
+                <select id="network-type">
+                    <option value="random">Random (Erdős-Rényi)</option>
+                    <option value="small-world">Small World (Watts-Strogatz)</option>
+                    <option value="scale-free">Scale-Free (Barabási-Albert)</option>
+                    <option value="complete">Complete Graph</option>
+                    <option value="star">Star Network</option>
+                    <option value="ring">Ring Network</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="edge-probability">Edge Probability</label>
+                <input type="range" id="edge-probability" min="0.05" max="0.5" step="0.05" value="0.15">
+            </div>
+            
+            <div class="control-group">
+                <label for="color-by">Color By</label>
+                <select id="color-by">
+                    <option value="none">None (B&W)</option>
+                    <option value="degree">Degree Centrality</option>
+                    <option value="betweenness">Betweenness</option>
+                    <option value="closeness">Closeness</option>
+                    <option value="clustering">Clustering</option>
+                </select>
+            </div>
+            
+            <button id="generate-btn">Generate Network</button>
+            <button id="layout-btn">Restart Layout</button>
+        </div>
+        
+        <div class="main-content">
+            <svg id="network-svg"></svg>
+            
+            <div class="stats-panel">
+                <div class="stats-section">
+                    <h3>Network Overview</h3>
+                    <div class="stat-item">
+                        <span class="stat-label">Nodes:</span>
+                        <span class="stat-value" id="stat-nodes">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Edges:</span>
+                        <span class="stat-value" id="stat-edges">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Density:</span>
+                        <span class="stat-value" id="stat-density">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Avg. Degree:</span>
+                        <span class="stat-value" id="stat-avg-degree">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Diameter:</span>
+                        <span class="stat-value" id="stat-diameter">-</span>
+                    </div>
+                </div>
+                
+                <div class="stats-section">
+                    <h3>Centrality Measures</h3>
+                    <div class="stat-item">
+                        <span class="stat-label">Max Degree:</span>
+                        <span class="stat-value" id="stat-max-degree">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Max Betweenness:</span>
+                        <span class="stat-value" id="stat-max-betweenness">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Max Closeness:</span>
+                        <span class="stat-value" id="stat-max-closeness">-</span>
+                    </div>
+                </div>
+                
+                <div class="stats-section">
+                    <h3>Clustering</h3>
+                    <div class="stat-item">
+                        <span class="stat-label">Global Clustering:</span>
+                        <span class="stat-value" id="stat-global-clustering">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Avg. Local Clustering:</span>
+                        <span class="stat-value" id="stat-avg-clustering">-</span>
+                    </div>
+                </div>
+                
+                <div class="stats-section">
+                    <h3>Selected Node</h3>
+                    <div id="node-details" style="color: #666; font-size: 14px;">
+                        Click on a node to see details
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip"></div>
+
+    <script>
+        // Global variables
+        let nodes = [];
+        let links = [];
+        let simulation;
+        let selectedNode = null;
+        
+        // SVG setup
+        const svg = d3.select("#network-svg");
+        const width = svg.node().getBoundingClientRect().width;
+        const height = 600;
+        svg.attr("width", width).attr("height", height);
+        
+        // Create main group for zoom/pan
+        const g = svg.append("g");
+        
+        // Add zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.5, 5])
+            .on("zoom", (event) => {
+                g.attr("transform", event.transform);
+            });
+        
+        svg.call(zoom);
+        
+        // Tooltip
+        const tooltip = d3.select(".tooltip");
+        
+        // Network generation functions
+        function generateRandomNetwork(n, p) {
+            const nodes = Array.from({length: n}, (_, i) => ({
+                id: i,
+                label: `N${i}`,
+                degree: 0
+            }));
+            
+            const links = [];
+            for (let i = 0; i < n; i++) {
+                for (let j = i + 1; j < n; j++) {
+                    if (Math.random() < p) {
+                        links.push({source: i, target: j});
+                        nodes[i].degree++;
+                        nodes[j].degree++;
+                    }
+                }
+            }
+            
+            return {nodes, links};
+        }
+        
+        function generateSmallWorldNetwork(n, k, p) {
+            const nodes = Array.from({length: n}, (_, i) => ({
+                id: i,
+                label: `N${i}`,
+                degree: 0
+            }));
+            
+            const links = [];
+            // Create ring lattice
+            for (let i = 0; i < n; i++) {
+                for (let j = 1; j <= k/2; j++) {
+                    const target = (i + j) % n;
+                    links.push({source: i, target: target});
+                    nodes[i].degree++;
+                    nodes[target].degree++;
+                }
+            }
+            
+            // Rewire edges
+            for (let i = 0; i < links.length; i++) {
+                if (Math.random() < p) {
+                    const newTarget = Math.floor(Math.random() * n);
+                    if (newTarget !== links[i].source) {
+                        links[i].target = newTarget;
+                    }
+                }
+            }
+            
+            return {nodes, links};
+        }
+        
+        function generateScaleFreeNetwork(n, m) {
+            const nodes = [{id: 0, label: 'N0', degree: 0}];
+            const links = [];
+            
+            for (let i = 1; i < n; i++) {
+                const newNode = {id: i, label: `N${i}`, degree: 0};
+                const targets = [];
+                const totalDegree = nodes.reduce((sum, node) => sum + node.degree + 1, 0);
+                
+                for (let j = 0; j < Math.min(m, i); j++) {
+                    let target;
+                    do {
+                        const r = Math.random() * totalDegree;
+                        let sum = 0;
+                        for (let k = 0; k < nodes.length; k++) {
+                            sum += nodes[k].degree + 1;
+                            if (r < sum) {
+                                target = k;
+                                break;
+                            }
+                        }
+                    } while (targets.includes(target));
+                    
+                    targets.push(target);
+                    links.push({source: i, target: target});
+                    newNode.degree++;
+                    nodes[target].degree++;
+                }
+                
+                nodes.push(newNode);
+            }
+            
+            return {nodes, links};
+        }
+        
+        function generateCompleteNetwork(n) {
+            const nodes = Array.from({length: n}, (_, i) => ({
+                id: i,
+                label: `N${i}`,
+                degree: n - 1
+            }));
+            
+            const links = [];
+            for (let i = 0; i < n; i++) {
+                for (let j = i + 1; j < n; j++) {
+                    links.push({source: i, target: j});
+                }
+            }
+            
+            return {nodes, links};
+        }
+        
+        function generateStarNetwork(n) {
+            const nodes = Array.from({length: n}, (_, i) => ({
+                id: i,
+                label: `N${i}`,
+                degree: i === 0 ? n - 1 : 1
+            }));
+            
+            const links = [];
+            for (let i = 1; i < n; i++) {
+                links.push({source: 0, target: i});
+            }
+            
+            return {nodes, links};
+        }
+        
+        function generateRingNetwork(n) {
+            const nodes = Array.from({length: n}, (_, i) => ({
+                id: i,
+                label: `N${i}`,
+                degree: 2
+            }));
+            
+            const links = [];
+            for (let i = 0; i < n; i++) {
+                links.push({source: i, target: (i + 1) % n});
+            }
+            
+            return {nodes, links};
+        }
+        
+        // Network metrics calculations
+        function calculateBetweennessCentrality(nodes, links) {
+            const n = nodes.length;
+            const betweenness = new Array(n).fill(0);
+            
+            // Build adjacency list
+            const adj = Array.from({length: n}, () => []);
+            links.forEach(link => {
+                const s = typeof link.source === 'object' ? link.source.id : link.source;
+                const t = typeof link.target === 'object' ? link.target.id : link.target;
+                adj[s].push(t);
+                adj[t].push(s);
+            });
+            
+            // Calculate shortest paths and betweenness
+            for (let s = 0; s < n; s++) {
+                const S = [];
+                const P = Array.from({length: n}, () => []);
+                const sigma = new Array(n).fill(0);
+                sigma[s] = 1;
+                const d = new Array(n).fill(-1);
+                d[s] = 0;
+                const Q = [s];
+                
+                while (Q.length > 0) {
+                    const v = Q.shift();
+                    S.push(v);
+                    
+                    for (const w of adj[v]) {
+                        if (d[w] < 0) {
+                            Q.push(w);
+                            d[w] = d[v] + 1;
+                        }
+                        if (d[w] === d[v] + 1) {
+                            sigma[w] += sigma[v];
+                            P[w].push(v);
+                        }
+                    }
+                }
+                
+                const delta = new Array(n).fill(0);
+                while (S.length > 0) {
+                    const w = S.pop();
+                    for (const v of P[w]) {
+                        delta[v] += (sigma[v] / sigma[w]) * (1 + delta[w]);
+                    }
+                    if (w !== s) {
+                        betweenness[w] += delta[w];
+                    }
+                }
+            }
+            
+            // Normalize
+            const norm = 2 / ((n - 1) * (n - 2));
+            return betweenness.map(b => b * norm);
+        }
+        
+        function calculateClosenessCentrality(nodes, links) {
+            const n = nodes.length;
+            const closeness = new Array(n).fill(0);
+            
+            // Build adjacency list
+            const adj = Array.from({length: n}, () => []);
+            links.forEach(link => {
+                const s = typeof link.source === 'object' ? link.source.id : link.source;
+                const t = typeof link.target === 'object' ? link.target.id : link.target;
+                adj[s].push(t);
+                adj[t].push(s);
+            });
+            
+            // Calculate closeness for each node
+            for (let i = 0; i < n; i++) {
+                const distances = new Array(n).fill(Infinity);
+                distances[i] = 0;
+                const queue = [i];
+                
+                while (queue.length > 0) {
+                    const current = queue.shift();
+                    for (const neighbor of adj[current]) {
+                        if (distances[neighbor] === Infinity) {
+                            distances[neighbor] = distances[current] + 1;
+                            queue.push(neighbor);
+                        }
+                    }
+                }
+                
+                const totalDistance = distances.reduce((sum, d) => sum + (d === Infinity ? 0 : d), 0);
+                closeness[i] = totalDistance > 0 ? (n - 1) / totalDistance : 0;
+            }
+            
+            return closeness;
+        }
+        
+        function calculateClusteringCoefficient(nodes, links) {
+            const n = nodes.length;
+            const clustering = new Array(n).fill(0);
+            
+            // Build adjacency list
+            const adj = Array.from({length: n}, () => new Set());
+            links.forEach(link => {
+                const s = typeof link.source === 'object' ? link.source.id : link.source;
+                const t = typeof link.target === 'object' ? link.target.id : link.target;
+                adj[s].add(t);
+                adj[t].add(s);
+            });
+            
+            // Calculate clustering coefficient for each node
+            for (let i = 0; i < n; i++) {
+                const neighbors = Array.from(adj[i]);
+                const k = neighbors.length;
+                
+                if (k < 2) {
+                    clustering[i] = 0;
+                    continue;
+                }
+                
+                let triangles = 0;
+                for (let j = 0; j < k; j++) {
+                    for (let l = j + 1; l < k; l++) {
+                        if (adj[neighbors[j]].has(neighbors[l])) {
+                            triangles++;
+                        }
+                    }
+                }
+                
+                clustering[i] = (2 * triangles) / (k * (k - 1));
+            }
+            
+            return clustering;
+        }
+        
+        function calculateNetworkDiameter(nodes, links) {
+            const n = nodes.length;
+            let diameter = 0;
+            
+            // Build adjacency list
+            const adj = Array.from({length: n}, () => []);
+            links.forEach(link => {
+                const s = typeof link.source === 'object' ? link.source.id : link.source;
+                const t = typeof link.target === 'object' ? link.target.id : link.target;
+                adj[s].push(t);
+                adj[t].push(s);
+            });
+            
+            // Find maximum shortest path
+            for (let i = 0; i < n; i++) {
+                const distances = new Array(n).fill(Infinity);
+                distances[i] = 0;
+                const queue = [i];
+                
+                while (queue.length > 0) {
+                    const current = queue.shift();
+                    for (const neighbor of adj[current]) {
+                        if (distances[neighbor] === Infinity) {
+                            distances[neighbor] = distances[current] + 1;
+                            queue.push(neighbor);
+                        }
+                    }
+                }
+                
+                const maxDist = Math.max(...distances.filter(d => d !== Infinity));
+                diameter = Math.max(diameter, maxDist);
+            }
+            
+            return diameter;
+        }
+        
+        // Color scale functions
+        function getColorScale(metric, values) {
+            if (!values || values.length === 0) return () => "#666";
+            
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            
+            if (metric === 'none') {
+                return () => "#f0f0f0";
+            }
+            
+            // Use subtle colors
+            const colors = ['#e0e0e0', '#a0a0a0', '#606060', '#303030', '#000000'];
+            const scale = d3.scaleQuantize()
+                .domain([min, max])
+                .range(colors);
+            
+            return scale;
+        }
+        
+        // Update network visualization
+        function updateNetwork() {
+            // Clear previous elements
+            g.selectAll("*").remove();
+            
+            // Calculate metrics
+            const betweenness = calculateBetweennessCentrality(nodes, links);
+            const closeness = calculateClosenessCentrality(nodes, links);
+            const clustering = calculateClusteringCoefficient(nodes, links);
+            
+            // Add metrics to nodes
+            nodes.forEach((node, i) => {
+                node.betweenness = betweenness[i];
+                node.closeness = closeness[i];
+                node.clustering = clustering[i];
+            });
+            
+            // Get color scale based on selected metric
+            const colorBy = document.getElementById("color-by").value;
+            let colorScale;
+            let values;
+            
+            switch(colorBy) {
+                case 'degree':
+                    values = nodes.map(n => n.degree);
+                    colorScale = getColorScale(colorBy, values);
+                    break;
+                case 'betweenness':
+                    values = betweenness;
+                    colorScale = getColorScale(colorBy, values);
+                    break;
+                case 'closeness':
+                    values = closeness;
+                    colorScale = getColorScale(colorBy, values);
+                    break;
+                case 'clustering':
+                    values = clustering;
+                    colorScale = getColorScale(colorBy, values);
+                    break;
+                default:
+                    colorScale = () => "#e0e0e0";
+            }
+            
+            // Create force simulation
+            simulation = d3.forceSimulation(nodes)
+                .force("link", d3.forceLink(links).id(d => d.id).distance(50))
+                .force("charge", d3.forceManyBody().strength(-100))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("collision", d3.forceCollide().radius(20));
+            
+            // Draw links
+            const link = g.append("g")
+                .selectAll("line")
+                .data(links)
+                .enter().append("line")
+                .attr("class", "link");
+            
+            // Draw nodes
+            const node = g.append("g")
+                .selectAll("circle")
+                .data(nodes)
+                .enter().append("circle")
+                .attr("class", "node")
+                .attr("r", d => 5 + Math.sqrt(d.degree) * 2)
+                .attr("fill", d => {
+                    if (colorBy === 'none') return "#e0e0e0";
+                    const value = colorBy === 'degree' ? d.degree :
+                                colorBy === 'betweenness' ? d.betweenness :
+                                colorBy === 'closeness' ? d.closeness :
+                                d.clustering;
+                    return colorScale(value);
+                })
+                .on("click", function(event, d) {
+                    selectedNode = d;
+                    updateNodeDetails(d);
+                    highlightNode(d);
+                })
+                .on("mouseover", function(event, d) {
+                    const metric = colorBy === 'none' ? '' :
+                        colorBy === 'degree' ? `Degree: ${d.degree}` :
+                        colorBy === 'betweenness' ? `Betweenness: ${d.betweenness.toFixed(3)}` :
+                        colorBy === 'closeness' ? `Closeness: ${d.closeness.toFixed(3)}` :
+                        `Clustering: ${d.clustering.toFixed(3)}`;
+                    
+                    tooltip
+                        .style("opacity", 1)
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 10) + "px")
+                        .html(`<strong>${d.label}</strong><br>${metric}`);
+                })
+                .on("mouseout", function() {
+                    tooltip.style("opacity", 0);
+                })
+                .call(d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended));
+            
+            // Add labels for small networks
+            if (nodes.length <= 30) {
+                const label = g.append("g")
+                    .selectAll("text")
+                    .data(nodes)
+                    .enter().append("text")
+                    .attr("class", "node-label")
+                    .text(d => d.label)
+                    .style("display", "block");
+            }
+            
+            // Update positions on tick
+            simulation.on("tick", () => {
+                link
+                    .attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+                
+                node
+                    .attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
+                
+                if (nodes.length <= 30) {
+                    g.selectAll(".node-label")
+                        .attr("x", d => d.x)
+                        .attr("y", d => d.y - 10);
+                }
+            });
+            
+            // Update statistics
+            updateStatistics();
+        }
+        
+        // Drag functions
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+        
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+        
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+        
+        // Highlight node and its connections
+        function highlightNode(node) {
+            g.selectAll(".link")
+                .classed("highlighted", d => 
+                    d.source.id === node.id || d.target.id === node.id);
+        }
+        
+        // Update node details panel
+        function updateNodeDetails(node) {
+            const details = `
+                <div class="stat-item">
+                    <span class="stat-label">Node ID:</span>
+                    <span class="stat-value">${node.label}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Degree:</span>
+                    <span class="stat-value">${node.degree}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Betweenness:</span>
+                    <span class="stat-value">${node.betweenness.toFixed(4)}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Closeness:</span>
+                    <span class="stat-value">${node.closeness.toFixed(4)}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Clustering:</span>
+                    <span class="stat-value">${node.clustering.toFixed(4)}</span>
+                </div>
+            `;
+            document.getElementById("node-details").innerHTML = details;
+        }
+        
+        // Update statistics panel
+        function updateStatistics() {
+            const density = (2 * links.length) / (nodes.length * (nodes.length - 1));
+            const avgDegree = nodes.reduce((sum, n) => sum + n.degree, 0) / nodes.length;
+            const diameter = calculateNetworkDiameter(nodes, links);
+            
+            const betweenness = nodes.map(n => n.betweenness);
+            const closeness = nodes.map(n => n.closeness);
+            const clustering = nodes.map(n => n.clustering);
+            
+            const globalClustering = clustering.reduce((sum, c) => sum + c, 0) / nodes.length;
+            
+            document.getElementById("stat-nodes").textContent = nodes.length;
+            document.getElementById("stat-edges").textContent = links.length;
+            document.getElementById("stat-density").textContent = density.toFixed(4);
+            document.getElementById("stat-avg-degree").textContent = avgDegree.toFixed(2);
+            document.getElementById("stat-diameter").textContent = diameter === Infinity ? "∞" : diameter;
+            
+            document.getElementById("stat-max-degree").textContent = 
+                Math.max(...nodes.map(n => n.degree));
+            document.getElementById("stat-max-betweenness").textContent = 
+                Math.max(...betweenness).toFixed(4);
+            document.getElementById("stat-max-closeness").textContent = 
+                Math.max(...closeness).toFixed(4);
+            
+            document.getElementById("stat-global-clustering").textContent = 
+                globalClustering.toFixed(4);
+            document.getElementById("stat-avg-clustering").textContent = 
+                globalClustering.toFixed(4);
+        }
+        
+        // Generate new network
+        function generateNetwork() {
+            const nodeCount = parseInt(document.getElementById("node-count").value);
+            const networkType = document.getElementById("network-type").value;
+            const edgeProbability = parseFloat(document.getElementById("edge-probability").value);
+            
+            let network;
+            switch(networkType) {
+                case 'random':
+                    network = generateRandomNetwork(nodeCount, edgeProbability);
+                    break;
+                case 'small-world':
+                    network = generateSmallWorldNetwork(nodeCount, 4, edgeProbability);
+                    break;
+                case 'scale-free':
+                    network = generateScaleFreeNetwork(nodeCount, 2);
+                    break;
+                case 'complete':
+                    network = generateCompleteNetwork(nodeCount);
+                    break;
+                case 'star':
+                    network = generateStarNetwork(nodeCount);
+                    break;
+                case 'ring':
+                    network = generateRingNetwork(nodeCount);
+                    break;
+            }
+            
+            nodes = network.nodes;
+            links = network.links;
+            
+            updateNetwork();
+        }
+        
+        // Event listeners
+        document.getElementById("generate-btn").addEventListener("click", generateNetwork);
+        document.getElementById("layout-btn").addEventListener("click", () => {
+            if (simulation) {
+                simulation.alpha(1).restart();
+            }
+        });
+        
+        document.getElementById("node-count").addEventListener("input", (e) => {
+            document.getElementById("node-count-display").textContent = e.target.value;
+        });
+        
+        document.getElementById("color-by").addEventListener("change", updateNetwork);
+        
+        // Initialize with a random network
+        generateNetwork();
+    </script>
+</body>
+</html>

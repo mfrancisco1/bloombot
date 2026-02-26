@@ -1,0 +1,499 @@
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><!-- base href="https://1254444447-atari-embeds.googleusercontent.com/embeds/16cb204cf3a9d4d223a0a3fd8b0eec5d/inner-frame-minified.html?jsh=m%3B%2F_%2Fscs%2Fabc-static%2F_%2Fjs%2Fk%3Dgapi.lb.en.PCvl17LujMs.O%2Fd%3D1%2Frs%3DAHpOoo-sAn5Asuf3MvShXCH_dsg8tE46Tw%2Fm%3D__features__" -->
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spurious Correlations</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #999;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #111;
+            border-radius: 8px;
+        }
+        
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+            font-size: 0.9em;
+        }
+        
+        select {
+            width: 100%;
+            padding: 8px;
+            background: #222;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .chart-container {
+            background: #000;
+            padding: 40px;
+            border-radius: 8px;
+            border: 1px solid #222;
+        }
+        
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .correlation-info {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: #111;
+            border-radius: 8px;
+        }
+        
+        .correlation-value {
+            font-size: 1.5em;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .warning {
+            margin-top: 30px;
+            padding: 20px;
+            background: #1a1a1a;
+            border-left: 4px solid #ff9800;
+            border-radius: 4px;
+        }
+        
+        .warning h3 {
+            color: #ff9800;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Spurious Correlations</h1>
+        <p class="subtitle">Correlation Does Not Imply Causation</p>
+        
+        
+        
+        <div class="chart-container">
+            <canvas id="chart" width="800" height="500"></canvas>
+        </div>
+        
+
+<div class="controls">
+            <div class="control-group">
+                <label for="correlationSelect">Select Correlation:</label>
+                <select id="correlationSelect">
+                    <option value="0" selected="selected">Margarine Consumption vs Divorce Rate in Maine</option>
+                    <option value="1">Per Capita Cheese Consumption vs Bedsheet Deaths</option>
+                    <option value="2">Nicolas Cage Films vs Pool Drownings</option>
+                    <option value="3">US Science Spending vs Suicides by Hanging</option>
+                    <option value="4">Ice Cream Sales vs Shark Attacks</option>
+                    <option value="5">US Crude Oil Imports vs Railway Deaths</option>
+                    <option value="6">Video Game Sales vs Nuclear Energy Production</option>
+                    <option value="7">High School Graduates vs Donut Consumption</option>
+                    <option value="8">Storks vs Human Births</option>
+                    <option value="9">Global Mean Sea Level vs Internet Traffic</option>
+                    <option value="10">Number of Churches vs Crime Rate</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Display Options:</label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="showGrid" checked="checked">
+                        <label for="showGrid">Show Grid</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="showPoints" checked="checked">
+                        <label for="showPoints">Show Data Points</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="showLabels" checked="checked">
+                        <label for="showLabels">Show Axis Labels</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="showLegend" checked="checked">
+                        <label for="showLegend">Show Legend</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="correlation-info">
+            <div>Correlation Coefficient: <span class="correlation-value" id="corrValue">0.99</span></div>
+            <div style="margin-top: 10px; color: #999;">p-value &lt; 0.01 (statistically significant)</div>
+        </div>
+        
+        <div class="warning">
+            <h3>⚠️ Important Note</h3>
+            <p>These correlations are spurious! Just because two 
+variables move together does not mean one causes the other. Common 
+reasons for spurious correlations include:</p>
+            <ul style="margin-top: 10px; margin-left: 20px; line-height: 1.6;">
+                <li>Confounding variables (e.g., population growth, time trends)</li>
+                <li>Random coincidence with sufficient data points</li>
+                <li>Data dredging (testing many correlations until finding one)</li>
+                <li>Cherry-picking time periods or outliers</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById('chart');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size
+        canvas.width = 800;
+        canvas.height = 500;
+        
+        // Correlation datasets
+        const datasets = [
+            {
+                name: "Margarine Consumption vs Divorce Rate in Maine",
+                years: [2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009],
+                data1: [8.2, 7.0, 6.5, 5.3, 5.2, 4.0, 4.6, 4.5, 4.2, 3.7],
+                data2: [5.0, 4.7, 4.6, 4.4, 4.3, 4.1, 4.2, 4.2, 4.1, 4.0],
+                label1: "Per capita margarine consumption (lbs)",
+                label2: "Divorce rate in Maine",
+                correlation: 0.99
+            },
+            {
+                name: "Per Capita Cheese Consumption vs Bedsheet Deaths",
+                years: [2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009],
+                data1: [29.8, 30.1, 30.5, 30.6, 31.3, 31.7, 32.6, 33.1, 32.7, 32.8],
+                data2: [327, 456, 509, 497, 596, 573, 661, 741, 809, 717],
+                label1: "Per capita cheese consumption (lbs)",
+                label2: "Deaths by bedsheet entanglement",
+                correlation: 0.95
+            },
+            {
+                name: "Nicolas Cage Films vs Pool Drownings",
+                years: [1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009],
+                data1: [2, 2, 2, 3, 1, 1, 2, 3, 4, 1, 4],
+                data2: [109, 102, 102, 98, 85, 95, 96, 98, 123, 94, 102],
+                label1: "Films Nicolas Cage appeared in",
+                label2: "Pool drownings",
+                correlation: 0.67
+            },
+            {
+                name: "US Science Spending vs Suicides by Hanging",
+                years: [1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009],
+                data1: [18.1, 18.6, 19.6, 20.0, 20.5, 21.2, 22.0, 23.2, 24.4, 25.5, 26.9],
+                data2: [5427, 5688, 6198, 6462, 6635, 7336, 7248, 7491, 8161, 8578, 9000],
+                label1: "US science spending (billions)",
+                label2: "Suicides by hanging",
+                correlation: 0.99
+            },
+            {
+                name: "Ice Cream Sales vs Shark Attacks",
+                years: [2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009],
+                data1: [1200, 1450, 1800, 2100, 2300, 2600, 2900, 3100, 3400, 3700],
+                data2: [15, 18, 22, 26, 29, 33, 37, 40, 44, 48],
+                label1: "Ice cream sales (thousands)",
+                label2: "Shark attacks",
+                correlation: 0.99
+            },
+            {
+                name: "US Crude Oil Imports vs Railway Deaths",
+                years: [1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009],
+                data1: [483, 456, 441, 420, 493, 560, 488, 451, 433, 414, 383],
+                data2: [76, 74, 66, 63, 74, 89, 75, 68, 66, 63, 58],
+                label1: "US crude oil imports from Norway",
+                label2: "Drivers killed by railway train",
+                correlation: 0.95
+            },
+            {
+                name: "Video Game Sales vs Nuclear Energy Production",
+                years: [2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009],
+                data1: [150, 175, 210, 240, 275, 310, 355, 400, 450, 490],
+                data2: [2518, 2584, 2637, 2667, 2731, 2768, 2793, 2608, 2601, 2558],
+                label1: "Global video game sales (billions)",
+                label2: "Nuclear energy production (TWh)",
+                correlation: 0.83
+            },
+            {
+                name: "High School Graduates vs Donut Consumption",
+                years: [2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009],
+                data1: [2.8, 2.85, 2.9, 2.95, 3.0, 3.05, 3.1, 3.15, 3.2, 3.25],
+                data2: [3.2, 3.35, 3.5, 3.65, 3.8, 3.95, 4.1, 4.25, 4.4, 4.55],
+                label1: "High school graduates (millions)",
+                label2: "Donut consumption (billions)",
+                correlation: 0.99
+            },
+            {
+              name: "Storks vs Human Births",
+              years: [1950, 1951, 1952, 1953, 1954, 1955, 1956, 1957, 1958, 1959],
+              data1: [1200, 1220, 1240, 1260, 1280, 1300, 1320, 1340, 1360, 1380],
+              data2: [300000, 305000, 310000, 315000, 320000, 325000, 330000, 335000, 340000, 345000],
+              label1: "Number of storks nesting",
+              label2: "Number of human births",
+              correlation: 0.98
+            },
+            {
+              name: "Global Mean Sea Level vs Internet Traffic",
+              years: [2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014],
+              data1: [100, 102, 104, 106, 108, 110, 112, 114, 116, 118],
+              data2: [1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0],
+              label1: "Global mean sea level (mm above baseline)",
+              label2: "Internet traffic (exabytes per year)",
+              correlation: 0.99
+            },
+            {
+              name: "Number of Churches vs Crime Rate",
+              years: [2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009],
+              data1: [500, 520, 540, 560, 580, 600, 620, 640, 660, 680],
+              data2: [50, 52, 54, 56, 58, 60, 62, 64, 66, 68],
+              label1: "Number of churches in city",
+              label2: "Crime rate (incidents per 1,000)",
+              correlation: 0.99
+            }
+        ];
+        
+        let currentDataset = 0;
+        let showGrid = true;
+        let showPoints = true;
+        let showLabels = true;
+        let showLegend = true;
+        
+        function drawChart() {
+            const padding = showLabels ? 80 : 40;
+            const dataset = datasets[currentDataset];
+            
+            // Clear canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Calculate scales
+            const chartWidth = canvas.width - 2 * padding;
+            const chartHeight = canvas.height - 2 * padding;
+            
+            const max1 = Math.max(...dataset.data1);
+            const min1 = Math.min(...dataset.data1);
+            const max2 = Math.max(...dataset.data2);
+            const min2 = Math.min(...dataset.data2);
+            
+            const scaleY1 = chartHeight / (max1 - min1);
+            const scaleY2 = chartHeight / (max2 - min2);
+            const scaleX = chartWidth / (dataset.years.length - 1);
+            
+            // Draw grid
+            if (showGrid) {
+                ctx.strokeStyle = '#222';
+                ctx.lineWidth = 1;
+                for (let i = 0; i <= 10; i++) {
+                    const y = padding + (chartHeight * i / 10);
+                    ctx.beginPath();
+                    ctx.moveTo(padding, y);
+                    ctx.lineTo(canvas.width - padding, y);
+                    ctx.stroke();
+                }
+                for (let i = 0; i < dataset.years.length; i++) {
+                    const x = padding + (i * scaleX);
+                    ctx.beginPath();
+                    ctx.moveTo(x, padding);
+                    ctx.lineTo(x, canvas.height - padding);
+                    ctx.stroke();
+                }
+            }
+            
+            // Draw axes
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, canvas.height - padding);
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.stroke();
+            
+            // Draw data lines
+            // Line 1 (white)
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < dataset.data1.length; i++) {
+                const x = padding + (i * scaleX);
+                const y = canvas.height - padding - ((dataset.data1[i] - min1) * scaleY1);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // Line 2 (gray)
+            ctx.strokeStyle = '#888';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < dataset.data2.length; i++) {
+                const x = padding + (i * scaleX);
+                const y = canvas.height - padding - ((dataset.data2[i] - min2) * scaleY2);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // Draw points
+            if (showPoints) {
+                // Points for line 1
+                ctx.fillStyle = '#fff';
+                for (let i = 0; i < dataset.data1.length; i++) {
+                    const x = padding + (i * scaleX);
+                    const y = canvas.height - padding - ((dataset.data1[i] - min1) * scaleY1);
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+                
+                // Points for line 2
+                ctx.fillStyle = '#888';
+                for (let i = 0; i < dataset.data2.length; i++) {
+                    const x = padding + (i * scaleX);
+                    const y = canvas.height - padding - ((dataset.data2[i] - min2) * scaleY2);
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+            
+            // Draw labels
+            if (showLabels) {
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                
+                // X-axis labels (years)
+                for (let i = 0; i < dataset.years.length; i++) {
+                    const x = padding + (i * scaleX);
+                    ctx.fillText(dataset.years[i], x, canvas.height - padding + 20);
+                }
+                
+                // Y-axis labels
+                ctx.textAlign = 'right';
+                for (let i = 0; i <= 5; i++) {
+                    const y = padding + (chartHeight * i / 5);
+                    const value1 = max1 - ((max1 - min1) * i / 5);
+                    ctx.fillStyle = '#fff';
+                    ctx.fillText(value1.toFixed(1), padding - 10, y + 4);
+                }
+                
+                ctx.textAlign = 'left';
+                for (let i = 0; i <= 5; i++) {
+                    const y = padding + (chartHeight * i / 5);
+                    const value2 = max2 - ((max2 - min2) * i / 5);
+                    ctx.fillStyle = '#888';
+                    ctx.fillText(value2.toFixed(0), canvas.width - padding + 10, y + 4);
+                }
+            }
+            
+            // Draw legend
+            if (showLegend) {
+                ctx.font = '11px Arial';
+                const legendY = padding - 60;
+                
+                // Legend 1
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(20, legendY, 20, 2);
+                ctx.textAlign = 'left';
+                ctx.fillText(dataset.label1, 45, legendY + 4);
+                
+                // Legend 2
+                ctx.fillStyle = '#888';
+                ctx.fillRect(20, legendY + 20, 20, 2);
+                ctx.fillText(dataset.label2, 45, legendY + 24);
+            }
+            
+            // Update correlation value
+            document.getElementById('corrValue').textContent = dataset.correlation.toFixed(2);
+        }
+        
+        // Event listeners
+        document.getElementById('correlationSelect').addEventListener('change', (e) => {
+            currentDataset = parseInt(e.target.value);
+            drawChart();
+        });
+        
+        document.getElementById('showGrid').addEventListener('change', (e) => {
+            showGrid = e.target.checked;
+            drawChart();
+        });
+        
+        document.getElementById('showPoints').addEventListener('change', (e) => {
+            showPoints = e.target.checked;
+            drawChart();
+        });
+        
+        document.getElementById('showLabels').addEventListener('change', (e) => {
+            showLabels = e.target.checked;
+            drawChart();
+        });
+        
+        document.getElementById('showLegend').addEventListener('change', (e) => {
+            showLegend = e.target.checked;
+            drawChart();
+        });
+        
+        // Initial draw
+        drawChart();
+    </script>
+
+</body></html>

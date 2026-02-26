@@ -1,0 +1,166 @@
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><!-- base href="https://2141431360-atari-embeds.googleusercontent.com/embeds/16cb204cf3a9d4d223a0a3fd8b0eec5d/inner-frame-minified.html?jsh=m%3B%2F_%2Fscs%2Fabc-static%2F_%2Fjs%2Fk%3Dgapi.lb.en.PCvl17LujMs.O%2Fd%3D1%2Frs%3DAHpOoo-sAn5Asuf3MvShXCH_dsg8tE46Tw%2Fm%3D__features__" -->
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Lattice Work Pattern Generator</title>
+    <style>
+        #canvas {
+            border: 0px solid black;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Random Lattice Work Patterns</h1>
+    <label for="width">Width:</label>
+    <input type="number" id="width" value="10" placeholder="Enter width">
+    <label for="height">Height:</label>
+    <input type="number" id="height" value="10" placeholder="Enter height">
+    <br>
+    <label for="width">Spacing:</label>
+    <input type="number" id="spacing" value="2" placeholder="Enter spacing">
+    <label for="height">Variation %:</label>
+    <input type="number" id="variation" value="10" placeholder="Enter size and spacing variation">
+    <br>
+    <label for="count">Number of Rectangles:</label>
+    <input type="number" id="count" value="1000" placeholder="Enter number of rectangles">
+    <button onclick="drawRectangles()">Draw Rectangles</button>
+    <button onclick="downloadAsSVG()">Download as SVG</button>
+    <p>Generate a vector pattern for use in digital fabrication machines
+ to cut lattice in paper or fabric sheets or panels of wood, plastic, 
+..etc. </p>
+
+    
+    <br>
+    <canvas id="canvas" width="800" height="500"></canvas>
+
+    <script>
+        function getRandomInt(max) {
+            return Math.floor(Math.random() * max);
+        }
+
+        function paintBlack () {
+            return '#87CEEB';
+        }
+
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        function rectanglesOverlap(rect1, rect2) {
+            return !(rect1.x + rect1.width + rect1.spacing < rect2.x || 
+                     rect1.x > rect2.x + rect2.width + rect2.spacing || 
+                     rect1.y + rect1.height + rect1.spacing < rect2.y || 
+                     rect1.y > rect2.y + rect2.height + rect2.spacing);
+        }
+
+        let rectangles = [];
+
+        function drawRectangles() {
+            // Get the width, height, and count values from the input fields
+            const baseWidth = parseInt(document.getElementById('width').value);
+            const baseHeight = parseInt(document.getElementById('height').value);
+            const baseSpacing = parseInt(document.getElementById('spacing').value);
+            const baseVar = parseInt(document.getElementById('variation').value);
+            const count = parseInt(document.getElementById('count').value);
+
+            if (isNaN(baseWidth) || isNaN(baseHeight) || isNaN(count) || count <= 0) {
+                alert("Please enter valid numbers for width, height, and count.");
+                return;
+            }
+
+            // Get the canvas element and its context
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+
+            // Clear the canvas before drawing new rectangles
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            context.fillStyle = "white";
+            context.fillRect(0,0,canvas.width, canvas.height);
+
+            // calculate variation percentage for spacing
+            let x = baseSpacing * (getRandomInt(baseVar + 1)/100) + 1; 
+            const minSpacing = baseSpacing;// + x;//Math.min(baseWidth, baseHeight) / 20; // Minimal spacing as a fraction of size
+            rectangles = [];
+
+            // Draw the specified number of rectangles
+            for (let i = 0; i < count; i++) {
+                let widthVariation, heightVariation, x, y;
+                let attempts = 100; // Limit the number of placement attempts to avoid infinite loops
+
+                do {
+                    let w = baseWidth * (getRandomInt(baseVar + 1)/100) + 1; 
+                    let h = baseHeight * (getRandomInt(baseVar + 1)/100) + 1; 
+
+                    widthVariation = baseWidth + w;//getRandomInt(20) - 10; // +-10
+                    heightVariation = baseHeight + w;//getRandomInt(20) - 10; // +-10
+
+                    x = getRandomInt(canvas.width - widthVariation);
+                    y = getRandomInt(canvas.height - heightVariation);
+
+                    var newRect = {
+                        x: x,
+                        y: y,
+                        width: widthVariation,
+                        height: heightVariation,
+                        spacing: minSpacing,
+                        color: paintBlack() //getRandomColor() // Add color property
+                    };
+
+                    attempts--;
+                } while (rectangles.some(rect => rectanglesOverlap(rect, newRect)) && attempts > 0);
+
+                if (attempts > 0) {
+                    // Add new rectangle to the list to check for overlaps
+                    rectangles.push(newRect);
+                    
+
+                    // Set a random color and draw the rectangle
+                    context.fillStyle = newRect.color;
+                    context.fillRect(x, y, widthVariation, heightVariation);
+                } else {
+                    console.warn(`Couldn't place rectangle #${i + 1} due to overlap constraints.`);
+                }  
+                 /// Thank you GPT-4 assist!
+            }
+        }
+
+
+        function downloadAsSVG() {
+            const svgContent = generateSVGContent(rectangles, canvas.width, canvas.height);
+            const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'canvas.svg';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function generateSVGContent(rectangles, width, height) {
+            const svgParts = [
+                `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">`
+            ];
+
+            rectangles.forEach(rect => {
+                const rectElement = `<rect x="${rect.x}" y="${rect.y}" width="${rect.width}" height="${rect.height}" fill="${rect.color}" />`;
+                svgParts.push(rectElement);
+            });
+            
+            svgParts.push('</svg>');
+
+            return svgParts.join('');
+        }
+    </script>
+
+</body></html>

@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trolley Problem Simulation</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: whitesmoke;
+      font-family: Arial, sans-serif;
+      overflow-x: auto;
+    }
+
+    .track-container {
+      position: relative;
+      width: 900px;
+      height: 700px;
+      margin: 0 auto;
+      background: whitesmoke;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .track {
+      position: absolute;
+      background: #444;
+      border: 2px solid #222;
+    }
+
+    .track-horizontal {
+      height: 16px;
+      width: 35%;
+      top: 400px;
+    }
+
+    .track-branch-main {
+      height: 16px;
+      width: 500px;
+      top: 400px;
+      left: 320px;
+      opacity: 0.6;
+    }
+    .track-branch-main.active { opacity: 1; }
+
+    .track-branch-upper {
+      height: 16px;
+      width: 160px;
+      top: 400px;
+      left: 320px;
+      transform: rotate(-45deg);
+      transform-origin: 0 50%;
+      opacity: 0.6;
+      transition: opacity 0.3s;
+    }
+    .track-branch-upper.active { opacity: 1; }
+
+    .track-upper-extension {
+      height: 16px;
+      width: 380px;
+      top: 290px;
+      left: 425px;
+      opacity: 0.6;
+      transition: opacity 0.3s;
+    }
+    .track-upper-extension.active { opacity: 1; }
+
+    /* Train container for positioning */
+    .train-container {
+        position: absolute;
+        top: 390px;
+        left: -140px;
+        transition: none;
+    }
+        
+    /* Your original keyframe animations */
+    @keyframes trainMove {
+        0% { left: -140px; }
+        50% { left: 360px; }
+        100% { left: 800px; }
+    }
+    
+    @keyframes trainMoveUpper {
+        0% { left: -140px; top: 390px; }
+        50% { left: 220px; top: 390px; }
+        75% { left: 320px; top: 220px; }
+        100% { left: 800px; top: 220px; }
+    }
+    
+    /* Animation classes */
+    .running { animation: trainMove 4s linear forwards; }
+    .running-upper { animation: trainMoveUpper 4s linear forwards; }
+        
+    /* ENHANCED MAIN TRAIN BODY */
+    .train {
+        position: relative;
+        width: 160px;
+        height: 50px;
+        background: linear-gradient(135deg, #c41e3a 0%, #e74c3c 50%, #dc2c2c 100%);
+        border: 3px solid #8b0000;
+        border-radius: 8px 15px 8px 8px;
+        z-index: 10;
+        box-shadow: 
+            0 6px 20px rgba(0,0,0,0.4),
+            inset 0 2px 0 rgba(255,255,255,0.3),
+            inset 0 -2px 0 rgba(0,0,0,0.2);
+    }
+        
+    /* ENHANCED WINDOWS */
+    .train::before {
+        content: '';
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        background: radial-gradient(circle, #fff 60%, #e6e6e6 100%);
+        border: 2px solid #ddd;
+        border-radius: 50%;
+        top: 15px;
+        left: 25px;
+        box-shadow: 
+            45px 0 0 -2px #ddd,
+            45px 0 0 0 #fff,
+            90px 0 0 -2px #ddd,
+            90px 0 0 0 #fff;
+        z-index: 11;
+    }
+        
+    /* ENHANCED CABIN */
+    .train::after {
+        content: '';
+        position: absolute;
+        width: 35px;
+        height: 30px;
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
+        top: 10px;
+        right: 8px;
+        border-radius: 6px 15px 6px 6px;
+        border: 2px solid #1a252f;
+        box-shadow: 
+            inset 0 2px 0 rgba(255,255,255,0.1),
+            0 3px 8px rgba(0,0,0,0.3);
+    }
+        
+    /* Smokestack */
+    .smokestack {
+        position: absolute;
+        width: 12px;
+        height: 25px;
+        background: linear-gradient(to right, #333 0%, #555 50%, #333 100%);
+        border-radius: 6px 6px 3px 3px;
+        top: -25px;
+        right: 45px;
+        border: 1px solid #222;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+        
+    .smokestack::before {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 4px;
+        background: #444;
+        top: -2px;
+        left: -2px;
+        border-radius: 2px;
+    }
+        
+    /* Front cowcatcher */
+    .cowcatcher {
+        position: absolute;
+        width: 0;
+        height: 0;
+        border-left: 20px solid transparent;
+        border-right: 0;
+        border-bottom: 15px solid black;
+        right: -17px;
+        bottom: 0;
+        filter: brightness(0.8);
+    }
+        
+    /* Wheels */
+    .wheels {
+        position: absolute;
+        bottom: -1px;
+        left: 20px;
+        right: 20px;
+    }
+        
+    .wheel {
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        background: radial-gradient(circle, #333 30%, #666 70%, #333 100%);
+        border: 3px solid #222;
+        border-radius: 50%;
+        box-shadow: 
+            inset 0 0 0 3px #444,
+            0 3px 6px rgba(0,0,0,0.4);
+        animation: spin 2s linear infinite;
+    }
+        
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+        
+    .wheel:nth-child(1) { left: 0; }
+    .wheel:nth-child(2) { left: 20px; }
+    .wheel:nth-child(3) { right: 20px; }
+    .wheel:nth-child(4) { right: 0; }
+        
+    /* Connecting rods between wheels */
+    .wheel::before {
+        content: '';
+        position: absolute;
+        width: 5px;
+        height: 5px;
+        background: #555;
+        top: 50%;
+        left: 100%;
+        transform: translateY(-50%);
+        z-index: -1;
+    }
+        
+    .wheel:nth-child(4)::before {
+        display: none;
+    }
+        
+    /* Steam/smoke */
+    .steam {
+        position: absolute;
+        top: -40px;
+        right: 39px;
+        width: 20px;
+        height: 20px;
+    }
+        
+    .steam::before,
+    .steam::after {
+        content: '';
+        position: absolute;
+        background: black;
+        border-radius: 50%;
+        animation: float 3s ease-in-out infinite;
+    }
+        
+    .steam::before {
+        width: 8px;
+        height: 8px;
+        top: 0;
+        left: 6px;
+        animation-delay: 0s;
+    }
+        
+    .steam::after {
+        width: 12px;
+        height: 12px;
+        top: -10px;
+        left: 2px;
+        animation-delay: 1s;
+    }
+        
+    @keyframes float {
+        0% { 
+            opacity: 0.7; 
+            transform: translateY(0) scale(1); 
+        }
+        50% { 
+            opacity: 0.4; 
+            transform: translateY(-20px) scale(1.2); 
+        }
+        100% { 
+            opacity: 0; 
+            transform: translateY(-40px) scale(1.5); 
+        }
+    }
+        
+    /* Headlight */
+    .headlight {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: radial-gradient(circle, #ffff80 0%, #ffff00 70%, #ffd700 100%);
+        border: 1px solid #daa520;
+        border-radius: 50%;
+        top: 20px;
+        right: -4px;
+        box-shadow: 
+            0 0 10px rgba(255,255,0,0.6),
+            0 0 20px rgba(255,255,0,0.3);
+        animation: glow 2s ease-in-out infinite alternate;
+    }
+        
+    @keyframes glow {
+        from { box-shadow: 0 0 10px rgba(255,255,0,0.6), 0 0 20px rgba(255,255,0,0.3); }
+        to { box-shadow: 0 0 15px rgba(255,255,0,0.8), 0 0 30px rgba(255,255,0,0.5); }
+    }
+
+    .person {
+      position: absolute;
+      font-size: 70px;
+      transition: opacity 0.3s;
+    }
+
+    .controls {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .next-button {
+      background: #27ae60;
+      color: white;
+      border: none;
+      padding: 15px 25px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .next-button:hover { background: #2ecc71; }
+    .next-button:disabled { 
+      background: #95a5a6; 
+      cursor: not-allowed;
+    }
+
+    /* Track Switch Control - positioned near railway switch */
+    .track-switch-control {
+      position: absolute;
+      top: 450px;
+      left: 280px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.95);
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      z-index: 50;
+    }
+
+    .switch-label { 
+      font-weight: bold; 
+      font-size: 14px;
+    }
+    
+    .switch-control {
+      position: relative;
+      width: 60px; height: 30px;
+      background: #bdc3c7;
+      border-radius: 15px;
+      cursor: pointer;
+      border: 2px solid #95a5a6;
+    }
+    .switch-control.active { background: #3498db; border-color: #2980b9; }
+    .switch-control.disabled { 
+      opacity: 0.5; 
+      cursor: not-allowed;
+    }
+    .switch-toggle {
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 22px; height: 22px;
+      background: white; border-radius: 50%;
+      transition: transform 0.3s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .switch-control.active .switch-toggle { transform: translateX(30px); }
+
+    .railway-switch {
+      position: absolute;
+      top: 390px;
+      left: 300px;
+      width: 60px;
+      height: 30px;
+    }
+    .switch-rail { position: absolute; background: #666; height: 6px; transition: all 0.3s; }
+    .switch-rail-straight { top: 13px; left: 0; width: 60px; }
+    .switch-rail-curved { top: 13px; left: 15px; width: 40px; transform-origin: 0 50%; }
+    .switch-rail-curved.upper { transform: rotate(-15deg); }
+    .switch-point {
+      position: absolute; width: 20px; height: 6px; background: #888;
+      top: 13px; left: 15px; transition: all 0.3s ease; transform-origin: 0 50%;
+    }
+    .switch-point.upper { transform: rotate(-15deg); background: #3498db; }
+    .switch-mechanism {
+      position: absolute;
+      top: 5px; left: 25px;
+      width: 12px; height: 12px;
+      background: #2c3e50;
+      border-radius: 50%;
+      border: 2px solid #34495e;
+    }
+
+    /* Timer Display */
+    .timer-display {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 48px;
+      font-weight: bold;
+      color: #e74c3c;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    /* Results Panel */
+    .results-panel {
+      position: absolute;
+      top: 480px;
+      right: 20px;
+      background: rgba(52,73,94,0.95);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      width: 280px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .results-panel h3 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+    }
+
+    .result-item {
+      margin: 5px 0;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .emoji-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 5px;
+      background: rgba(0,0,0,0.2);
+      padding: 5px;
+      border-radius: 5px;
+    }
+
+    .emoji-icon {
+      font-size: 24px;
+    }
+
+    /* Warning Modal */
+    .warning-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .warning-modal.show {
+      display: flex;
+    }
+
+    .warning-content {
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 400px;
+      animation: shake 0.5s;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+
+    .warning-content h2 {
+      color: #e74c3c;
+      margin: 0 0 15px 0;
+    }
+
+    .warning-content p {
+      margin: 15px 0;
+      font-size: 16px;
+    }
+
+    .warning-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .warning-button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .confirm-divert {
+      background: #e74c3c;
+      color: white;
+    }
+
+    .cancel-divert {
+      background: #95a5a6;
+      color: white;
+    }
+
+    /* Scenario Info */
+    .scenario-info {
+      position: absolute;
+      top: 80px;
+      left: 20px;
+      background: rgba(52,73,94,0.95);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+    .scenario-info h3 {
+      margin: 0 0 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="track-container">
+    <!-- Tracks -->
+    <div class="track track-horizontal"></div>
+    <div class="track track-branch-main" id="mainTrack"></div>
+    <div class="track track-branch-upper" id="upperTrack"></div>
+    <div class="track track-upper-extension" id="upperExtension"></div>
+
+    <!-- Train -->
+    <div class="train-container" id="trainContainer">
+      <div class="train"></div>
+      <div class="smokestack"></div>
+      <div class="cowcatcher"></div>
+      <div class="headlight"></div>
+      <div class="steam"></div>
+      <div class="wheels">
+        <div class="wheel"></div>
+        <div class="wheel"></div>
+        <div class="wheel"></div>
+        <div class="wheel"></div>
+      </div>
+    </div>
+
+    <!-- Railway Switch -->
+    <div class="railway-switch">
+      <div class="switch-rail switch-rail-straight"></div>
+      <div class="switch-rail switch-rail-curved" id="curvedRail"></div>
+      <div class="switch-point" id="switchPoint"></div>
+      <div class="switch-mechanism"></div>
+    </div>
+
+    <!-- Track Switch Control (moved near railway switch) -->
+    <div class="track-switch-control">
+      <span class="switch-label">Main</span>
+      <div class="switch-control" id="trackSwitch">
+        <div class="switch-toggle"></div>
+      </div>
+      <span class="switch-label">Upper</span>
+    </div>
+
+    <!-- People -->
+    <div class="person" style="top:360px; left:450px;">🧍</div>
+    <div class="person" style="top:360px; left:500px;">🧍</div>
+    <div class="person" style="top:360px; left:550px;">🧍</div>
+    <div class="person" style="top:360px; left:600px;">🧍</div>
+    <div class="person" style="top:360px; left:650px;">🧍</div>
+    <div class="person" style="top:220px; left:600px;">🧍</div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="next-button" id="nextBtn">Next Scenario</button>
+      <!-- <select id="simType">
+        <option value="1">Random People</option>
+        <option value="2">Random Professions</option>
+        <option value="3">Random Faces</option>
+        <option value="4">Professions</option>
+        <option value="5">Animals</option>
+        <option value="6">Mix</option>
+      </select> -->
+    </div>
+
+    <!-- Timer Display -->
+    <div class="timer-display" id="timerDisplay">5</div>
+
+    <!-- Scenario Info -->
+    <div class="scenario-info">
+      <h3>Scenario <span id="scenarioNumber">1</span></h3>
+      <div id="scenarioDescription"></div>
+    </div>
+
+    <!-- Results Panel -->
+    <div class="results-panel">
+      <h3>Moral Ledger</h3>
+      <div id="resultsHistory"></div>
+      <hr style="margin: 10px 0; border-color: #556;">
+      <div class="result-item">
+        <strong>Total Saved:</strong> <span id="totalSaved">0</span>
+      </div>
+      <div class="result-item">
+        <strong>Total Lost:</strong> <span id="totalLost">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Warning Modal -->
+  <div class="warning-modal" id="warningModal">
+    <div class="warning-content">
+      <h2>⚠️ WARNING ⚠️</h2>
+      <p><strong>You are about to divert the train from its scheduled path!</strong></p>
+      <p>This action will redirect the train to the upper track where <span id="upperTrackVictims">1 person</span> is located.</p>
+      <p>Are you certain you want to take this action?</p>
+      <div class="warning-buttons">
+        <button class="warning-button confirm-divert" id="confirmDivert">Divert Train</button>
+        <button class="warning-button cancel-divert" id="cancelDivert">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let switchPosition = 'main';
+    let isRunning = false;
+    let countdownTimer = null;
+    let currentTime = 5;
+    let currentScenario = 1;
+    let totalSaved = 0;
+    let totalLost = 0;
+    let resultsHistory = [];
+    let userActed = false;
+    let scenarioStarted = false;
+
+    const train = document.getElementById('trainContainer');
+    const nextBtn = document.getElementById('nextBtn');
+    const trackSwitch = document.getElementById('trackSwitch');
+    const switchPoint = document.getElementById('switchPoint');
+    const curvedRail = document.getElementById('curvedRail');
+    const upperTrack = document.getElementById('upperTrack');
+    const mainTrack = document.getElementById('mainTrack');
+    const upperExtension = document.getElementById('upperExtension');
+    const people = document.querySelectorAll('.person');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const warningModal = document.getElementById('warningModal');
+    const confirmDivert = document.getElementById('confirmDivert');
+    const cancelDivert = document.getElementById('cancelDivert');
+    const scenarioNumber = document.getElementById('scenarioNumber');
+    const resultsHistoryDiv = document.getElementById('resultsHistory');
+    const totalSavedSpan = document.getElementById('totalSaved');
+    const totalLostSpan = document.getElementById('totalLost');
+
+    // Base activities without skin tone variations
+    const baseActivities = {
+      standing: ["🧍"],
+      walking: ["🚶"],
+      running: ["🏃"],
+      kneeling: ["🧎"],
+      meditating: ["🧘"],
+      dancing: ["💃", "🕺"],
+      baby: ["👶"],
+      child: ["🧒"], 
+      boy: ["👦"],
+      girl: ["👧"],
+      man: ["👨"],
+      woman: ["👩"],
+      person: ["🧑"],
+      olderPerson: ["🧓"],
+      oldMan: ["👴"],
+      oldWoman: ["👵"],
+      doctor: ["👨‍⚕️", "👩‍⚕️"],
+      teacher: ["👨‍🏫", "👩‍🏫"],
+      student: ["👨‍🎓", "👩‍🎓"],
+      judge: ["👨‍⚖️", "👩‍⚖️"],
+      farmer: ["👨‍🌾", "👩‍🌾"],
+      cook: ["👨‍🍳", "👩‍🍳"],
+      mechanic: ["👨‍🔧", "👩‍🔧"],
+      scientist: ["👨‍🔬", "👩‍🔬"],
+      technologist: ["👨‍💻", "👩‍💻"],
+      singer: ["👨‍🎤", "👩‍🎤"],
+      artist: ["👨‍🎨", "👩‍🎨"],
+      pilot: ["👨‍✈️", "👩‍✈️"],
+      astronaut: ["👨‍🚀", "👩‍🚀"],
+      firefighter: ["👨‍🚒", "👩‍🚒"],
+      police: ["👮‍♂️", "👮‍♀️"],
+      construction: ["👷"],
+      prince: ["🤴"],
+      princess: ["👸"],
+      surfing: ["🏄"],
+      golfing: ["🏌️"],
+      supervillain: ["🦹"],
+      animals: ["🐕", "🐈", "🐘", "🐎", "🐒", "🐅", "🦁", "🐺", "🐻", "🐨", "🐯", "🦒", "🦏", "🐄", "🐖"]
+    };
+
+    const skinTones = ["", "🏻", "🏼", "🏽", "🏾", "🏿"];
+
+    function addRandomVariation(baseEmoji) {
+      const randomSkinTone = skinTones[Math.floor(Math.random() * skinTones.length)];
+      
+      if (baseEmoji.includes('‍')) {
+        if (baseEmoji.startsWith('👨‍') || baseEmoji.startsWith('👩‍') || baseEmoji.startsWith('🧑‍')) {
+          return baseEmoji.charAt(0) + baseEmoji.charAt(1) + randomSkinTone + baseEmoji.slice(2);
+        }
+        return baseEmoji.replace(/^(.)/, '$1' + randomSkinTone);
+      }
+      
+      if (baseEmoji === "💃" || baseEmoji === "🕺") {
+        return baseEmoji + randomSkinTone;
+      }
+
+      if (["👶", "🧒", "👦", "👧", "👨", "👩", "🧑", "🧓", "👴", "👵", "🧍", "🚶", "🏃", "🧎", "🧘", "👷", "🤴", "👸", "👮"].includes(baseEmoji)) {
+        return baseEmoji + randomSkinTone;
+      }
+      
+      return baseEmoji;
+    }
+
+    function getCategoryEmojis(categories, count) {
+      const result = [];
+      const availableCategories = categories.filter(cat => baseActivities[cat]);
+      
+      for (let i = 0; i < count; i++) {
+        const categoryName = availableCategories[i % availableCategories.length];
+        const baseEmojis = baseActivities[categoryName];
+        const randomBaseEmoji = baseEmojis[Math.floor(Math.random() * baseEmojis.length)];
+        const finalEmoji = addRandomVariation(randomBaseEmoji);
+        result.push(finalEmoji);
+      }
+      
+      return result;
+    }
+
+    function getRandomProfessions(count) {
+      const professionCategories = ["doctor", "teacher", "student", "judge", "farmer", "cook", 
+        "mechanic", "scientist", "technologist", "singer", "artist", 
+        "pilot", "astronaut", "firefighter", "police", "construction", 
+        "prince", "princess"];
+      return getCategoryEmojis(professionCategories, count);
+    }
+
+    function getRandomBasicPeople(count) {
+      const basicPeopleCategories = ["baby", "child", "boy", "girl", "man", "woman", "person", 
+        "olderPerson", "oldMan", "oldWoman"];
+      return getCategoryEmojis(basicPeopleCategories, count);
+    }
+
+    const emojiSets = {
+      1: getCategoryEmojis(["doctor", "oldMan", "woman", "man", "girl", "boy"], 6),
+      2: getCategoryEmojis(["oldMan", "baby", "woman", "man", "girl", "oldMan"], 6),
+      3: getCategoryEmojis(["animals", "animals", "animals", "animals", "animals", "oldMan"], 6),
+      4: getCategoryEmojis(["artist", "singer", "technologist", "surfing", "golfing", "firefighter"], 6),
+      5: getCategoryEmojis(["doctor", "oldMan", "woman", "man", "girl", "firefighter"], 6),
+      6: getCategoryEmojis(["pilot", "teacher", "doctor", "farmer", "judge", "boy"], 6),
+      7: getCategoryEmojis(["prince", "princess", "animals", "animals", "animals", "baby"], 6),
+      8: getCategoryEmojis(["man", "oldMan", "woman", "oldWoman", "girl", "supervillain"], 6),
+      9: getCategoryEmojis(["doctor", "oldMan", "woman", "man", "girl", "boy"], 6),
+    };
+
+    let currentSet = 1;
+
+    function updateTrackVisibility() {
+      upperTrack.classList.remove('active');
+      mainTrack.classList.remove('active');
+      switchPoint.classList.remove('upper');
+      curvedRail.classList.remove('upper');
+      trackSwitch.classList.remove('active');
+      upperExtension.classList.remove('active');
+
+      if (switchPosition === 'upper') {
+        upperTrack.classList.add('active');
+        switchPoint.classList.add('upper');
+        curvedRail.classList.add('upper');
+        trackSwitch.classList.add('active');
+        upperExtension.classList.add('active');
+      } else {
+        mainTrack.classList.add('active');
+      }
+    }
+
+    function checkCollisions() {
+      const trainRect = train.getBoundingClientRect();
+      people.forEach((person) => {
+        const rect = person.getBoundingClientRect();
+        if (!(rect.right < trainRect.left || rect.left > trainRect.right || 
+              rect.bottom < trainRect.top || rect.top > trainRect.bottom)) {
+          if (person.textContent !== '❌') {
+            person.textContent = '❌';
+          }
+        }
+      });
+    }
+
+    function startCountdown() {
+      scenarioStarted = true;
+      userActed = false;
+      trackSwitch.classList.remove('disabled');
+      nextBtn.disabled = true;
+      
+      currentTime = 5;
+      timerDisplay.textContent = currentTime;
+      timerDisplay.style.display = 'block';
+      
+      countdownTimer = setInterval(() => {
+        currentTime--;
+        timerDisplay.textContent = currentTime;
+        
+        if (currentTime <= 2) {
+          timerDisplay.style.color = '#c0392b';
+        }
+        
+        if (currentTime === 0) {
+          clearInterval(countdownTimer);
+          startTrain();
+        }
+      }, 1000);
+    }
+
+    function startTrain() {
+      if (isRunning) return;
+      isRunning = true;
+      trackSwitch.classList.add('disabled');
+      
+      train.classList.remove('running', 'running-upper');
+      train.style.left = '-140px';
+      train.style.top = '390px';
+
+      setTimeout(() => {
+        train.classList.add(switchPosition === 'upper' ? 'running-upper' : 'running');
+      }, 50);
+
+      const interval = setInterval(checkCollisions, 50);
+
+      setTimeout(() => {
+        clearInterval(interval);
+        isRunning = false;
+        recordResults();
+        nextBtn.disabled = false;
+        timerDisplay.style.display = 'none';
+      }, 4200);
+    }
+
+    function recordResults() {
+      const mainTrackPeople = Array.from(people).slice(0, 5);
+      const upperTrackPerson = people[5];
+      
+      let killedByAction = [];      // Category 1: Deaths caused by pulling switch
+      let diedFromInaction = [];    // Category 2: Deaths from not acting
+      let savedByAction = [];       // Category 3: Lives saved by pulling switch
+      let bystanders = [];          // Category 4: Not in danger (saved without action)
+      
+      if (switchPosition === 'main') {
+        // Train stayed on main track
+        if (userActed) {
+          // User actively returned switch to main (or never moved it after seeing situation)
+          // This is treating returning to main as an action
+          mainTrackPeople.forEach(p => {
+            if (p.textContent === '❌') {
+              killedByAction.push(p.getAttribute('data-original-emoji') || '🧍');
+            }
+          });
+          bystanders.push(upperTrackPerson.getAttribute('data-original-emoji') || '🧍');
+        } else {
+          // User did nothing - watched people die
+          mainTrackPeople.forEach(p => {
+            if (p.textContent === '❌') {
+              diedFromInaction.push(p.getAttribute('data-original-emoji') || '🧍');
+            }
+          });
+          bystanders.push(upperTrackPerson.getAttribute('data-original-emoji') || '🧍');
+        }
+      } else {
+        // Train was diverted to upper track - user definitely acted
+        if (upperTrackPerson.textContent === '❌') {
+          killedByAction.push(upperTrackPerson.getAttribute('data-original-emoji') || '🧍');
+        }
+        mainTrackPeople.forEach(p => {
+          savedByAction.push(p.getAttribute('data-original-emoji') || '🧍');
+        });
+      }
+      
+      const result = {
+        scenario: currentScenario,
+        userActed: userActed,
+        switchPosition: switchPosition,
+        killedByAction: killedByAction,
+        diedFromInaction: diedFromInaction,
+        savedByAction: savedByAction,
+        bystanders: bystanders
+      };
+      
+      resultsHistory.push(result);
+      
+      // Update totals
+      totalSaved += savedByAction.length + bystanders.length;
+      totalLost += killedByAction.length + diedFromInaction.length;
+      
+      updateResultsDisplay();
+    }
+
+    function updateResultsDisplay() {
+      totalSavedSpan.textContent = totalSaved;
+      totalLostSpan.textContent = totalLost;
+      
+      // Accumulate all results across all scenarios
+      let allKilledByAction = [];
+      let allDiedFromInaction = [];
+      let allSavedByAction = [];
+      let allBystanders = [];
+      
+      resultsHistory.forEach(result => {
+        allKilledByAction = allKilledByAction.concat(result.killedByAction);
+        allDiedFromInaction = allDiedFromInaction.concat(result.diedFromInaction);
+        allSavedByAction = allSavedByAction.concat(result.savedByAction);
+        allBystanders = allBystanders.concat(result.bystanders);
+      });
+      
+      resultsHistoryDiv.innerHTML = '';
+      
+      // Category 1: Deaths caused by action
+      if (allKilledByAction.length > 0) {
+        resultsHistoryDiv.innerHTML += `
+          <div class="result-item" style="color: #e74c3c; margin-bottom: 15px;">
+            <strong>Your actions resulted in the death of (${allKilledByAction.length}):</strong>
+            <div class="emoji-list">${allKilledByAction.map(e => `<span class="emoji-icon">${e}</span>`).join('')}</div>
+          </div>
+        `;
+      }
+      
+      // Category 2: Deaths from inaction
+      if (allDiedFromInaction.length > 0) {
+        resultsHistoryDiv.innerHTML += `
+          <div class="result-item" style="color: #d68910; margin-bottom: 15px;">
+            <strong>You watched the following die without acting (${allDiedFromInaction.length}):</strong>
+            <div class="emoji-list">${allDiedFromInaction.map(e => `<span class="emoji-icon">${e}</span>`).join('')}</div>
+          </div>
+        `;
+      }
+      
+      // Category 3: Lives saved by action
+      if (allSavedByAction.length > 0) {
+        resultsHistoryDiv.innerHTML += `
+          <div class="result-item" style="color: #27ae60; margin-bottom: 15px;">
+            <strong>Your actions resulted in saving the following lives (${allSavedByAction.length}):</strong>
+            <div class="emoji-list">${allSavedByAction.map(e => `<span class="emoji-icon">${e}</span>`).join('')}</div>
+          </div>
+        `;
+      }
+      
+      // Category 4: Bystanders not in danger
+      if (allBystanders.length > 0) {
+        resultsHistoryDiv.innerHTML += `
+          <div class="result-item" style="color: #3498db; margin-bottom: 15px;">
+            <strong>The following were bystanders not in danger (${allBystanders.length}):</strong>
+            <div class="emoji-list">${allBystanders.map(e => `<span class="emoji-icon">${e}</span>`).join('')}</div>
+          </div>
+        `;
+      }
+      
+      // Add current scenario counter at the bottom
+      resultsHistoryDiv.innerHTML += `
+        <div style="border-top: 1px solid #556; padding-top: 10px; margin-top: 10px; font-size: 12px; text-align: center;">
+          Completed Scenarios: ${resultsHistory.length}
+        </div>
+      `;
+    }
+
+    function populatePeople(type) {
+      const chosen = emojiSets[type];
+      people.forEach((p, i) => {
+        const emoji = chosen[i % chosen.length];
+        p.textContent = emoji;
+        p.setAttribute('data-original-emoji', emoji);
+      });
+    }
+
+    function resetForNextScenario() {
+      scenarioStarted = false;
+      clearInterval(countdownTimer);
+      
+      switchPosition = 'main';
+      train.classList.remove('running', 'running-upper');
+      train.style.left = '-140px';
+      train.style.top = '390px';
+      
+      updateTrackVisibility();
+      
+      isRunning = false;
+      nextBtn.disabled = false;
+      trackSwitch.classList.remove('disabled');
+      timerDisplay.style.display = 'none';
+      timerDisplay.style.color = '#e74c3c';
+      
+      currentScenario++;
+      scenarioNumber.textContent = currentScenario;
+      
+      // Randomize people for next scenario
+      currentSet = currentScenario;//Math.floor(Math.random() * 6) + 1;
+      populatePeople(currentSet);
+      // document.getElementById('simType').value = currentSet;
+      
+      // Auto-start countdown for next scenario
+      setTimeout(startCountdown, 1000);
+    }
+
+    // Event Listeners
+    trackSwitch.addEventListener('click', (e) => {
+      if (isRunning || !scenarioStarted) return;
+      
+      if (switchPosition === 'main') {
+        // Show warning when switching to upper track
+        document.getElementById('upperTrackVictims').textContent = '1 person';
+        warningModal.classList.add('show');
+        e.stopPropagation();
+      } else {
+        // Allow switching back to main without warning
+        switchPosition = 'main';
+        userActed = true;
+        updateTrackVisibility();
+      }
+    });
+
+    confirmDivert.addEventListener('click', () => {
+      switchPosition = 'upper';
+      userActed = true;
+      updateTrackVisibility();
+      warningModal.classList.remove('show');
+    });
+
+    cancelDivert.addEventListener('click', () => {
+      warningModal.classList.remove('show');
+    });
+
+    nextBtn.addEventListener('click', resetForNextScenario);
+
+    // document.getElementById('simType').addEventListener('change', (e) => {
+    //   if (!isRunning && !scenarioStarted) {
+    //     currentSet = parseInt(e.target.value, 10);
+    //     populatePeople(currentSet);
+    //   }
+    // });
+
+    // Initialize
+    updateTrackVisibility();
+    populatePeople(currentSet);
+    
+    // Auto-start first scenario after 2 seconds
+    setTimeout(startCountdown, 2000);
+  </script>
+</body>
+</html>

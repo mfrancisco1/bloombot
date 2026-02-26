@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Tightrope Performance — Industrial Dashboard</title>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- Single-file CSS (compact, metal-black theme, subtle metallic texture) -->
+<style>
+  :root{
+    --bg:#0f1113;
+    --panel:#15171a;
+    --muted:#9aa0a6;
+    --accent:#ff6b2d; /* glowing orange */
+    --accent-2:#ff2d2d; /* red */
+    --glint: rgba(255,255,255,0.035);
+    --glass: rgba(255,255,255,0.02);
+    --radius:10px;
+    --pad:10px;
+    --compact-gap:10px;
+    --card-font: 12px/1.1 Arial;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--card-font);
+    background:
+      radial-gradient(1200px 400px at 10% 10%, rgba(255,255,255,0.02), transparent 5%),
+      linear-gradient(180deg,#0b0c0d 0%, #0f1113 60%);
+    color:#dbe0e6;
+    padding:14px;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+  }
+
+  /* container */
+  .wrap{
+    max-width:1300px;
+    margin:0 auto;
+    border-radius:14px;
+    padding:12px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    box-shadow: 0 6px 30px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.03);
+  }
+
+  /* header */
+  .head{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .title{
+    display:flex;
+    gap:12px;
+    align-items:center;
+  }
+  .logo{
+    width:48px;height:48px;
+    border-radius:8px;
+    background: linear-gradient(135deg,#2b2e31,#1a1b1d);
+    border:1px solid rgba(255,255,255,0.03);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6), 0 0 18px rgba(255,107,45,0.03) inset;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    color:var(--accent);
+    font-size:18px;
+  }
+  h1{
+    font-size:16px;
+    letter-spacing:0.3px;
+    color:#fff;
+  }
+  .sub{
+    font-size:11px;color:var(--muted);
+  }
+
+  /* compact controls */
+  .controls{
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  .btn{
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04));
+    border:1px solid rgba(255,255,255,0.03);
+    color:#e9eef2;
+    padding:6px 10px;
+    border-radius:8px;
+    font-size:12px;
+    cursor:pointer;
+    display:inline-flex;
+    gap:8px;
+    align-items:center;
+  }
+  .btn.active{
+    box-shadow: 0 0 18px rgba(255,107,45,0.12), 0 4px 10px rgba(0,0,0,0.6);
+    border-color: rgba(255,107,45,0.35);
+    background: linear-gradient(180deg, rgba(255,107,45,0.03), rgba(0,0,0,0.06));
+    color: #fff;
+  }
+  .compact-toggle{font-size:11px;color:var(--muted)}
+
+  /* grid (compact) */
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(12,1fr);
+    gap:var(--compact-gap);
+  }
+
+  /* cards */
+  .card{
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.03)),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.01) 0 4px, transparent 4px 20px);
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,0.03);
+    padding:10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+    color: #dce3e8;
+    font-size:13px;
+  }
+  .card.small{padding:8px;font-size:12px}
+  .muted{color:var(--muted);font-size:11px}
+  .metric{font-weight:700;font-size:20px;color:#fff}
+  .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.9px}
+
+  /* left panel image (no haze overlay) */
+/*  .scene{
+    grid-column: span 4;
+    border-radius:10px;
+    overflow:hidden;
+    min-height:160px;
+    display:flex;
+    align-items:flex-end;
+    padding:10px;
+    background-size:cover;
+    background-position:center;
+    position:relative;
+  }*/
+  /* keep image aspect ratio stable */
+.scene {
+   grid-column: span 4; /* was 4 */
+  aspect-ratio: 4 / 3;              /* change to 4/3, 21/9, etc. */
+  min-height: 200px;                     /* remove earlier min-height */
+  height: auto;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+  /* subtle metallic sheen (NOT haze) */
+  .scene::after{
+    content:"";
+    position:absolute; inset:0;
+    background: linear-gradient(120deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+    pointer-events:none;
+  }
+  .scene-title{position:relative;z-index:2;background:linear-gradient(90deg, rgba(0,0,0,0.45), rgba(0,0,0,0.2)); padding:6px 8px;border-radius:6px;font-weight:700;font-size:13px}
+
+  /* compact stat grid */
+  .stats{grid-column: span 8; display:grid; grid-template-columns: repeat(4,1fr); gap:8px}
+  .stat-card{padding:8px;border-radius:8px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.05)); border:1px solid rgba(255,255,255,0.02)}
+  .stat-row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+
+  /* charts area */
+  .chart-lg{grid-column: span 6; padding:8px}
+  .chart-sm{grid-column: span 3; padding:8px; min-height:110px}
+  .gauge{
+    width:100%; height:110px; display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.03));
+    border-radius:8px;border:1px solid rgba(255,255,255,0.02)
+  }
+
+  /* footer / environment */
+  .env{grid-column: span 12; padding:8px; font-size:12px;color:var(--muted); border-radius:8px; border:1px solid rgba(255,255,255,0.02); background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02))}
+  
+  /* responsiveness */
+  @media (max-width:1000px){
+    .grid{grid-template-columns: repeat(6,1fr)}
+    .scene{grid-column: span 6}
+    .stats{grid-column: span 6; grid-template-columns: repeat(3,1fr)}
+    .chart-lg{grid-column: span 6}
+    .chart-sm{grid-column: span 3}
+  }
+  @media (max-width:640px){
+    .grid{grid-template-columns: repeat(2,1fr)}
+    .scene{grid-column: span 2}
+    .stats{grid-column: span 2; grid-template-columns: repeat(2,1fr)}
+    .chart-lg{grid-column: span 2}
+    .chart-sm{grid-column: span 1}
+    .head{flex-direction:column;align-items:flex-start;gap:8px}
+  }
+  /* ==== STOP VERTICAL STRETCHING ==== */
+
+/* Grid items must not grow vertically from internal content */
+.grid > * {
+  align-self: start !important;
+  min-height: 0 !important;
+}
+
+/* Lock chart containers to fixed height */
+.chart-lg, .chart-sm {
+  height: auto !important;
+  max-height: none !important;
+}
+
+/* Hard cap each chart's height */
+.chart-lg canvas {
+  display: block;
+  width: 100% !important;
+  height: 160px !important;  /* or whatever fixed size you prefer */
+  max-height: 160px !important;
+}
+.chart-sm canvas {
+  display: block;
+  width: 100% !important;
+  height: 100px !important;
+  max-height: 100px !important;
+}
+
+/* Prevent any nested flex/grid stretch inside cards */
+.card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+}
+
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head">
+      <div class="title">
+        <div class="logo">TR</div>
+        <div>
+          <h1>Tightrope Performance — Industrial Panel</h1>
+          <div class="sub">Compact · Metal theme · All-in-one HTML</div>
+        </div>
+      </div>
+
+      <div class="controls" role="toolbar" aria-label="Scenario controls">
+        <button class="btn active" onclick="switchScenario(1)" id="b1">🏙 Urban</button>
+        <button class="btn" onclick="switchScenario(2)" id="b2">🌳 Rural</button>
+        <button class="btn" onclick="switchScenario(3)" id="b3">🌊 Seaside</button>
+        <button class="btn" onclick="switchScenario(4)" id="b4">🏗 Lab</button>
+      </div>
+    </div>
+
+    <div class="grid" id="grid">
+      <!-- Left: Scene -->
+      <div id="scene" class="scene card" style="background-image: linear-gradient(0deg, rgba(0,0,0,0.25), rgba(0,0,0,0.12)), url('urban.png');">
+        <div class="scene-title" id="sceneTitle">Performance Setting</div>
+      </div>
+
+      <!-- Right: compact stats 4x -->
+      <div class="stats" id="statGrid">
+        <!-- cards injected by JS -->
+      </div>
+
+      <!-- Charts: time-series (logical for heart rate / tension), donut for audience -->
+      <div class="chart-lg card" style="grid-column: span 6;">
+        <div class="label">Heart Rate / Rope Tension (simulated time-series)</div>
+        <canvas id="tsChart" style="height:160px"></canvas>
+      </div>
+
+      <div class="chart-sm card">
+        <div class="label">Risk Gauge</div>
+        <div class="gauge"><canvas id="gaugeChart" width="140" height="110"></canvas></div>
+      </div>
+
+      <div class="chart-sm card">
+        <div class="label">Audience vs Capacity</div>
+        <canvas id="audChart" style="height:110px"></canvas>
+      </div>
+
+      <div class="chart-sm card">
+        <div class="label">Balance Time Spark</div>
+        <canvas id="sparkBalance" style="height:110px"></canvas>
+      </div>
+
+      <div class="chart-sm card">
+        <div class="label">Wind Speed (history)</div>
+        <canvas id="windSpark" style="height:110px"></canvas>
+      </div>
+
+      <!-- environment / notes -->
+      <div class="env" id="envText">
+        <!-- injected -->
+      </div>
+    </div>
+  </div>
+
+<script>
+/* === Example data (kept from your file) === */
+const scenarios = {
+  1: {
+    title: "🏙️ The Urban Performance - Downtown Chicago",
+    image: "urban.png",
+    data: { ropeHeight: 320, ropeLength: 120, windSpeed: 18, ropeTension: 6500, skillLevel: "Expert", skillRating: 5, balanceTime: 17, footwear: "Soft leather soles", lighting: "Twilight, spotlights", audienceSize: 12000, environment: "Cool, urban wind tunnels, echoing city sounds", heartRate:125, riskLevel:5}
+  },
+  2: {
+    title: "🌳 The Rural Training Session - Between Oak Trees",
+    image: "rural.png",
+    data: { ropeHeight: 1.2, ropeLength: 8, windSpeed: 2, ropeTension: 800, skillLevel: "Beginner", skillRating: 1, balanceTime: 0.38, footwear: "Barefoot", lighting: "Natural sunlight", audienceSize: 0, environment: "Calm, natural setting, bird songs, gentle breeze", heartRate:95, riskLevel:1, coachPresent:true, practiceDuration:45 }
+  },
+  3: {
+    title: "🌊 The Seaside Festival Walk - Harbor Performance",
+    image: "seaside.png",
+    data: { ropeHeight:5, ropeLength:35, windSpeed:11, ropeTension:3200, skillLevel:"Intermediate", skillRating:3, balanceTime:5, footwear:"Lightweight grip shoes", lighting:"Midday sun, reflective glare", audienceSize:800, environment:"Variable crosswinds, ocean sounds, festive atmosphere", heartRate:115, riskLevel:3, musicTempo:96, applauseRate:9.2 }
+  },
+  4: {
+    title: "🏗️ The Controlled Lab Test - Biomechanics Research",
+    image: "lab.png",
+    data: { ropeHeight:0, ropeLength:10, windSpeed:0, ropeTension:4000, skillLevel:"Mechanical", skillRating:0, balanceTime:60, footwear:"Robotic sensors", lighting:"Controlled 21°C", audienceSize:0, environment:"Sterile lab environment, constant temperature, no external variables", heartRate:0, riskLevel:0, sensorCount:32, dataRate:120 }
+  }
+};
+
+let current = 1;
+const sceneEl = document.getElementById('scene');
+const sceneTitle = document.getElementById('sceneTitle');
+const statGrid = document.getElementById('statGrid');
+const envText = document.getElementById('envText');
+
+function switchScenario(n){
+  current = n;
+  // button states
+  for(let i=1;i<=4;i++){
+    document.getElementById('b'+i).classList.toggle('active', i===n);
+  }
+  render();
+}
+
+/* compact helper to format */
+function fmt(n,unit=''){ return (typeof n==='number')? (n.toLocaleString() + (unit?(' '+unit):'')) : n; }
+
+/* Render small stat cards */
+function renderStats(s){
+  statGrid.innerHTML = '';
+  const d = s.data;
+
+  // choose 8 compact stats in order (grid 4 cols)
+  const items = [
+    {label:'Rope Height', value: d.ropeHeight + (d.ropeHeight && d.ropeHeight>10 ? ' m' : (d.ropeHeight && d.ropeHeight<=10 ? ' m' : ' m'))},
+    {label:'Rope Length', value: fmt(d.ropeLength,'m')},
+    {label:'Rope Tension', value: fmt(d.ropeTension,'N')},
+    {label:'Wind Speed', value: fmt(d.windSpeed,'mph')},
+    {label:'Skill Level', value: d.skillLevel + (d.skillRating ? ` · ${d.skillRating}/5` : '')},
+    {label:'Balance Time', value: fmt(d.balanceTime,'min')},
+    {label:'Audience', value: fmt(d.audienceSize)},
+    {label:'Footwear', value: d.footwear || '—'}
+  ];
+
+  items.forEach(it=>{
+    const el = document.createElement('div');
+    el.className = 'stat-card card small';
+    el.innerHTML = `<div class="label">${it.label}</div><div class="stat-row"><div class="metric">${it.value}</div></div>`;
+    statGrid.appendChild(el);
+  });
+}
+
+/* Small simulated series generator for charts (makes sense for example data) */
+function genSeries(base, len=20, variance=0.08){
+  const arr=[];
+  for(let i=0;i<len;i++){
+    const noise = (Math.random()*2-1)*variance*base;
+    arr.push(Math.max(0, Math.round((base + noise) * 10)/10));
+  }
+  return arr;
+}
+
+/* Render everything */
+let tsChart, gaugeChart, audChart, sparkChart, windChart;
+function render(){
+  const s = scenarios[current];
+  // update scene (no haze overlay — only subtle sheen)
+  sceneEl.style.backgroundImage = `linear-gradient(0deg, rgba(0,0,0,0.12), rgba(0,0,0,0.06)), url('${s.image}')`;
+  sceneTitle.textContent = s.title;
+
+  // stats
+  renderStats(s);
+
+  // env text
+  envText.innerHTML = `<strong>Environment:</strong> ${s.data.environment || 'N/A'} · <span class="muted">Lighting:</span> ${s.data.lighting || '—'}`;
+
+  // Build charts data that make sense:
+  // Time-series chart: heart rate + rope tension (scaled)
+  const hrBase = s.data.heartRate || (s.data.skillRating ? 80 + s.data.skillRating*8 : 80);
+  const hr = genSeries(hrBase, 24, 0.06);
+  const tensionBase = s.data.ropeTension || 1000;
+  const tens = genSeries(tensionBase, 24, 0.05);
+
+  // Destroy if exists
+  if(tsChart) tsChart.destroy();
+  if(gaugeChart) gaugeChart.destroy();
+  if(audChart) audChart.destroy();
+  if(sparkChart) sparkChart.destroy();
+  if(windChart) windChart.destroy();
+
+  // Time-series combined (left axis HR right axis tension)
+  const ctx = document.getElementById('tsChart').getContext('2d');
+  tsChart = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: Array.from({length:hr.length}, (_,i)=>`${i+1}m`),
+      datasets:[
+        {
+          label:'Heart Rate (bpm)',
+          data: hr,
+          yAxisID:'y1',
+          tension:0.3,
+          borderWidth:2,
+          pointRadius:0,
+          borderColor: 'rgba(255,107,45,0.95)',
+          backgroundColor: 'rgba(255,107,45,0.06)',
+          fill:'start'
+        },
+        {
+          label:'Rope Tension (N)',
+          data: tens,
+          yAxisID:'y2',
+          tension:0.25,
+          borderWidth:2,
+          pointRadius:0,
+          borderColor: 'rgba(255,45,45,0.95)',
+          backgroundColor: 'rgba(255,45,45,0.04)',
+          fill:false
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:'#cfd6db'}}, tooltip:{enabled:true}},
+      scales:{
+        x:{ticks:{color:'#9aa0a6',maxRotation:0}},
+        y1:{ type:'linear', position:'left', ticks:{color:'#ffd6c6'}, grid:{color:'rgba(255,255,255,0.02)'} },
+        y2:{ type:'linear', position:'right', ticks:{color:'#ffc6c6'}, grid:{display:false}, beginAtZero:false }
+      }
+    }
+  });
+
+  // Gauge (risk)
+  const gctx = document.getElementById('gaugeChart').getContext('2d');
+  const risk = Math.max(0, Math.min(5, s.data.riskLevel || 0));
+  gaugeChart = new Chart(gctx, {
+    type:'doughnut',
+    data:{
+      labels:['Risk','Safe'],
+      datasets:[{
+        data: [risk, 5-risk],
+        backgroundColor: [ 'rgba(255,45,45,0.95)', 'rgba(255,255,255,0.04)' ],
+        borderWidth:0
+      }]
+    },
+    options:{
+      cutout: '75%',
+      plugins:{
+        legend:{display:false},
+        tooltip:{enabled:false}
+      },
+      responsive:true,
+      maintainAspectRatio:false
+    }
+  });
+  // draw center text for gauge
+  Chart.register({
+    id: 'gaugeCenter',
+    afterDraw(chart){
+      if(chart.canvas.id!=='gaugeChart') return;
+      const w = chart.width, h = chart.height;
+      const ctx = chart.ctx;
+      ctx.restore();
+      ctx.font = '700 16px arial';
+      ctx.fillStyle = '#fff';
+      ctx.textBaseline = 'middle';
+      const txt = risk + '/5';
+      ctx.fillText(txt, w/2 - ctx.measureText(txt).width/2, h/2);
+      ctx.save();
+    }
+  });
+
+  // Audience donut (makes sense for example: audience vs capacity)
+  const cap = Math.max(1000, Math.round((s.data.audienceSize||0) + 2000));
+  const acolors = ['rgba(255,107,45,0.95)','rgba(255,255,255,0.04)'];
+  const actx = document.getElementById('audChart').getContext('2d');
+  audChart = new Chart(actx, {
+    type:'doughnut',
+    data:{ labels:['Audience','Remaining'], datasets:[{ data:[ s.data.audienceSize||0, Math.max(0,cap - (s.data.audienceSize||0))], backgroundColor:acolors, borderWidth:0 }]},
+    options:{ cutout:'70%', plugins:{legend:{display:false}, tooltip:{enabled:false}}, maintainAspectRatio:false }
+  });
+
+  // small sparklines (balance time converted)
+  const sctx = document.getElementById('sparkBalance').getContext('2d');
+  sparkChart = new Chart(sctx, {
+    type:'line',
+    data:{ labels: hr.map((_,i)=>i+1), datasets:[{ data: genSeries( (s.data.balanceTime||5), 20, 0.25), borderWidth:2, pointRadius:0, tension:0.3, borderColor:'rgba(255,107,45,0.95)', fill:false }]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{display:false}, y:{display:false}} }
+  });
+
+  // wind spark
+  const wctx = document.getElementById('windSpark').getContext('2d');
+  windChart = new Chart(wctx, {
+    type:'bar',
+    data:{ labels: hr.map((_,i)=>i+1), datasets:[{ data: genSeries(s.data.windSpeed||2, 12, 0.4), borderWidth:0, backgroundColor:'rgba(255,45,45,0.85)' }]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{display:false}, y:{display:false}} }
+  });
+}
+
+// initialize
+render();
+
+// Expose switchScenario globally (used by buttons above)
+window.switchScenario = switchScenario;
+
+// If user images are missing, provide gentle fallback - change background to metallic gradient
+document.querySelectorAll('.scene').forEach(el=>{
+  const img = el.style.backgroundImage;
+  // If URL likely empty or loads broken, user can swap image files. We do not attempt to load remotely here.
+  // We still keep sheen and no opaque haze (as requested).
+});
+</script>
+
+</body>
+</html>

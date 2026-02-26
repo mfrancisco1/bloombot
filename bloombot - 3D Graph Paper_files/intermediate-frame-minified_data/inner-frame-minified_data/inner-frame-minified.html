@@ -1,0 +1,681 @@
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><!-- base href="https://1173652239-atari-embeds.googleusercontent.com/embeds/16cb204cf3a9d4d223a0a3fd8b0eec5d/inner-frame-minified.html?jsh=m%3B%2F_%2Fscs%2Fabc-static%2F_%2Fjs%2Fk%3Dgapi.lb.en.PCvl17LujMs.O%2Fd%3D1%2Frs%3DAHpOoo-sAn5Asuf3MvShXCH_dsg8tE46Tw%2Fm%3D__features__" -->
+
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Three Dimensional Graph Paper</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+      line-height: 1.6;
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    .intro {
+      background: whitesmoke;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      border-left: 6px solid darkred;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 30px;
+      background: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .controls {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      height: fit-content;
+    }
+
+    .control-group {
+      margin-bottom: 18px;
+    }
+
+    .section-header {
+      font-weight: bold;
+      color: #dc3545;
+      margin-top: 20px;
+      margin-bottom: 10px;
+      padding-top: 10px;
+      border-top: 2px solid #ddd;
+    }
+
+    .section-header:first-child {
+      margin-top: 0;
+      border-top: none;
+      padding-top: 0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    input[type="number"], input[type="checkbox"] {
+      width: 100%;
+      padding: 8px;
+      border: 2px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    input[type="checkbox"] {
+      width: auto;
+      margin-right: 8px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #4A90E2;
+    }
+
+    .svg-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: white;
+      border: 2px solid #eee;
+      border-radius: 8px;
+      min-height: 420px;
+      position: relative;
+    }
+
+    .st0 {
+      fill: whitesmoke;
+      stroke: #dc3545;
+      stroke-width: 2;
+    }
+
+    .export-buttons {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .export-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+
+    .export-btn:hover {
+      background: #218838;
+    }
+
+    .unit-display {
+      font-size: 12px;
+      color: #666;
+      margin-top: 3px;
+      font-style: italic;
+    }
+
+    .gallery {
+      margin-top: 40px;
+    }
+
+    .gallery h2 {
+      margin-bottom: 15px;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+    }
+
+    .gallery-grid img {
+      width: 100%;
+      height: auto;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      background: #fff;
+    }
+
+    .side-b-controls {
+      display: none;
+    }
+
+    .side-b-controls.active {
+      display: block;
+    }
+
+    .svg-row svg {
+      border: 1px solid #ccc;
+      background: white;
+      flex: 1;             /* make them share space equally */
+      max-width: 45%;      /* or lock each to a percentage */
+    }
+
+
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0; top: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.7);
+        justify-content: center;
+        align-items: center;
+      }
+      .modal-content {
+        background: white;
+        padding: 10px;
+        border-radius: 8px;
+        max-width: 490%;
+        max-height: 490%;
+        overflow: auto;
+      }
+      #closeModal {
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      #modalSvgContainer svg {
+        width: 100%;
+        height: auto;
+      }
+
+    .notch-info {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+      background: #f0f0f0;
+      padding: 5px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <!-- <h1>Three Dimensional Graph Paper</h1> -->
+
+  <div class="intro">
+    <p>
+      <strong>About The Torsion Box Structure:</strong><br>
+      3D graph paper becomes very strong once a skin or panel is glued to the grid.
+      This is called a <em>torsion box</em> and is a common pattern to create strong and
+      "dead flat" work surfaces in woodworking shops. Torsion boxes made from paper make for excellent
+      materials in robotic prototypes because they are rigid, easy to shape, and provide
+      reliable mounting areas for electronics such as sensors, motors, and wiring.
+    </p>
+    <p>
+      A second variation uses two different section sizes that form rectangular "bays."
+      These rectangular bays are especially useful for modular designs or where different
+      components need distinct mounting spaces.
+    </p>
+  </div>
+
+  <div class="container">
+    <div class="controls">
+      <div class="section-header">Side A Parameters</div>
+      
+      <div class="control-group">
+        <label for="width">Total Width (mm):</label>
+        <input type="number" id="width" value="147.1" min="35" max="353" step="0.1">
+        <div class="unit-display" id="widthUnits">≈ 417 units</div>
+      </div>
+
+      <div class="control-group">
+        <label for="numNotches">Number of Notches:</label>
+        <input type="number" id="numNotches" value="12" min="1" max="50">
+      </div>
+
+      <div class="control-group">
+        <label for="offset">Edge Offset (mm):</label>
+        <input type="number" id="offset" value="2.47" min="0" max="35.3" step="0.01">
+        <div class="unit-display" id="offsetUnits">≈ 7 units</div>
+      </div>
+
+      <div class="control-group">
+        <label><input type="checkbox" id="dualSection"> Add Side B Parameters for Rectangle</label>
+      </div>
+
+      <div class="side-b-controls" id="sideBControls">
+        <div class="section-header">Side B Parameters</div>
+        
+        <div class="control-group">
+          <label for="widthB">Total Width (mm):</label>
+          <input type="number" id="widthB" value="147.1" min="35" max="353" step="0.1">
+          <div class="unit-display" id="widthBUnits">≈ 417 units</div>
+        </div>
+
+        <div class="control-group">
+          <label for="numNotchesB">Number of Notches:</label>
+          <input type="number" id="numNotchesB" value="12" min="1" max="50">
+        </div>
+
+        <div class="control-group">
+          <label for="offsetB">Edge Offset (mm):</label>
+          <input type="number" id="offsetB" value="2.47" min="0" max="35.3" step="0.01">
+          <div class="unit-display" id="offsetBUnits">≈ 7 units</div>
+        </div>
+      </div>
+
+      <div class="section-header">Structure (shared by both sides)</div>
+      
+      <div class="control-group">
+        <label for="height">Total Height (mm):</label>
+        <input type="number" id="height" value="12.0" min="3.5" max="70.6" step="0.1">
+        <div class="unit-display" id="heightUnits">≈ 34 units</div>
+      </div>
+
+      <div class="control-group">
+        <label for="notchWidth">Notch Width / Paper Thickness (mm):</label>
+        <input type="number" id="notchWidth" value="0.46" min="0.18" max="7.06" step="0.01">
+        <div class="unit-display" id="notchWidthUnits">≈ 1.3 units</div>
+      </div>
+
+      <div class="control-group">
+        <label for="notchDepth">Notch Depth for Side A (% of height):</label>
+        <input type="number" id="notchDepth" value="50" min="10" max="90">
+        <div class="unit-display" id="notchDepthMm">≈ 6.0mm</div>
+        <div class="notch-info" id="notchInfo">Side B will have complementary depth: 50%</div>
+      </div>
+
+      <div class="export-buttons">
+        <button class="export-btn" onclick="exportSVG()">Export as SVG</button>
+        <button class="export-btn" onclick="exportIllustrator()">Export for Illustrator</button>
+      </div>
+    </div>
+
+    <!-- <div class="svg-container">
+      <svg id="shapeSvg" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
+        <polygon id="shapePolygon" class="st0" points=""/>
+        <polygon id="shapePolygon2" class="st0" points=""/>
+      </svg>
+    </div>
+  </div> -->
+
+<div class="svg-row">
+  <svg id="shapeSvg" width="400" height="1000" viewBox="0 0 134 516.7833333333333" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <g id="rotatedGroup" transform="rotate(90) translate(0 -134)">
+    <polygon id="shapePolygon" class="st0" points="50,50 466.78333333333336,50 466.78333333333336,84 459.785,84 459.785,67 458.4816666666667,67 458.4816666666667,84 423.2865151515152,84 423.2865151515152,67 421.98318181818183,67 421.98318181818183,84 386.7880303030303,84 386.7880303030303,67 385.484696969697,67 385.484696969697,84 350.2895454545455,84 350.2895454545455,67 348.98621212121213,67 348.98621212121213,84 313.7910606060606,84 313.7910606060606,67 312.4877272727273,67 312.4877272727273,84 277.2925757575758,84 277.2925757575758,67 275.98924242424243,67 275.98924242424243,84 240.79409090909093,84 240.79409090909093,67 239.49075757575758,67 239.49075757575758,84 204.29560606060608,84 204.29560606060608,67 202.99227272727273,67 202.99227272727273,84 167.79712121212123,84 167.79712121212123,67 166.49378787878788,67 166.49378787878788,84 131.29863636363638,84 131.29863636363638,67 129.99530303030303,67 129.99530303030303,84 94.80015151515151,84 94.80015151515151,67 93.49681818181818,67 93.49681818181818,84 58.30166666666667,84 58.30166666666667,67 56.998333333333335,67 56.998333333333335,84 50,84"></polygon>
+    <polygon id="shapePolygon2" class="st0" points=""></polygon>
+  </g>
+  </svg>
+
+  <!-- Second SVG container: Top View -->
+  <svg id="topViewSvg" width="600" height="600" viewBox="0 0 476.78333333333336 476.78333333333336" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style="border:1px solid #ccc; margin-top:20px; background:white;"><rect x="30" y="30" width="416.78333333333336" height="416.78333333333336" fill="none" stroke="black" stroke-dasharray="4,3"></rect><rect x="36.998333333333335" y="30" width="1.3033333333333335" height="416.78333333333336" fill="#e8e8e8" stroke="#999"></rect><rect x="73.49681818181818" y="30" width="1.3033333333333335" height="416.78333333333336" fill="#e8e8e8" stroke="#999"></rect><rect x="109.99530303030303" y="30" width="1.3033333333333335" height="416.78333333333336" fill="#e8e8e8" stroke="#999"></rect><rect x="146.49378787878788" y="30" width="1.3033333333333335" height="416.78333333333336" fill="#e8e8e8" stroke="#999"></rect><rect x="182.99227272727273" y="30" width="1.3033333333333335" height="416.78333333333336" fill="#e8e8e8" stroke="#999"></rect><rect x="219.49075757575758" y="30" width="1.3033333333333335" height="416.78333333333336" fill="#e8e8e8" stroke="#999"></rect><rect x="255.98924242424243" y="30" width="1.3033333333333335" height="416.78333333333336" fill="#e8e8e8" stroke="#999"></rect><rect x="292.4877272727273" y="30" width="1.3033333333333335" height="416.78333333333336" fill="#e8e8e8" stroke="#999"></rect><rect x="328.98621212121213" y="30" width="1.3033333333333335" height="416.78333333333336" fill="#e8e8e8" stroke="#999"></rect><rect x="365.484696969697" y="30" width="1.3033333333333335" height="416.78333333333336" fill="#e8e8e8" stroke="#999"></rect><rect x="401.98318181818183" y="30" width="1.3033333333333335" height="416.78333333333336" fill="#e8e8e8" stroke="#999"></rect><rect x="438.4816666666667" y="30" width="1.3033333333333335" height="416.78333333333336" fill="#e8e8e8" stroke="#999"></rect><rect x="30" y="36.998333333333335" width="416.78333333333336" height="1.3033333333333335" fill="#f2f2f2" stroke="#999"></rect><rect x="30" y="73.49681818181818" width="416.78333333333336" height="1.3033333333333335" fill="#f2f2f2" stroke="#999"></rect><rect x="30" y="109.99530303030303" width="416.78333333333336" height="1.3033333333333335" fill="#f2f2f2" stroke="#999"></rect><rect x="30" y="146.49378787878788" width="416.78333333333336" height="1.3033333333333335" fill="#f2f2f2" stroke="#999"></rect><rect x="30" y="182.99227272727273" width="416.78333333333336" height="1.3033333333333335" fill="#f2f2f2" stroke="#999"></rect><rect x="30" y="219.49075757575758" width="416.78333333333336" height="1.3033333333333335" fill="#f2f2f2" stroke="#999"></rect><rect x="30" y="255.98924242424243" width="416.78333333333336" height="1.3033333333333335" fill="#f2f2f2" stroke="#999"></rect><rect x="30" y="292.4877272727273" width="416.78333333333336" height="1.3033333333333335" fill="#f2f2f2" stroke="#999"></rect><rect x="30" y="328.98621212121213" width="416.78333333333336" height="1.3033333333333335" fill="#f2f2f2" stroke="#999"></rect><rect x="30" y="365.484696969697" width="416.78333333333336" height="1.3033333333333335" fill="#f2f2f2" stroke="#999"></rect><rect x="30" y="401.98318181818183" width="416.78333333333336" height="1.3033333333333335" fill="#f2f2f2" stroke="#999"></rect><rect x="30" y="438.4816666666667" width="416.78333333333336" height="1.3033333333333335" fill="#f2f2f2" stroke="#999"></rect><text x="198.39166666666668" y="20" font-size="12" fill="black">Overall A: 147.1 mm</text><text x="456.78333333333336" y="238.39166666666668" font-size="12" fill="black">Overall B: 147.1 mm</text><text x="198.39166666666668" y="466.78333333333336" font-size="12" fill="black">Bay A: 12.88 mm</text><text x="-70" y="238.39166666666668" font-size="12" fill="black">Bay B: 12.88 mm</text></svg>
+  </div>
+
+<div id="svgModal" class="modal">
+  <div class="modal-content">
+    <span id="closeModal">×</span>
+    <div id="modalSvgContainer"></div>
+  </div>
+</div>
+
+<!--   <div class="gallery">
+    <h2>Example Torsion Boxes</h2>
+    <div class="gallery-grid">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/9/94/Torsion_box.jpg" alt="Woodworking torsion box example">
+      <img src="https://i.imgur.com/0ZjV0ZV.jpg" alt="Workshop torsion box table">
+      <img src="https://i.imgur.com/fzB2Q4U.jpg" alt="Rectangular bay torsion box prototype">
+    </div>
+  </div> -->
+
+  <script>
+    const MM_TO_UNITS = 34 / 12;
+    const UNITS_TO_MM = 12 / 34;
+
+    function mmToUnits(mm) { return mm * MM_TO_UNITS; }
+    function unitsToMm(units) { return units * UNITS_TO_MM; }
+
+    function updateUnitDisplays() {
+      const widthMm = parseFloat(document.getElementById('width').value);
+      const heightMm = parseFloat(document.getElementById('height').value);
+      const notchWidthMm = parseFloat(document.getElementById('notchWidth').value);
+      const offsetMm = parseFloat(document.getElementById('offset').value);
+      const notchDepthPercent = parseFloat(document.getElementById('notchDepth').value);
+      const dualSection = document.getElementById('dualSection').checked;
+
+      document.getElementById('widthUnits').textContent = `≈ ${mmToUnits(widthMm).toFixed(0)} units`;
+      document.getElementById('heightUnits').textContent = `≈ ${mmToUnits(heightMm).toFixed(0)} units`;
+      document.getElementById('notchWidthUnits').textContent = `≈ ${mmToUnits(notchWidthMm).toFixed(1)} units`;
+      document.getElementById('offsetUnits').textContent = `≈ ${mmToUnits(offsetMm).toFixed(0)} units`;
+
+      const notchDepthMm = heightMm * (notchDepthPercent / 100);
+      document.getElementById('notchDepthMm').textContent = `≈ ${notchDepthMm.toFixed(1)}mm`;
+
+      // Update complementary notch depth info
+      const complementaryDepth = 100 - notchDepthPercent;
+      document.getElementById('notchInfo').textContent = `Side B will have complementary depth: ${complementaryDepth}%`;
+
+      // Update Side B units if dual section is enabled
+      if (dualSection) {
+        const widthBMm = parseFloat(document.getElementById('widthB').value);
+        const offsetBMm = parseFloat(document.getElementById('offsetB').value);
+        document.getElementById('widthBUnits').textContent = `≈ ${mmToUnits(widthBMm).toFixed(0)} units`;
+        document.getElementById('offsetBUnits').textContent = `≈ ${mmToUnits(offsetBMm).toFixed(0)} units`;
+      }
+    }
+
+    function generateShape() {
+      const widthMm = parseFloat(document.getElementById('width').value);
+      const heightMm = parseFloat(document.getElementById('height').value);
+      const numNotches = parseInt(document.getElementById('numNotches').value);
+      const notchWidthMm = parseFloat(document.getElementById('notchWidth').value);
+      const offsetMm = parseFloat(document.getElementById('offset').value);
+      const notchDepthPercent = parseFloat(document.getElementById('notchDepth').value);
+      const dualSection = document.getElementById('dualSection').checked;
+
+      const width = mmToUnits(widthMm);
+      const height = mmToUnits(heightMm);
+      const notchWidth = mmToUnits(notchWidthMm);
+      const offset = mmToUnits(offsetMm);
+      const notchDepthA = height * (notchDepthPercent / 100);
+      const availableWidth = width - (2 * offset);
+      const spacing = availableWidth / numNotches;
+
+      const startX = 50;
+      const startY = 50;
+
+ 
+      function buildPoints(useWidth, useNumNotches, useOffset, useNotchDepth, yOffset=0) {
+  const usableLength = useWidth - 2 * useOffset - notchWidth; 
+  const spacing = useNumNotches > 1 ? usableLength / (useNumNotches - 1) : 0;
+
+  let pts = [];
+  // Full width rectangle
+  pts.push([startX, startY + yOffset]);                         // top-left
+  pts.push([startX + useWidth, startY + yOffset]);              // top-right
+  pts.push([startX + useWidth, startY + height + yOffset]);     // bottom-right
+
+  // Walk back with notches (aligned to offset, not centered)
+  for (let i = useNumNotches - 1; i >= 0; i--) {
+    const notchStartX = startX + useOffset + i * spacing;
+    const notchEndX   = notchStartX + notchWidth;
+
+    pts.push([notchEndX, startY + height + yOffset]);
+    pts.push([notchEndX, startY + height - useNotchDepth + yOffset]);
+    pts.push([notchStartX, startY + height - useNotchDepth + yOffset]);
+    pts.push([notchStartX, startY + height + yOffset]);
+  }
+
+  pts.push([startX, startY + height + yOffset]);                // bottom-left
+  return pts.map(p => `${p[0]},${p[1]}`).join(' ');
+}
+
+
+      // Build Side A
+      document.getElementById('shapePolygon').setAttribute('points', 
+        buildPoints(width, numNotches, offset, notchDepthA, 0));
+
+      // Build Side B if enabled
+      if (dualSection) {
+        const widthBMm = parseFloat(document.getElementById('widthB').value);
+        const numNotchesB = parseInt(document.getElementById('numNotchesB').value);
+        const offsetBMm = parseFloat(document.getElementById('offsetB').value);
+        
+        const widthB = mmToUnits(widthBMm);
+        const offsetB = mmToUnits(offsetBMm);
+        const notchDepthB = height * ((100 - notchDepthPercent) / 100); // Complementary depth
+        
+        document.getElementById('shapePolygon2').setAttribute('points', 
+          buildPoints(widthB, numNotchesB, offsetB, notchDepthB, height + 20));
+      } else {
+        document.getElementById('shapePolygon2').setAttribute('points', "");
+      }
+
+      // Update viewBox
+      const maxWidth = dualSection ? 
+        Math.max(width, mmToUnits(parseFloat(document.getElementById('widthB').value))) : width;
+      // const viewBoxWidth = maxWidth + 100;
+      // const viewBoxHeight = dualSection ? (height * 2 + 150) : (height + 100);
+        const viewBoxHeight = maxWidth + 100;
+      const viewBoxWidth = dualSection ? (height * 2 + 150) : (height + 100);
+      document.getElementById('shapeSvg').setAttribute('viewBox', `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
+
+      updateUnitDisplays();
+    }
+
+    function rotateSvg() {
+      const svg = document.getElementById("shapeSvg");
+      const vb = svg.viewBox.baseVal;
+      const cx = vb.width / 2;
+      const cy = vb.height / 2;
+      // document.getElementById("rotatedGroup")
+      //   .setAttribute("transform", `rotate(90 ${cx} ${cy})`);
+      document.getElementById("rotatedGroup")
+        .setAttribute("transform", `rotate(90) translate(0 -${vb.width})`);
+    }
+
+ 
+
+function generateTopView() {
+  const dualSection = document.getElementById('dualSection').checked;
+
+  const widthAMm   = parseFloat(document.getElementById('width').value);
+  const numNotchesA = parseInt(document.getElementById('numNotches').value);
+  const offsetAMm  = parseFloat(document.getElementById('offset').value);
+
+  let widthBMm   = widthAMm;
+  let numNotchesB = numNotchesA;
+  let offsetBMm  = offsetAMm;
+
+  if (dualSection) {
+    widthBMm   = parseFloat(document.getElementById('widthB').value);
+    numNotchesB = parseInt(document.getElementById('numNotchesB').value);
+    offsetBMm  = parseFloat(document.getElementById('offsetB').value);
+  }
+
+  const notchWidthMm = parseFloat(document.getElementById('notchWidth').value);
+
+  // Convert to units
+  const widthA = mmToUnits(widthAMm);
+  const widthB = mmToUnits(widthBMm);
+  const offsetA = mmToUnits(offsetAMm);
+  const offsetB = mmToUnits(offsetBMm);
+  const notchWidth = mmToUnits(notchWidthMm);
+
+  const gridWidth  = widthA - 2 * offsetA;
+  const gridHeight = widthB - 2 * offsetB;
+
+  const svg = document.getElementById('topViewSvg');
+  svg.innerHTML = "";
+
+  const margin = 30;
+
+  // Dotted outer rectangle
+  const outer = document.createElementNS("http://www.w3.org/2000/svg","rect");
+  outer.setAttribute("x", margin);
+  outer.setAttribute("y", margin);
+  outer.setAttribute("width", widthA);
+  outer.setAttribute("height", widthB);
+  outer.setAttribute("fill", "none");
+  outer.setAttribute("stroke", "black");
+  outer.setAttribute("stroke-dasharray", "4,3");
+  svg.appendChild(outer);
+
+  // // Solid inner rectangle
+  // const inner = document.createElementNS("http://www.w3.org/2000/svg","rect");
+  // inner.setAttribute("x", margin + offsetA);
+  // inner.setAttribute("y", margin + offsetB);
+  // inner.setAttribute("width", gridWidth);
+  // inner.setAttribute("height", gridHeight);
+  // inner.setAttribute("fill", "none");
+  // inner.setAttribute("stroke", "black");
+  // inner.setAttribute("stroke-width", "2");
+  // svg.appendChild(inner);
+
+  // --- Vertical crossmembers (Side A) ---
+if (numNotchesA > 0) {
+  const usableA = gridWidth - notchWidth;
+  const spacingA = numNotchesA > 1 ? usableA / (numNotchesA - 1) : 0;
+  for (let i = 0; i < numNotchesA; i++) {
+    const x = margin + offsetA + i * spacingA;
+    const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+    rect.setAttribute("x", x);
+    rect.setAttribute("y", margin);                 // extend to dotted top edge
+    rect.setAttribute("width", notchWidth);
+    rect.setAttribute("height", widthB);            // full outer height
+    rect.setAttribute("fill", "#e8e8e8");
+    rect.setAttribute("stroke", "#999");
+    svg.appendChild(rect);
+  }
+}
+
+// --- Horizontal crossmembers (Side B) ---
+if (numNotchesB > 0) {
+  const usableB = gridHeight - notchWidth;
+  const spacingB = numNotchesB > 1 ? usableB / (numNotchesB - 1) : 0;
+  for (let j = 0; j < numNotchesB; j++) {
+    const y = margin + offsetB + j * spacingB;
+    const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+    rect.setAttribute("x", margin);                 // extend to dotted left edge
+    rect.setAttribute("y", y);
+    rect.setAttribute("width", widthA);             // full outer width
+    rect.setAttribute("height", notchWidth);
+    rect.setAttribute("fill", "#f2f2f2");
+    rect.setAttribute("stroke", "#999");
+    svg.appendChild(rect);
+  }
+}
+
+  // Fit viewBox
+  svg.setAttribute("viewBox", `0 0 ${widthA + 2*margin} ${widthB + 2*margin}`);
+
+  // Labels
+  function addText(txt, x, y) {
+    const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+    t.setAttribute("x", x);
+    t.setAttribute("y", y);
+    t.setAttribute("font-size","12");
+    t.setAttribute("fill","black");
+    t.textContent = txt;
+    svg.appendChild(t);
+  }
+  addText(`Overall A: ${widthAMm.toFixed(1)} mm`, margin + widthA/2 - 40, margin - 10);
+  addText(`Overall B: ${widthBMm.toFixed(1)} mm`, margin + widthA + 10, margin + widthB/2);
+  addText(`Bay A: ${((widthAMm - 2*offsetAMm - notchWidthMm)/(numNotchesA-1)).toFixed(2)} mm`, margin + widthA/2 - 40, margin + widthB + 20);
+  addText(`Bay B: ${((widthBMm - 2*offsetBMm - notchWidthMm)/(numNotchesB-1)).toFixed(2)} mm`, margin - 100, margin + widthB/2);
+}
+
+
+
+
+
+    // Hook into your existing generateShape
+const oldGenerateShape = generateShape;
+generateShape = function() {
+  oldGenerateShape();
+  generateTopView();
+};
+
+// Initial draw
+generateTopView();
+
+
+
+
+    function exportSVG() {
+      const svg = document.getElementById('shapeSvg');
+      const serializer = new XMLSerializer();
+      let svgString = serializer.serializeToString(svg);
+      svgString = '<?xml version="1.0" encoding="UTF-8"?>\n' + svgString;
+      const blob = new Blob([svgString], {type: 'image/svg+xml'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'torsion_box_section.svg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function exportIllustrator() {
+      const svg = document.getElementById('shapeSvg');
+      const serializer = new XMLSerializer();
+      let svgString = serializer.serializeToString(svg);
+      
+      // Add Adobe Illustrator compatible header
+      svgString = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' +
+                  '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' +
+                  svgString;
+      
+      const blob = new Blob([svgString], {type: 'image/svg+xml'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'torsion_box_illustrator.svg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Click topViewSvg to enlarge
+      document.getElementById("topViewSvg").addEventListener("click", () => {
+        const modal = document.getElementById("svgModal");
+        const container = document.getElementById("modalSvgContainer");
+        container.innerHTML = ""; // clear old
+        const clone = document.getElementById("topViewSvg").cloneNode(true);
+        clone.removeAttribute("width");
+        clone.removeAttribute("height");
+        container.appendChild(clone);
+        modal.style.display = "flex";
+      });
+
+      // Close button
+      document.getElementById("closeModal").addEventListener("click", () => {
+        document.getElementById("svgModal").style.display = "none";
+      });
+
+      // Close on background click
+      document.getElementById("svgModal").addEventListener("click", (e) => {
+        if (e.target.id === "svgModal") {
+          document.getElementById("svgModal").style.display = "none";
+        }
+      });
+
+    // Toggle Side B controls
+    document.getElementById('dualSection').addEventListener('change', function() {
+      const sideBControls = document.getElementById('sideBControls');
+      if (this.checked) {
+        sideBControls.classList.add('active');
+      } else {
+        sideBControls.classList.remove('active');
+      }
+      generateShape();
+      rotateSvg();
+    });
+
+    // Add event listeners
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', generateShape);
+      input.addEventListener('change', generateShape);
+    });
+
+    generateShape();
+    rotateSvg();
+  </script>
+
+</div></body></html>

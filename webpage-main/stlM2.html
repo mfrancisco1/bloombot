@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Francisco's 3D Modeling Showcase</title>
+  <style>
+    body { margin: 0; }
+    canvas { width: 100%; height: 100%; }
+    .description-box {
+      position: absolute;
+      font-family: 'Your Modern Font', sans-serif;
+      color: white;
+      top: 100px;
+      left: 10px;
+      background-color: black;
+      padding: 10px;
+      border-radius: 5px;
+      max-width: 350px;
+    }
+    .selection-box {
+      top: 5px;
+      left: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      color: white;
+      background-color: black;
+      font-family: 'Your Modern Font', sans-serif;
+      font-size: 16pt;
+    }
+}
+  </style>
+</head>
+<body>
+  <div class="selection-box">
+  <p>Models from I341 and Research Projects</p>
+  <select id="modelSelect">
+    <!-- Add options for each model -->
+    <option value="love heart v2.stl">Love Heart Lamp</option>
+    <option value="dsservo clip4d.stl">Servo Clip Holder</option>
+    <option value="cat_tail_v2.stl">Tail for Robotic PuppyCat</option>
+    <option value="luddymodeli2.stl">Luddy Hall Shell</option>
+    <option value="finger4b.stl">Robotic C-String Extension Finger</option>
+    <option value="leftside_heli.stl">Left Side of Toy Helicopter</option>
+    <!-- Add options for all your models -->
+    <option value="9614.stl">Steering Wheel for Bat Dashboard</option>
+    <option value="Dodecahedron 1 (middle) v10.stl">Robotic Dodecahedron Snow Person (Middle)</option>=
+    <!-- <option value="model3.stl">Model 3</option> -->
+    <!-- <option value="model3.stl">Model 3</option> -->
+    <!-- <option value="model4.stl">Model 4</option> -->
+    <!-- ... -->
+  </select>
+</div>
+
+  <div class="description-box" id="modelDescription">
+    Description will appear here.
+  </div>
+  <div id="camera_position"></div>
+
+  <script type="module">
+    import * as THREE from './three.module.js';
+    import { STLLoader } from './STLLoader.js';
+    import { OrbitControls } from './OrbitControls.js'; // Update the path based on OrbitControls.js location
+
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+    var renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    var controls = new OrbitControls(camera, renderer.domElement); // Add controls
+
+    var directionalLight = new THREE.DirectionalLight(0xffffff, 3);
+    
+    directionalLight.position.set(250, 50, 200);
+    scene.add(directionalLight);
+    var directionalLight2 = new THREE.DirectionalLight(0x968ddf, 3);
+    directionalLight2.position.set(150, 50, -200);
+    scene.add(directionalLight2);
+    var directionalLight3 = new THREE.DirectionalLight(0xff5fbd, 2);
+    directionalLight3.position.set(-150, 50, 200);
+    scene.add(directionalLight3);
+
+    var ambientLight = new THREE.AmbientLight(0xffffff, 1);
+    scene.add(ambientLight);
+
+    var models = [
+      { name: 'love heart v2.stl', 
+        description: 'A housing for a lamp for FA23 I341 final project' ,
+        cx: 1.4, cy: .7, cz: -1 },
+      { name: 'dsservo clip4d.stl', 
+        description: 'A mount for a regular sized DSServo with 35Kg of torque ',
+        cx: 4, cy: 3, cz: -.2  },
+      { name: 'cat_tail_v2.stl', 
+        description: 'Description for Tail for Robotic PuppyCat' ,
+        cx: 1, cy: 1, cz: 1 },
+      { name: 'luddymodeli2.stl', 
+        description: 'From that time when we made a Minecraft (and Minetest) world with many Luddy Halls',
+        cx: 1, cy: -.1, cz: -.4 },
+      { name: 'finger4b.stl', 
+        description: 'A robotic finger for a double bass string.',
+        cx: 1, cy: -.2, cz: -1.2 },
+      { name: 'leftside_heli.stl', 
+        description: 'This group was going for the largest possible print.',
+        cx: 1, cy: -.2, cz: -1.2 },
+      { name: '9614.stl', 
+        description: 'A steering wheel for a prototype dashboard interface for Magic Wheelchair Batmobile.',
+         cx: 1, cy: 2, cz: -1.2 },
+      { name: 'Dodecahedron 1 (middle) v10.stl', 
+        description: 'Student work from FA2022.  The middle section of a three part robotic dodecahdron light fixture.',
+         cx: 1, cy: .8, cz: 1.2 }
+      // { name: 'Dodecahedron 1 (middle) v10.stl', 
+      //   description: 'Student work from FA2022.  The middle section of a three part robotic dodecahdron light fixture.',
+      //    cx: 1, cy: -.2, cz: -1.2 }
+      // ...
+    ];
+
+    var modelSelect = document.getElementById('modelSelect');
+    var modelDescription = document.getElementById('modelDescription');
+
+    modelSelect.addEventListener('change', function () {
+      var selectedModel = models[modelSelect.selectedIndex];
+      loadModel(selectedModel);
+    });
+
+    function loadModel(modelInfo) {
+      var loader = new STLLoader();
+      loader.load(modelInfo.name, function (geometry) {
+        var material = new THREE.MeshStandardMaterial();
+        var mesh = new THREE.Mesh(geometry, material);
+
+        // Clear previous models from the scene
+        scene.remove.apply(scene, scene.children.filter(obj => obj.type === 'Mesh'));
+
+
+        // Create an edges geometry and pass in your original geometry
+        var edges = new THREE.EdgesGeometry(geometry);
+
+        // Create a line material
+        var lineMaterial = new THREE.LineBasicMaterial({ color: 0x888888 }); // Black, adjust as needed
+
+        // Create a line segments geometry using the edges
+        var lineSegments = new THREE.LineSegments(edges, lineMaterial);
+
+        // Add the lines to your mesh
+        mesh.add(lineSegments);
+
+
+        scene.add(mesh);
+
+        geometry.computeBoundingSphere();
+        var center = geometry.boundingSphere.center;
+
+        camera.position.x = center.x + modelInfo.cx * geometry.boundingSphere.radius;
+        camera.position.y = center.y + modelInfo.cy * geometry.boundingSphere.radius;
+        camera.position.z = center.z + modelInfo.cz * geometry.boundingSphere.radius;
+
+        camera.lookAt(center);
+
+        controls.target = center; // Make the controls rotate around the loaded object
+
+        // Update description box
+        modelDescription.textContent = modelInfo.description;
+      });
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update(); // Required if controls.enableDamping or controls.autoRotate are set to true
+      renderer.render(scene, camera);
+    }
+
+
+    animate();
+  </script>
+</body>
+</html>

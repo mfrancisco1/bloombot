@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Footprint Simulator - IU Student Day</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #ffffff;
+            color: #000000;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            border-bottom: 3px solid #000000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 5px;
+        }
+        
+        .intro {
+            background-color: #f5f5f5;
+            border: 2px solid #000000;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            border: 2px solid #000000;
+            padding: 20px;
+            background-color: #fafafa;
+        }
+        
+        .activity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .activity-btn {
+            background-color: #000000;
+            border: 2px solid #000000;
+            padding: 10px;
+            cursor: pointer;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .activity-btn:hover {
+            background-color: #8B0000; 
+            color: #ffffff;
+        }
+        
+        .schedule-item {
+            background-color: #ffffff;
+            border: 2px solid #000000;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .schedule-item-content {
+            flex: 1;
+        }
+        
+        .time {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .remove-btn {
+            background-color: #000000;
+            color: #ffffff;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+        }
+        
+        .remove-btn:hover {
+            background-color: #333333;
+        }
+        
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background-color: #000000;
+            color: #ffffff;
+            border: none;
+            padding: 12px 24px;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background-color: #333333;
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-box {
+            border: 2px solid #000000;
+            padding: 15px;
+            background-color: #ffffff;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            display: block;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+        }
+        
+        .data-log {
+            background-color: #ffffff;
+            border: 2px solid #000000;
+            padding: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        
+        .log-entry {
+            border-left: 4px solid #000000;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+        }
+        
+        .log-time {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        
+        .log-activity {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .log-section {
+            margin: 8px 0;
+            padding-left: 15px;
+        }
+        
+        .log-label {
+            font-weight: bold;
+            text-decoration: underline;
+        }
+        
+        .collector {
+            display: inline-block;
+            background-color: #e0e0e0;
+            padding: 2px 8px;
+            margin: 2px;
+            border: 1px solid #000000;
+            font-size: 0.9em;
+        }
+        
+        .inference {
+            font-style: italic;
+            color: #333333;
+        }
+        
+        .network-viz {
+            background-color: #ffffff;
+            border: 2px solid #000000;
+            padding: 20px;
+            min-height: 400px;
+        }
+        
+        .entity-node {
+            border: 2px solid #000000;
+            padding: 10px;
+            margin: 10px;
+            background-color: #f5f5f5;
+            display: inline-block;
+        }
+        
+        .entity-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .entity-data {
+            font-size: 0.85em;
+            line-height: 1.4;
+        }
+        
+        .warning {
+            background-color: #000000;
+            color: #ffffff;
+            padding: 15px;
+            margin: 20px 0;
+            border: 2px solid #000000;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666666;
+            font-style: italic;
+        }
+        #networkContainer svg {
+          width: 100% !important;
+          height: 1000px !important;
+          display: block;
+        }
+        
+        /*#networkCanvas {
+            width: 100%;
+            height: 500px;
+            border: 2px solid #000000;
+            background-color: #ffffff;
+        }*/
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Digital Footprint Simulator</h1>
+        <div class="intro">
+            <strong>A Day in the Life of an IU Student</strong><br>
+            Build your typical daily schedule by clicking activities below. Then run the simulation to see what data is collected about you, who has access to it, and what they can infer about your life.
+        </div>
+
+        <div class="two-column">
+            <div class="panel">
+                <h2>📅 Build Your Schedule</h2>
+                <p style="margin-bottom: 15px; font-size: 0.9em;">Click activities to add them to your day:</p>
+                
+                <div class="activity-grid">
+                    <button class="activity-btn" onclick="addActivity('wake')">📱 Wake Up (Phone Alarm)</button>
+                    <button class="activity-btn" onclick="addActivity('social')">📱 Check Social Media</button>
+                    <button class="activity-btn" onclick="addActivity('email')">📧 Check Email</button>
+                    <button class="activity-btn" onclick="addActivity('search')">🔍 Google Search</button>
+                    <button class="activity-btn" onclick="addActivity('walk')">🚶 Walk to Class</button>
+                    <button class="activity-btn" onclick="addActivity('class')">📚 Attend Class</button>
+                    <button class="activity-btn" onclick="addActivity('crimson')">💳 Swipe CrimsonCard</button>
+                    <button class="activity-btn" onclick="addActivity('wifi')">📡 Connect to WiFi</button>
+                    <button class="activity-btn" onclick="addActivity('dining')">🍕 Order Food Delivery</button>
+                    <button class="activity-btn" onclick="addActivity('spotify')">🎵 Stream Music</button>
+                    <button class="activity-btn" onclick="addActivity('fitness')">💪 Fitness Tracker</button>
+                    <button class="activity-btn" onclick="addActivity('shopping')">🛒 Online Shopping</button>
+                    <button class="activity-btn" onclick="addActivity('video')">📺 Watch Streaming</button>
+                    <button class="activity-btn" onclick="addActivity('ride')">🚗 Rideshare App</button>
+                    <button class="activity-btn" onclick="addActivity('library')">📖 Study at Library</button>
+                    <button class="activity-btn" onclick="addActivity('venmo')">💰 Venmo Payment</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>📋 Your Schedule</h2>
+                <div id="scheduleList"></div>
+                <div class="controls">
+                    <button onclick="clearSchedule()">Clear All</button>
+                    <button onclick="loadSampleDay()">Load Sample Day</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="runSimulation()" id="runBtn">▶️ RUN SIMULATION</button>
+            <button onclick="resetSimulation()">🔄 Reset</button>
+        </div>
+
+        <div id="results" style="display: none;">
+            <div class="warning">
+                ⚠️ SIMULATION COMPLETE: Here's your digital footprint from just ONE day
+            </div>
+
+            <div class="stats">
+                <div class="stat-box">
+                    <span class="stat-number" id="dataPoints">0</span>
+                    <span class="stat-label">Data Points Collected</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-number" id="entities">0</span>
+                    <span class="stat-label">Entities With Your Data</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-number" id="inferences">0</span>
+                    <span class="stat-label">Inferences Made</span>
+                </div>
+            </div>
+
+            <h2>📊 Data Collection Log</h2>
+            <div class="data-log" id="dataLog"></div>
+
+            <h2>🕸️ Network Visualization</h2>
+            <p style="margin-bottom: 15px;">Who has your data and what they know about you:</p>
+            <div id="networkContainer" style="width:100%; height:1000px; border:2px solid #000;"></div>
+            <div id="networkLegend" style="margin-top: 20px;"></div>
+            <h3>Activity Log</h3>
+<div id="dataLog" 
+     style="margin-top:10px; max-height:200px; overflow-y:auto; border:1px solid #000; padding:6px; background:#fafafa;">
+</div>
+        </div>
+    </div>
+
+    <script>
+        let schedule = [];
+        let currentTime = 7; // Start at 7 AM
+        let simulationData = [];
+
+        const activityDatabase = {
+            wake: {
+                name: '📱 Wake Up - Phone Alarm',
+                duration: 0,
+                data: ['Time awake', 'Sleep duration', 'Sleep quality', 'Movement patterns', 'Heart rate', 'Sleep cycles'],
+                collectors: ['Apple/Google', 'Phone Manufacturer', 'Sleep App'],
+                inferences: ['Sleep schedule', 'Health patterns', 'Daily routine consistency'],
+                category: 'Behavioral/Biometric'
+            },
+            social: {
+                name: '📱 Check Social Media',
+                duration: 0.25,
+                data: ['Login time', 'Device ID', 'IP address', 'Location', 'Posts viewed', 'Time spent', 'Likes/comments', 'Friends list', 'Messages'],
+                collectors: ['Instagram', 'TikTok', 'Snapchat', 'Meta/Facebook', 'Data Brokers'],
+                inferences: ['Social connections', 'Interests', 'Political views', 'Relationship status', 'Daily habits', 'Mental state', 'Location patterns'],
+                category: 'Behavioral/Social'
+            },
+            email: {
+                name: '📧 Check Email',
+                duration: 0.25,
+                data: ['Login time', 'IP address', 'Device', 'Emails read/sent', 'Contact list', 'Email content', 'Attachments'],
+                collectors: ['Google/Microsoft', 'Email Provider', 'Third-party trackers'],
+                inferences: ['Communication patterns', 'Professional/academic connections', 'Appointments', 'Purchases', 'Travel plans'],
+                category: 'Communication'
+            },
+            search: {
+                name: '🔍 Google Search',
+                duration: 0.25,
+                data: ['Search queries', 'Search time', 'IP address', 'Device', 'Location', 'Browser history', 'Clicked results'],
+                collectors: ['Google', 'Ad Networks', 'Data Brokers'],
+                inferences: ['Interests', 'Health concerns', 'Financial situation', 'Relationship issues', 'Career plans', 'Shopping intent'],
+                category: 'Behavioral'
+            },
+            walk: {
+                name: '🚶 Walk to Class',
+                duration: 0.5,
+                data: ['GPS location', 'Route taken', 'Speed', 'Steps', 'Heart rate', 'Time stamps'],
+                collectors: ['Google Maps', 'Apple', 'Phone OS', 'Cell Phone Towers', 'WiFi Networks'],
+                inferences: ['Daily routes', 'Class schedule', 'Home location', 'Routine patterns', 'Visited locations'],
+                category: 'Location/Biometric'
+            },
+            class: {
+                name: '📚 Attend Class',
+                duration: 1.25,
+                data: ['Building entry', 'WiFi connection', 'Canvas activity', 'Attendance record', 'Location'],
+                collectors: ['IU', 'Canvas/Instructure', 'WiFi Network'],
+                inferences: ['Class schedule', 'Academic performance', 'Attendance patterns', 'Major/courses'],
+                category: 'Academic'
+            },
+            crimson: {
+                name: '💳 Swipe CrimsonCard',
+                duration: 0,
+                data: ['Location', 'Time', 'Building access', 'Purchase details', 'Meal plan balance', 'Transaction history'],
+                collectors: ['IU', 'Card Services'],
+                inferences: ['Eating habits', 'Building access patterns', 'Financial status', 'Daily routine', 'Social patterns'],
+                category: 'Financial/Location'
+            },
+            wifi: {
+                name: '📡 Connect to WiFi',
+                duration: 0,
+                data: ['MAC address', 'Device type', 'Connection time', 'Duration', 'Location', 'Data usage', 'Websites visited'],
+                collectors: ['IU Network Services', 'WiFi Provider', 'ISP'],
+                inferences: ['Location tracking', 'Device inventory', 'Usage patterns', 'Time spent in locations'],
+                category: 'Network/Location'
+            },
+            dining: {
+                name: '🍕 Order Food Delivery',
+                duration: 0.5,
+                data: ['Address', 'Phone number', 'Order details', 'Payment method', 'Order frequency', 'Delivery location', 'Tip amount'],
+                collectors: ['DoorDash/UberEats', 'Restaurant', 'Payment Processor', 'Data Brokers'],
+                inferences: ['Home address', 'Dietary preferences', 'Spending habits', 'Schedule', 'Living situation'],
+                category: 'Financial/Behavioral'
+            },
+            spotify: {
+                name: '🎵 Stream Music',
+                duration: 1,
+                data: ['Songs played', 'Playlists', 'Listening time', 'Device', 'Location', 'Skip patterns', 'Mood'],
+                collectors: ['Spotify', 'Record Labels', 'Advertisers'],
+                inferences: ['Music taste', 'Mood/emotional state', 'Activity type', 'Cultural background', 'Age group'],
+                category: 'Behavioral'
+            },
+            fitness: {
+                name: '💪 Fitness Tracker',
+                duration: 1,
+                data: ['Heart rate', 'Steps', 'Calories burned', 'Sleep data', 'Exercise type', 'Location', 'Routes'],
+                collectors: ['Fitbit/Apple/Garmin', 'Health Apps', 'Insurance Companies'],
+                inferences: ['Health status', 'Fitness level', 'Daily routines', 'Location patterns', 'Risk factors'],
+                category: 'Biometric/Health'
+            },
+            shopping: {
+                name: '🛒 Online Shopping',
+                duration: 0.5,
+                data: ['Items viewed', 'Cart contents', 'Purchase history', 'Payment info', 'Shipping address', 'Browsing time', 'Returns'],
+                collectors: ['Amazon/Retailers', 'Payment Processors', 'Advertisers', 'Data Brokers'],
+                inferences: ['Shopping preferences', 'Income level', 'Living situation', 'Interests', 'Gift recipients', 'Life events'],
+                category: 'Financial/Behavioral'
+            },
+            video: {
+                name: '📺 Watch Streaming',
+                duration: 2,
+                data: ['Watch history', 'Time spent', 'Pause/rewind patterns', 'Device', 'Account sharing', 'Preferences'],
+                collectors: ['Netflix/Hulu/etc', 'Content Providers', 'Advertisers'],
+                inferences: ['Interests', 'Schedule', 'Household members', 'Mood', 'Binge-watching habits'],
+                category: 'Behavioral'
+            },
+            ride: {
+                name: '🚗 Rideshare App',
+                duration: 0.5,
+                data: ['Pickup location', 'Dropoff location', 'Time', 'Payment info', 'Trip frequency', 'Route', 'Rating'],
+                collectors: ['Uber/Lyft', 'Payment Processors', 'Insurance Companies'],
+                inferences: ['Home/work locations', 'Social activities', 'Travel patterns', 'Financial status', 'Nightlife habits'],
+                category: 'Location/Financial'
+            },
+            library: {
+                name: '📖 Study at Library',
+                duration: 2,
+                data: ['Entry/exit times', 'Computer login', 'Books checked out', 'WiFi usage', 'Printing records', 'Search history'],
+                collectors: ['IU Libraries', 'Network Services'],
+                inferences: ['Study habits', 'Academic interests', 'Research topics', 'Schedule', 'Time management'],
+                category: 'Academic/Behavioral'
+            },
+            venmo: {
+                name: '💰 Venmo Payment',
+                duration: 0,
+                data: ['Payment amount', 'Recipient', 'Description', 'Time', 'Friend network', 'Transaction history'],
+                collectors: ['Venmo/PayPal', 'Payment Network', 'Data Brokers', 'Friends (public feed)'],
+                inferences: ['Financial habits', 'Social network', 'Spending categories', 'Relationships', 'Lifestyle choices'],
+                category: 'Financial/Social'
+            }
+        };
+
+        function formatTime(hour) {
+            const h = Math.floor(hour);
+            const m = Math.round((hour - h) * 60);
+            const period = h >= 12 ? 'PM' : 'AM';
+            const displayHour = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+            return `${displayHour}:${m.toString().padStart(2, '0')} ${period}`;
+        }
+
+        function addActivity(type) {
+            const activity = activityDatabase[type];
+            const time = currentTime;
+            currentTime += activity.duration;
+            
+            schedule.push({
+                type: type,
+                time: time,
+                ...activity
+            });
+            
+            updateScheduleDisplay();
+        }
+
+        function updateScheduleDisplay() {
+            const list = document.getElementById('scheduleList');
+            if (schedule.length === 0) {
+                list.innerHTML = '<div class="empty-state">No activities yet. Click activities above to build your day.</div>';
+                return;
+            }
+            
+            list.innerHTML = schedule.map((item, index) => `
+                <div class="schedule-item">
+                    <div class="schedule-item-content">
+                        <span class="time">${formatTime(item.time)}</span>
+                        ${item.name}
+                    </div>
+                    <button class="remove-btn" onclick="removeActivity(${index})">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        function removeActivity(index) {
+            schedule.splice(index, 1);
+            // Recalculate times
+            currentTime = 7;
+            schedule.forEach(item => {
+                item.time = currentTime;
+                currentTime += item.duration;
+            });
+            updateScheduleDisplay();
+        }
+
+        function clearSchedule() {
+            schedule = [];
+            currentTime = 7;
+            updateScheduleDisplay();
+            resetSimulation();
+        }
+
+        function loadSampleDay() {
+            clearSchedule();
+            const sampleActivities = ['wake', 'social', 'email', 'walk', 'class', 'wifi', 'crimson', 'search', 'class', 'dining', 'spotify', 'library', 'social', 'shopping', 'video', 'venmo'];
+            sampleActivities.forEach(type => addActivity(type));
+        }
+
+function runSimulation() {
+    if (schedule.length === 0) {
+        alert('Please add some activities to your schedule first!');
+        return;
+    }
+
+    // Process data
+    simulationData = schedule.map(activity => ({
+        ...activity,
+        dataCount: activity.data.length,
+        collectorCount: activity.collectors.length,
+        inferenceCount: activity.inferences.length
+    }));
+
+    // Calculate totals
+    const totalDataPoints = simulationData.reduce((sum, item) => sum + item.dataCount, 0);
+    const allCollectors = new Set(simulationData.flatMap(item => item.collectors));
+    const totalInferences = simulationData.reduce((sum, item) => sum + item.inferenceCount, 0);
+
+    // Update stats
+    document.getElementById('dataPoints').textContent = totalDataPoints;
+    document.getElementById('entities').textContent = allCollectors.size;
+    document.getElementById('inferences').textContent = totalInferences;
+
+    // Generate log
+    generateDataLog();
+
+    // Draw network
+    drawNetwork();
+
+    // Show results
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+
+        function generateDataLog() {
+            const log = document.getElementById('dataLog');
+            log.innerHTML = simulationData.map(activity => `
+                <div class="log-entry">
+                    <div class="log-time">${formatTime(activity.time)}</div>
+                    <div class="log-activity">${activity.name}</div>
+                    
+                    <div class="log-section">
+                        <span class="log-label">Data Collected (${activity.data.length} points):</span><br>
+                        ${activity.data.join(', ')}
+                    </div>
+                    
+                    <div class="log-section">
+                        <span class="log-label">Who Has Access:</span><br>
+                        ${activity.collectors.map(c => `<span class="collector">${c}</span>`).join(' ')}
+                    </div>
+                    
+                    <div class="log-section">
+                        <span class="log-label">What They Can Infer:</span><br>
+                        <span class="inference">${activity.inferences.join(' • ')}</span>
+                    </div>
+                    
+                    <div class="log-section">
+                        <span class="log-label">Category:</span> ${activity.category}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+
+
+ function drawNetwork() {
+    console.log("drawNetwork: start. simulationData length:", simulationData.length);
+
+    const container = document.getElementById("networkContainer");
+    const width = container.offsetWidth;
+    const height = 1000;
+
+    // Clear previous SVG
+    d3.select("#networkContainer").selectAll("*").remove();
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    //
+    // === BUILD 4-LAYER GRAPH ===
+    //
+    const nodes = [];
+    const links = [];
+    const nodeSet = new Set(); // To avoid duplicate nodes
+    const linkSet = new Set(); // To avoid duplicate links
+
+    // Helper function to add nodes and links
+    const addNode = (id, layer) => {
+        if (!nodeSet.has(id)) {
+            nodeSet.add(id);
+            nodes.push({ id, layer });
+        }
+    };
+
+    const addLink = (source, target) => {
+        const linkKey = `${source}|${target}`;
+        if (!linkSet.has(linkKey)) {
+            linkSet.add(linkKey);
+            links.push({ source, target });
+        }
+    };
+
+    // Add "YOU" node
+    addNode("YOU", "user");
+
+    // Process simulation data to build nodes and links
+    simulationData.forEach(activity => {
+        const dataTypes = activity.data;
+        const collectors = activity.collectors;
+        const inferences = activity.inferences;
+
+        dataTypes.forEach(dt => {
+            addNode(dt, "datatype");
+            addLink("YOU", dt); // YOU -> Data Type
+
+            collectors.forEach(c => {
+                addNode(c, "collector");
+                addLink(dt, c); // Data Type -> Collector
+            });
+        });
+
+        collectors.forEach(c => {
+            inferences.forEach(inf => {
+                addNode(inf, "inference");
+                addLink(c, inf); // Collector -> Inference
+            });
+        });
+    });
+
+
+    console.log("drawNetwork: nodes:", nodes.length, "links:", links.length);
+
+    //
+    // === INITIAL POSITIONS (radial rings) ===
+    //
+    const radiusByLayer = { user: 0, datatype: 160, collector: 300, inference: 420 };
+
+    nodes.forEach(n => {
+        const angle = Math.random() * Math.PI * 2;
+        const r = radiusByLayer[n.layer];
+
+        if (n.layer === "user") {
+            n.fx = centerX;
+            n.fy = centerY;
+        } else {
+            n.x = centerX + r * Math.cos(angle);
+            n.y = centerY + r * Math.sin(angle);
+        }
+    });
+
+    //
+    // === SVG + SIMULATION ===
+    //
+    const zoom = d3.zoom()
+        .scaleExtent([0.3, 3])
+        .on("zoom", (event) => {
+            g.attr("transform", event.transform);
+        });
+
+    const svg = d3.select("#networkContainer")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .call(zoom);
+
+    // Group that holds nodes + links
+    const g = svg.append("g");
+
+    // NEW: Create groups for draw order (links bottom, labels top)
+    const linkGroup = g.append("g").attr("class", "links");
+    const nodeGroup = g.append("g").attr("class", "nodes");
+    const labelGroup = g.append("g").attr("class", "labels");
+
+
+    const sim = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(d => {
+            if (d.source.layer === "user") return 150; // YOU -> Data
+            if (d.source.layer === "datatype") return 120; // Data -> Collector
+            return 90; // Collector -> Inference
+        }))
+        .force("collision", d3.forceCollide().radius(d => {
+            if (d.layer === "user") return 50;
+            if (d.layer === "datatype") return 30;
+            if (d.layer === "collector") return 18;
+            return 12; // Inference node radius
+        }))
+        .force("charge", d3.forceManyBody().strength(d => {
+            if (d.layer === "user") return 0;
+            if (d.layer === "datatype") return -200;
+            if (d.layer === "collector") return -80;
+            return -40; // Inference charge
+        }))
+        .alpha(1);
+
+    //
+    // === DRAW LINKS ===
+    //
+    const link = linkGroup.selectAll("line") // NEW: Append to linkGroup
+        .data(links)
+        .enter()
+        .append("line")
+        .attr("stroke", "#999")
+        .attr("stroke-width", 1.5);
+
+    //
+    // === DEFINE COLORS/RADIUS ===
+    //
+    // const color = d =>
+    //     d.layer === "user" ? "#000" :
+    //     d.layer === "datatype" ? "#ffcc00" :
+    //     d.layer === "collector" ? "#6a9dfc" :
+    //     "#8B0000"; // Dark red for inference
+        const color = d =>
+        d.layer === "user" ? "#E0E0E0" :     // Was #000 (black) -> Now light gray
+        d.layer === "datatype" ? "#FFF9C4" : // Was #ffcc00 (gold) -> Now pale yellow
+        d.layer === "collector" ? "#D1E4FF" : // Was #6a9dfc (blue) -> Now pale blue
+        "#FFCDD2"; // Was #8B0000 (dark red) -> Now pale red
+
+    const radius = d =>
+        d.layer === "user" ? 40 :
+        d.layer === "datatype" ? 22 :
+        d.layer === "collector" ? 14 :
+        10; // New radius for inference
+
+    //
+    // === LABELS ===
+    // NEW: Defined before node, but appended to its own group
+    //
+    const label = labelGroup.selectAll("text") // NEW: Append to labelGroup
+        .data(nodes)
+        .enter()
+        .append("text")
+        .text(d => d.id)
+        .attr("font-family", "Courier New")
+        .attr("font-size", d => // Storing original size logic here
+            d.layer === "user" ? "16px" :
+            d.layer === "inference" ? "9px" : "10px")
+        .attr("text-anchor", "middle")
+        .style("pointer-events", "none"); // Prevents text from blocking mouse events on the circle
+
+    //
+    // === DRAW NODES ===
+    //
+    const node = nodeGroup.selectAll("circle") // NEW: Append to nodeGroup
+        .data(nodes)
+        .enter()
+        .append("circle")
+        .attr("r", radius) // Use the radius function
+        .attr("fill", color)
+        .attr("stroke", "#000")
+        .attr("stroke-width", 1) 
+        .on("click", (event, d) => {
+            togglePin(d);
+        })
+        
+        .on("mouseover", (event, d) => {
+            // Highlight the node
+            d3.select(event.currentTarget)
+                .attr("stroke-width", 3)
+                .attr("r", radius(d) + 2); // Make circle slightly larger
+
+            // Highlight the label
+            label.filter(ld => ld.id === d.id) // 'label' is already defined
+                .attr("font-size", "20px")
+                .attr("font-weight", "bold");
+                // NEW: No .raise() needed! The labelGroup is already on top.
+        })
+        .on("mouseout", (event, d) => {
+            // Revert the node
+            d3.select(event.currentTarget)
+                .attr("stroke-width", 1)
+                .attr("r", radius); // Back to original radius
+
+            // Revert the label
+            label.filter(ld => ld.id === d.id)
+                .attr("font-size", ld => // Revert to original dynamic size
+                    ld.layer === "user" ? "16px" :
+                    ld.layer === "inference" ? "9px" : "10px")
+                .attr("font-weight", "normal");
+        })
+
+        .call(
+            d3.drag()
+                .filter(d => d.layer !== "user") // cannot drag YOU
+                .on("start", (event, d) => {
+                    if (!event.active) sim.alphaTarget(0.3).restart();
+                    d.fx = d.x; d.fy = d.y;
+                })
+                .on("drag", (event, d) => {
+                    d.fx = event.x; d.fy = event.y;
+                })
+                .on("end", (event, d) => {
+                    if (!event.active) sim.alphaTarget(0);
+                    d.fx = null; d.fy = null;
+                })
+        );
+
+    function togglePin(d) {
+        if (d.fx == null && d.fy == null) {
+            d.fx = d.x;
+            d.fy = d.y;
+        } else {
+            d.fx = null;
+            d.fy = null;
+        }
+    }
+
+    //
+    // === ON TICK ===
+    //
+    sim.on("tick", () => {
+        link
+            .attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
+
+        node
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y);
+
+        // Position the labels above their nodes
+        label
+            .attr("x", d => d.x)
+            .attr("y", d => d.y - (
+                d.layer === "user" ? 50 :     // 40 + 10
+                d.layer === "datatype" ? 28 : // 22 + 6
+                d.layer === "collector" ? 20 : // 14 + 6
+                16 // 10 + 6 (inference)
+            ));
+    });
+
+    //
+    // === LEGEND ===
+    //
+    document.getElementById("networkLegend").innerHTML = `
+        <h3>Data Flow Network</h3>
+        <p><b>YOU → Data Type → Third Party → Inference</b></p>
+        <div style="margin:2px 0;"><span style="background:#000;width:12px;height:12px;display:inline-block;border:1px solid #000;vertical-align:middle;margin-right:5px;"></span> YOU</div>
+        <div style="margin:2px 0;"><span style="background:#ffcc00;width:12px;height:12px;display:inline-block;border:1px solid #000;vertical-align:middle;margin-right:5px;"></span> Data Types</div>
+        <div style="margin:2px 0;"><span style="background:#6a9dfc;width:12px;height:12px;display:inline-block;border:1px solid #000;vertical-align:middle;margin-right:5px;"></span> Third Parties</div>
+        <div style="margin:2px 0;"><span style="background:#8B0000;width:12px;height:12px;display:inline-block;border:1px solid #000;vertical-align:middle;margin-right:5px;"></span> Inferences Made</div>
+    `;
+
+    console.log(`drawNetwork: finished drawing svg with ${nodes.length} nodes and ${links.length} links.`);
+}
+
+    
+        function resetSimulation() {
+            document.getElementById('results').style.display = 'none';
+            simulationData = [];
+        }
+
+        // Initialize
+        updateScheduleDisplay();
+    </script>
+</body>
+</html>

@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wild Boar Survival</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom, #87CEEB, #E8D5B7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        #gameCanvas {
+            display: block;
+            background: #6B8E23;
+            border: 4px solid #5D4E37;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        
+        .stat {
+            margin: 5px 0;
+        }
+        
+        .bar {
+            width: 200px;
+            height: 20px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .bar-fill {
+            height: 100%;
+            transition: width 0.3s;
+        }
+        
+        .health-bar { background: #ff4444; }
+        .stamina-bar { background: #44ff44; }
+        .food-bar { background: #ffaa44; }
+        
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            font-size: 12px;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.7);
+            padding: 20px 40px;
+            border-radius: 15px;
+            display: none;
+            z-index: 10;
+        }
+        
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-align: center;
+            background: rgba(0,0,0,0.9);
+            padding: 30px;
+            border-radius: 15px;
+            display: none;
+            z-index: 11;
+        }
+        
+        #gameOver h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #ff4444;
+        }
+        
+        #gameOver button {
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #44ff44;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        #gameOver button:hover {
+            background: #66ff66;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="900" height="600"></canvas>
+        
+        <div id="ui">
+            <div class="stat">
+                Health
+                <div class="bar">
+                    <div id="healthBar" class="bar-fill health-bar" style="width: 100%"></div>
+                </div>
+            </div>
+            <div class="stat">
+                Stamina
+                <div class="bar">
+                    <div id="staminaBar" class="bar-fill stamina-bar" style="width: 100%"></div>
+                </div>
+            </div>
+            <div class="stat">
+                Food: <span id="foodCount">0</span> / 50
+                <div class="bar">
+                    <div id="foodBar" class="bar-fill food-bar" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="stat">Score: <span id="score">0</span></div>
+            <div class="stat">Piglets: <span id="pigletCount">3</span> / 3</div>
+            <div class="stat">Holes Dug: <span id="holesCount">0</span></div>
+        </div>
+        
+        <div id="controls">
+            <strong>Controls:</strong><br>
+            WASD / Arrow Keys - Move<br>
+            SPACE - Sprint<br>
+            E - Dig Hole<br>
+            R - Raid Farm (when near)
+        </div>
+        
+        <div id="message"></div>
+        
+        <div id="gameOver">
+            <h2>Game Over!</h2>
+            <p id="finalScore"></p>
+            <button onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game state
+        const game = {
+            running: true,
+            score: 0,
+            foodCollected: 0,
+            holesDigged: 0,
+            messageTimer: 0
+        };
+        
+        // Player (Wild Boar)
+        const player = {
+            x: 450,
+            y: 300,
+            size: 25,
+            angle: 0,
+            speed: 2,
+            sprintSpeed: 4,
+            health: 100,
+            maxHealth: 100,
+            stamina: 100,
+            maxStamina: 100,
+            isSprinting: false,
+            color: '#8B4513'
+        };
+        
+        // Input
+        const keys = {};
+        
+        // Game objects
+        let foods = [];
+        let holes = [];
+        let piglets = [];
+        let farms = [];
+        let enemies = [];
+        let bushes = [];
+        let trees = [];
+        
+        // Initialize game objects
+        function init() {
+            // Create bushes
+            for (let i = 0; i < 40; i++) {
+                bushes.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: 15 + Math.random() * 15
+                });
+            }
+            
+            // Create trees
+            for (let i = 0; i < 20; i++) {
+                trees.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: 20 + Math.random() * 20
+                });
+            }
+            
+            // Create food items
+            for (let i = 0; i < 15; i++) {
+                spawnFood();
+            }
+            
+            // Create piglets
+            for (let i = 0; i < 3; i++) {
+                piglets.push({
+                    x: player.x + (i - 1) * 40,
+                    y: player.y + 50,
+                    size: 15,
+                    targetX: player.x,
+                    targetY: player.y,
+                    speed: 1.5,
+                    health: 50
+                });
+            }
+            
+            // Create farms
+            for (let i = 0; i < 3; i++) {
+                farms.push({
+                    x: 150 + i * 300,
+                    y: 100 + Math.random() * 400,
+                    width: 80,
+                    height: 80,
+                    food: 10,
+                    raided: false
+                });
+            }
+            
+            // Create enemies (wolves)
+            for (let i = 0; i < 3; i++) {
+                spawnEnemy();
+            }
+        }
+        
+        function spawnFood() {
+            foods.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: 8,
+                type: Math.random() > 0.5 ? 'acorn' : 'root'
+            });
+        }
+        
+        function spawnEnemy() {
+            const side = Math.floor(Math.random() * 4);
+            let x, y;
+            
+            if (side === 0) { x = -50; y = Math.random() * canvas.height; }
+            else if (side === 1) { x = canvas.width + 50; y = Math.random() * canvas.height; }
+            else if (side === 2) { x = Math.random() * canvas.width; y = -50; }
+            else { x = Math.random() * canvas.width; y = canvas.height + 50; }
+            
+            enemies.push({
+                x: x,
+                y: y,
+                size: 20,
+                speed: 1 + Math.random(),
+                health: 30,
+                targetType: Math.random() > 0.5 ? 'player' : 'piglet'
+            });
+        }
+        
+        // Input handlers
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            
+            if (e.key.toLowerCase() === 'e') {
+                digHole();
+            }
+            
+            if (e.key.toLowerCase() === 'r') {
+                raidFarm();
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+        
+        // Game functions
+        function digHole() {
+            if (player.stamina >= 20) {
+                holes.push({
+                    x: player.x,
+                    y: player.y,
+                    size: 20,
+                    age: 0
+                });
+                player.stamina -= 20;
+                game.holesDigged++;
+                game.score += 10;
+                showMessage('Dug a hole! +10 points');
+            }
+        }
+        
+        function raidFarm() {
+            for (let farm of farms) {
+                const dist = Math.hypot(player.x - farm.x, player.y - farm.y);
+                if (dist < 100 && !farm.raided) {
+                    game.foodCollected += farm.food;
+                    game.score += 50;
+                    farm.raided = true;
+                    showMessage('Raided farm! +' + farm.food + ' food, +50 points');
+                    
+                    // Spawn more enemies when raiding
+                    spawnEnemy();
+                    spawnEnemy();
+                    break;
+                }
+            }
+        }
+        
+        function showMessage(text) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.style.display = 'block';
+            game.messageTimer = 60;
+        }
+        
+        function update() {
+            if (!game.running) return;
+            
+            // Message timer
+            if (game.messageTimer > 0) {
+                game.messageTimer--;
+                if (game.messageTimer === 0) {
+                    document.getElementById('message').style.display = 'none';
+                }
+            }
+            
+            // Player movement
+            let dx = 0;
+            let dy = 0;
+            
+            if (keys['w'] || keys['arrowup']) dy -= 1;
+            if (keys['s'] || keys['arrowdown']) dy += 1;
+            if (keys['a'] || keys['arrowleft']) dx -= 1;
+            if (keys['d'] || keys['arrowright']) dx += 1;
+            
+            // Normalize diagonal movement
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.707;
+                dy *= 0.707;
+            }
+            
+            // Sprint
+            player.isSprinting = keys[' '] && player.stamina > 0;
+            const speed = player.isSprinting ? player.sprintSpeed : player.speed;
+            
+            if (dx !== 0 || dy !== 0) {
+                player.angle = Math.atan2(dy, dx);
+                player.x += dx * speed;
+                player.y += dy * speed;
+                
+                if (player.isSprinting) {
+                    player.stamina = Math.max(0, player.stamina - 0.5);
+                }
+            }
+            
+            // Regenerate stamina
+            if (!player.isSprinting) {
+                player.stamina = Math.min(player.maxStamina, player.stamina + 0.3);
+            }
+            
+            // Keep player in bounds
+            player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x));
+            player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y));
+            
+            // Update piglets
+            for (let piglet of piglets) {
+                if (piglet.health <= 0) continue;
+                
+                // Follow player with some delay
+                const dx = player.x - piglet.x;
+                const dy = player.y - piglet.y;
+                const dist = Math.hypot(dx, dy);
+                
+                if (dist > 50) {
+                    piglet.x += (dx / dist) * piglet.speed;
+                    piglet.y += (dy / dist) * piglet.speed;
+                }
+            }
+            
+            // Check food collection
+            for (let i = foods.length - 1; i >= 0; i--) {
+                const food = foods[i];
+                const dist = Math.hypot(player.x - food.x, player.y - food.y);
+                
+                if (dist < player.size + food.size) {
+                    foods.splice(i, 1);
+                    game.foodCollected++;
+                    game.score += 5;
+                    player.health = Math.min(player.maxHealth, player.health + 5);
+                    
+                    // Spawn new food
+                    if (foods.length < 10) {
+                        spawnFood();
+                    }
+                }
+            }
+            
+            // Update enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                
+                let targetX, targetY;
+                
+                if (enemy.targetType === 'player') {
+                    targetX = player.x;
+                    targetY = player.y;
+                } else {
+                    // Target nearest piglet
+                    let nearestPiglet = null;
+                    let nearestDist = Infinity;
+                    
+                    for (let piglet of piglets) {
+                        if (piglet.health <= 0) continue;
+                        const dist = Math.hypot(enemy.x - piglet.x, enemy.y - piglet.y);
+                        if (dist < nearestDist) {
+                            nearestDist = dist;
+                            nearestPiglet = piglet;
+                        }
+                    }
+                    
+                    if (nearestPiglet) {
+                        targetX = nearestPiglet.x;
+                        targetY = nearestPiglet.y;
+                    } else {
+                        targetX = player.x;
+                        targetY = player.y;
+                    }
+                }
+                
+                const dx = targetX - enemy.x;
+                const dy = targetY - enemy.y;
+                const dist = Math.hypot(dx, dy);
+                
+                enemy.x += (dx / dist) * enemy.speed;
+                enemy.y += (dy / dist) * enemy.speed;
+                
+                // Check collision with player
+                const playerDist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+                if (playerDist < player.size + enemy.size) {
+                    player.health -= 0.5;
+                    
+                    // Push enemy back
+                    const pushDx = enemy.x - player.x;
+                    const pushDy = enemy.y - player.y;
+                    const pushDist = Math.hypot(pushDx, pushDy);
+                    enemy.x += (pushDx / pushDist) * 3;
+                    enemy.y += (pushDy / pushDist) * 3;
+                }
+                
+                // Check collision with piglets
+                for (let piglet of piglets) {
+                    if (piglet.health <= 0) continue;
+                    const pigletDist = Math.hypot(piglet.x - enemy.x, piglet.y - enemy.y);
+                    if (pigletDist < piglet.size + enemy.size) {
+                        piglet.health -= 1;
+                        if (piglet.health <= 0) {
+                            showMessage('Lost a piglet!');
+                        }
+                    }
+                }
+                
+                // Check if enemy fell in hole
+                for (let hole of holes) {
+                    const holeDist = Math.hypot(hole.x - enemy.x, hole.y - enemy.y);
+                    if (holeDist < hole.size) {
+                        enemies.splice(i, 1);
+                        game.score += 20;
+                        showMessage('Trapped enemy! +20 points');
+                        break;
+                    }
+                }
+            }
+            
+            // Spawn new enemies occasionally
+            if (Math.random() < 0.01 && enemies.length < 5) {
+                spawnEnemy();
+            }
+            
+            // Age holes
+            for (let hole of holes) {
+                hole.age++;
+            }
+            
+            // Check win condition
+            if (game.foodCollected >= 50) {
+                endGame(true);
+            }
+            
+            // Check lose condition
+            if (player.health <= 0) {
+                endGame(false);
+            }
+            
+            // Update UI
+            updateUI();
+        }
+        
+        function updateUI() {
+            document.getElementById('healthBar').style.width = (player.health / player.maxHealth * 100) + '%';
+            document.getElementById('staminaBar').style.width = (player.stamina / player.maxStamina * 100) + '%';
+            document.getElementById('foodBar').style.width = (game.foodCollected / 50 * 100) + '%';
+            document.getElementById('foodCount').textContent = game.foodCollected;
+            document.getElementById('score').textContent = game.score;
+            
+            const alivePiglets = piglets.filter(p => p.health > 0).length;
+            document.getElementById('pigletCount').textContent = alivePiglets;
+            document.getElementById('holesCount').textContent = game.holesDigged;
+        }
+        
+        function endGame(won) {
+            game.running = false;
+            const gameOver = document.getElementById('gameOver');
+            const finalScore = document.getElementById('finalScore');
+            
+            if (won) {
+                gameOver.querySelector('h2').textContent = 'Victory!';
+                gameOver.querySelector('h2').style.color = '#44ff44';
+                finalScore.textContent = 'You collected enough food to survive the winter!\nFinal Score: ' + game.score;
+            } else {
+                finalScore.textContent = 'Your boar has fallen!\nFinal Score: ' + game.score;
+            }
+            
+            gameOver.style.display = 'block';
+        }
+        
+        function draw() {
+            // Clear canvas with grass color
+            ctx.fillStyle = '#6B8E23';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw grass texture
+            ctx.fillStyle = '#5A7A1E';
+            for (let i = 0; i < 100; i++) {
+                const x = (i * 137 + Date.now() * 0.001) % canvas.width;
+                const y = (i * 241) % canvas.height;
+                ctx.fillRect(x, y, 2, 2);
+            }
+            
+            // Draw bushes
+            for (let bush of bushes) {
+                ctx.fillStyle = '#556B2F';
+                ctx.beginPath();
+                ctx.arc(bush.x, bush.y, bush.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#6B8E23';
+                ctx.beginPath();
+                ctx.arc(bush.x - bush.size * 0.3, bush.y - bush.size * 0.3, bush.size * 0.6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw trees
+            for (let tree of trees) {
+                // Trunk
+                ctx.fillStyle = '#4A3C2E';
+                ctx.fillRect(tree.x - tree.size * 0.2, tree.y, tree.size * 0.4, tree.size);
+                
+                // Foliage
+                ctx.fillStyle = '#228B22';
+                ctx.beginPath();
+                ctx.arc(tree.x, tree.y, tree.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw holes
+            for (let hole of holes) {
+                ctx.fillStyle = '#3E2723';
+                ctx.beginPath();
+                ctx.arc(hole.x, hole.y, hole.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = '#4E342E';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            
+            // Draw farms
+            for (let farm of farms) {
+                // Barn
+                ctx.fillStyle = farm.raided ? '#666' : '#8B0000';
+                ctx.fillRect(farm.x, farm.y, farm.width, farm.height);
+                
+                // Roof
+                ctx.fillStyle = '#4A0000';
+                ctx.beginPath();
+                ctx.moveTo(farm.x - 10, farm.y);
+                ctx.lineTo(farm.x + farm.width / 2, farm.y - 20);
+                ctx.lineTo(farm.x + farm.width + 10, farm.y);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Door
+                ctx.fillStyle = '#4A3C2E';
+                ctx.fillRect(farm.x + farm.width / 2 - 15, farm.y + farm.height - 30, 30, 30);
+                
+                if (!farm.raided) {
+                    ctx.fillStyle = 'white';
+                    ctx.font = '12px Arial';
+                    ctx.fillText('Press R', farm.x + 10, farm.y - 25);
+                }
+            }
+            
+            // Draw food
+            for (let food of foods) {
+                if (food.type === 'acorn') {
+                    ctx.fillStyle = '#8B4513';
+                    ctx.beginPath();
+                    ctx.arc(food.x, food.y, food.size, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillStyle = '#CD853F';
+                    ctx.fillRect(food.x - food.size, food.y - food.size / 2, food.size * 2, food.size);
+                }
+            }
+            
+            // Draw enemies (wolves)
+            for (let enemy of enemies) {
+                ctx.fillStyle = '#696969';
+                ctx.beginPath();
+                ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eyes
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                ctx.arc(enemy.x - 5, enemy.y - 5, 3, 0, Math.PI * 2);
+                ctx.arc(enemy.x + 5, enemy.y - 5, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw piglets
+            for (let piglet of piglets) {
+                if (piglet.health <= 0) continue;
+                
+                ctx.fillStyle = '#D2691E';
+                ctx.beginPath();
+                ctx.arc(piglet.x, piglet.y, piglet.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Snout
+                ctx.fillStyle = '#C19A6B';
+                ctx.beginPath();
+                ctx.arc(piglet.x, piglet.y + piglet.size * 0.3, piglet.size * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw player (wild boar)
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.rotate(player.angle);
+            
+            // Body
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, player.size, player.size * 0.8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Snout
+            ctx.fillStyle = '#704214';
+            ctx.beginPath();
+            ctx.arc(player.size * 0.7, 0, player.size * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Tusks
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(player.size * 0.9, -5, 5, 0, Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(player.size * 0.9, 5, 5, 0, Math.PI);
+            ctx.stroke();
+            
+            // Eye
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(player.size * 0.3, -player.size * 0.3, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Hair/mane
+            ctx.strokeStyle = '#4A3C2E';
+            ctx.lineWidth = 2;
+            for (let i = -3; i <= 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(-player.size * 0.3, i * 3);
+                ctx.lineTo(-player.size * 0.6, i * 5 - 10);
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Start game
+        init();
+        gameLoop();
+    </script>
+</body>
+</html>

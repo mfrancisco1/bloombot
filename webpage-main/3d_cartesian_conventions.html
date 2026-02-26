@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>3D Coordinate System</title>
+<style>
+    body {
+        background: black;
+        color: white;
+        font-family: sans-serif;
+        text-align: center;
+        padding: 20px;
+    }
+    #coordinate3DCanvas {
+        border: 1px solid white;
+        background: black;
+        display: block;
+        margin: 20px auto;
+        cursor: crosshair;
+    }
+    select, input, button {
+        background: black;
+        color: white;
+        border: 1px solid white;
+        padding: 5px 10px;
+        margin: 5px;
+        cursor: pointer;
+    }
+    button:hover {
+        background: #333;
+    }
+    .controls {
+        margin: 15px 0;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+    .coordinate-info {
+        font-size: 18px;
+        margin: 10px 0;
+    }
+    .axis-labels {
+        font-size: 16px;
+        margin: 10px 0;
+    }
+    .convention-info {
+        font-size: 14px;
+        color: #ccc;
+        margin: 10px 0;
+    }
+    .slider-container {
+        margin: 10px;
+        display: inline-block;
+    }
+    .slider-container label {
+        display: block;
+        margin-bottom: 5px;
+    }
+    input[type="range"] {
+        width: 100px;
+    }
+</style>
+</head>
+<body>
+
+<h1>Interactive 3D Coordinate System</h1>
+
+<canvas id="coordinate3DCanvas" width="700" height="500"></canvas>
+
+<div class="controls">
+    <button id="rightHandedBtn">Right-Handed</button>
+    <button id="leftHandedBtn">Left-Handed</button>
+    <button id="mathConventionBtn">Math Convention</button>
+    <button id="graphicsConventionBtn">Graphics Convention</button>
+    <button id="randomAxisBtn">Random Axis Names</button>
+    <button id="toggleOrderBtn">Toggle Coordinate Order</button>
+    <button id="resetConventionBtn">Reset to x,y,z</button>
+</div>
+
+<div class="controls">
+    <div class="slider-container">
+        <label for="xSlider">X: <span id="xValue">0</span></label>
+        <input type="range" id="xSlider" min="-5" max="5" value="0">
+    </div>
+    <div class="slider-container">
+        <label for="ySlider">Y: <span id="yValue">0</span></label>
+        <input type="range" id="ySlider" min="-5" max="5" value="0">
+    </div>
+    <div class="slider-container">
+        <label for="zSlider">Z: <span id="zValue">0</span></label>
+        <input type="range" id="zSlider" min="-5" max="5" value="0">
+    </div>
+    <button id="resetPointBtn">Reset Point</button>
+</div>
+
+<div class="axis-labels">
+    X-Axis: <span id="xAxisName">x</span> | 
+    Y-Axis: <span id="yAxisName">y</span> | 
+    Z-Axis: <span id="zAxisName">z</span>
+</div>
+
+<div class="coordinate-info">
+    Point Location: <span id="coordinates">(0, 0, 0)</span>
+</div>
+
+<div class="convention-info">
+    Current Convention: <span id="currentConvention">Right-Handed Math</span>
+</div>
+
+<p style="font-size: 14px; color: #ccc;">
+    Use sliders to move the point in 3D space.<br>
+    Switch between different coordinate system conventions used in math, graphics, and engineering.
+</p>
+
+<script>
+let canvas = document.getElementById('coordinate3DCanvas');
+let ctx = canvas.getContext('2d');
+
+// 3D Coordinate system state
+let pointX = 0;
+let pointY = 0;
+let pointZ = 0;
+let xAxisName = 'x';
+let yAxisName = 'y';
+let zAxisName = 'z';
+let coordinateOrder = 'normal'; // 'normal' or 'reversed'
+let handedness = 'right'; // 'right' or 'left'
+let convention = 'math'; // 'math' or 'graphics'
+
+// Canvas settings
+const centerX = canvas.width / 2;
+const centerY = canvas.height / 2;
+const scale = 30;
+const maxUnits = 5;
+
+// Random axis names
+const axisNames = ['a', 'b', 'c', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w'];
+
+// 3D to 2D projection
+function project3D(x, y, z) {
+    let screenX, screenY;
+    
+    if (convention === 'math') {
+        if (handedness === 'right') {
+            // Right-handed math: X right, Y up, Z toward viewer
+            screenX = centerX + x * scale - z * scale * 0.3;
+            screenY = centerY - y * scale - z * scale * 0.2;
+        } else {
+            // Left-handed math: X right, Y up, Z away from viewer
+            screenX = centerX + x * scale + z * scale * 0.3;
+            screenY = centerY - y * scale + z * scale * 0.2;
+        }
+    } else {
+        // Graphics convention: X right, Y down, Z away/toward
+        if (handedness === 'right') {
+            screenX = centerX + x * scale - z * scale * 0.3;
+            screenY = centerY + y * scale - z * scale * 0.2;
+        } else {
+            screenX = centerX + x * scale + z * scale * 0.3;
+            screenY = centerY + y * scale + z * scale * 0.2;
+        }
+    }
+    
+    return { x: screenX, y: screenY };
+}
+
+function drawAxes() {
+    ctx.lineWidth = 3;
+    
+    // Origin
+    const origin = project3D(0, 0, 0);
+    
+    // X-axis (Red)
+    ctx.strokeStyle = '#ff4444';
+    ctx.beginPath();
+    const xEnd = project3D(maxUnits, 0, 0);
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(xEnd.x, xEnd.y);
+    ctx.stroke();
+    
+    // X-axis label
+    ctx.fillStyle = '#ff4444';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(xAxisName, xEnd.x + 15, xEnd.y);
+    
+    // Y-axis (Green)
+    ctx.strokeStyle = '#44ff44';
+    ctx.beginPath();
+    const yEnd = project3D(0, maxUnits, 0);
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(yEnd.x, yEnd.y);
+    ctx.stroke();
+    
+    // Y-axis label
+    ctx.fillStyle = '#44ff44';
+    ctx.fillText(yAxisName, yEnd.x, yEnd.y - 10);
+    
+    // Z-axis (Blue)
+    ctx.strokeStyle = '#4444ff';
+    ctx.beginPath();
+    const zEnd = project3D(0, 0, maxUnits);
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(zEnd.x, zEnd.y);
+    ctx.stroke();
+    
+    // Z-axis label
+    ctx.fillStyle = '#4444ff';
+    ctx.fillText(zAxisName, zEnd.x + 15, zEnd.y);
+    
+    // Draw negative axes with dashed lines
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 2;
+    
+    // Negative X
+    ctx.strokeStyle = '#aa2222';
+    ctx.beginPath();
+    const xNegEnd = project3D(-maxUnits, 0, 0);
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(xNegEnd.x, xNegEnd.y);
+    ctx.stroke();
+    
+    // Negative Y
+    ctx.strokeStyle = '#22aa22';
+    ctx.beginPath();
+    const yNegEnd = project3D(0, -maxUnits, 0);
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(yNegEnd.x, yNegEnd.y);
+    ctx.stroke();
+    
+    // Negative Z
+    ctx.strokeStyle = '#2222aa';
+    ctx.beginPath();
+    const zNegEnd = project3D(0, 0, -maxUnits);
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(zNegEnd.x, zNegEnd.y);
+    ctx.stroke();
+    
+    ctx.setLineDash([]);
+}
+
+function drawGrid() {
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1;
+    
+    // Draw grid lines on XY plane (Z=0)
+    for (let i = -maxUnits; i <= maxUnits; i++) {
+        // Lines parallel to X-axis
+        ctx.beginPath();
+        const start1 = project3D(-maxUnits, i, 0);
+        const end1 = project3D(maxUnits, i, 0);
+        ctx.moveTo(start1.x, start1.y);
+        ctx.lineTo(end1.x, end1.y);
+        ctx.stroke();
+        
+        // Lines parallel to Y-axis
+        ctx.beginPath();
+        const start2 = project3D(i, -maxUnits, 0);
+        const end2 = project3D(i, maxUnits, 0);
+        ctx.moveTo(start2.x, start2.y);
+        ctx.lineTo(end2.x, end2.y);
+        ctx.stroke();
+    }
+}
+
+function drawPoint() {
+    const point = project3D(pointX, pointY, pointZ);
+    
+    // Draw projection lines
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    
+    // Line to XY plane
+    const xyProjection = project3D(pointX, pointY, 0);
+    ctx.beginPath();
+    ctx.moveTo(point.x, point.y);
+    ctx.lineTo(xyProjection.x, xyProjection.y);
+    ctx.stroke();
+    
+    // Line to XZ plane
+    const xzProjection = project3D(pointX, 0, pointZ);
+    ctx.beginPath();
+    ctx.moveTo(point.x, point.y);
+    ctx.lineTo(xzProjection.x, xzProjection.y);
+    ctx.stroke();
+    
+    // Line to YZ plane
+    const yzProjection = project3D(0, pointY, pointZ);
+    ctx.beginPath();
+    ctx.moveTo(point.x, point.y);
+    ctx.lineTo(yzProjection.x, yzProjection.y);
+    ctx.stroke();
+    
+    ctx.setLineDash([]);
+    
+    // Draw the main point
+    ctx.fillStyle = '#ffff44';
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, 8, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Point outline
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Draw projection points
+    ctx.fillStyle = '#888';
+    ctx.beginPath();
+    ctx.arc(xyProjection.x, xyProjection.y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    ctx.beginPath();
+    ctx.arc(xzProjection.x, xzProjection.y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    ctx.beginPath();
+    ctx.arc(yzProjection.x, yzProjection.y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Draw coordinate label next to point
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    
+    let coordText;
+    if (coordinateOrder === 'normal') {
+        coordText = `(${pointX}, ${pointY}, ${pointZ})`;
+    } else {
+        coordText = `(${pointZ}, ${pointY}, ${pointX})`;
+    }
+    
+    // Position label
+    let labelX = point.x + 15;
+    let labelY = point.y - 10;
+    
+    // Adjust position if near canvas edges
+    if (labelX + ctx.measureText(coordText).width > canvas.width - 10) {
+        labelX = point.x - 15;
+        ctx.textAlign = 'right';
+    }
+    if (labelY < 20) {
+        labelY = point.y + 25;
+        ctx.textBaseline = 'top';
+    }
+    
+    // Draw background for label
+    const textMetrics = ctx.measureText(coordText);
+    const padding = 4;
+    const rectWidth = textMetrics.width + padding * 2;
+    const rectHeight = 16;
+    
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    if (ctx.textAlign === 'right') {
+        ctx.fillRect(labelX - rectWidth, labelY - (ctx.textBaseline === 'top' ? 0 : rectHeight), rectWidth, rectHeight);
+    } else {
+        ctx.fillRect(labelX, labelY - (ctx.textBaseline === 'top' ? 0 : rectHeight), rectWidth, rectHeight);
+    }
+    
+    // Draw text
+    ctx.fillStyle = 'white';
+    ctx.fillText(coordText, labelX, labelY);
+}
+
+function updateDisplay() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    drawGrid();
+    drawAxes();
+    drawPoint();
+    
+    // Update coordinate display
+    let coordText;
+    if (coordinateOrder === 'normal') {
+        coordText = `(${pointX}, ${pointY}, ${pointZ})`;
+    } else {
+        coordText = `(${pointZ}, ${pointY}, ${pointX})`;
+    }
+    
+    document.getElementById('coordinates').textContent = coordText;
+    document.getElementById('xAxisName').textContent = xAxisName;
+    document.getElementById('yAxisName').textContent = yAxisName;
+    document.getElementById('zAxisName').textContent = zAxisName;
+    
+    // Update convention display
+    let conventionText = handedness === 'right' ? 'Right-Handed' : 'Left-Handed';
+    conventionText += convention === 'math' ? ' Math' : ' Graphics';
+    document.getElementById('currentConvention').textContent = conventionText;
+    
+    // Update slider values
+    document.getElementById('xValue').textContent = pointX;
+    document.getElementById('yValue').textContent = pointY;
+    document.getElementById('zValue').textContent = pointZ;
+}
+
+// Event handlers
+document.getElementById('rightHandedBtn').addEventListener('click', () => {
+    handedness = 'right';
+    updateDisplay();
+});
+
+document.getElementById('leftHandedBtn').addEventListener('click', () => {
+    handedness = 'left';
+    updateDisplay();
+});
+
+document.getElementById('mathConventionBtn').addEventListener('click', () => {
+    convention = 'math';
+    updateDisplay();
+});
+
+document.getElementById('graphicsConventionBtn').addEventListener('click', () => {
+    convention = 'graphics';
+    updateDisplay();
+});
+
+document.getElementById('randomAxisBtn').addEventListener('click', () => {
+    const availableNames = [...axisNames];
+    
+    // Pick random names for each axis
+    const xIndex = Math.floor(Math.random() * availableNames.length);
+    xAxisName = availableNames[xIndex];
+    availableNames.splice(xIndex, 1);
+    
+    const yIndex = Math.floor(Math.random() * availableNames.length);
+    yAxisName = availableNames[yIndex];
+    availableNames.splice(yIndex, 1);
+    
+    const zIndex = Math.floor(Math.random() * availableNames.length);
+    zAxisName = availableNames[zIndex];
+    
+    updateDisplay();
+});
+
+document.getElementById('toggleOrderBtn').addEventListener('click', () => {
+    coordinateOrder = coordinateOrder === 'normal' ? 'reversed' : 'normal';
+    updateDisplay();
+});
+
+document.getElementById('resetConventionBtn').addEventListener('click', () => {
+    xAxisName = 'x';
+    yAxisName = 'y';
+    zAxisName = 'z';
+    coordinateOrder = 'normal';
+    handedness = 'right';
+    convention = 'math';
+    updateDisplay();
+});
+
+document.getElementById('resetPointBtn').addEventListener('click', () => {
+    pointX = 0;
+    pointY = 0;
+    pointZ = 0;
+    document.getElementById('xSlider').value = 0;
+    document.getElementById('ySlider').value = 0;
+    document.getElementById('zSlider').value = 0;
+    updateDisplay();
+});
+
+// Slider event handlers
+document.getElementById('xSlider').addEventListener('input', (e) => {
+    pointX = parseInt(e.target.value);
+    updateDisplay();
+});
+
+document.getElementById('ySlider').addEventListener('input', (e) => {
+    pointY = parseInt(e.target.value);
+    updateDisplay();
+});
+
+document.getElementById('zSlider').addEventListener('input', (e) => {
+    pointZ = parseInt(e.target.value);
+    updateDisplay();
+});
+
+// Initialize
+updateDisplay();
+</script>
+
+</body>
+</html>

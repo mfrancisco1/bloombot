@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Engineering Detection Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #ffffff;
+            color: #000000;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            border-bottom: 3px solid #000000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+        
+        .intro {
+            background-color: #f5f5f5;
+            border: 2px solid #000000;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .score-panel {
+            background-color: #000000;
+            color: #ffffff;
+            padding: 15px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .score-item {
+            text-align: center;
+        }
+        
+        .score-number {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        
+        .score-label {
+            font-size: 0.9em;
+        }
+        
+        .scenario-container {
+            border: 2px solid #000000;
+            background-color: #fafafa;
+            margin-bottom: 30px;
+            display: none;
+        }
+        
+        .scenario-container.active {
+            display: block;
+        }
+        
+        .scenario-header {
+            background-color: #e8e8e8;
+            border-bottom: 2px solid #000000;
+            padding: 15px;
+        }
+        
+        .scenario-type {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+        
+        .scenario-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .scenario-body {
+            padding: 30px;
+            background-color: #ffffff;
+            border-bottom: 2px solid #000000;
+            min-height: 300px;
+        }
+        
+        .scenario-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .scenario-text {
+            font-size: 1.1em;
+            line-height: 1.8;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #000000;
+            margin-bottom: 20px;
+        }
+        
+        .dialogue {
+            font-style: italic;
+            margin: 10px 0;
+            padding-left: 20px;
+            border-left: 3px solid #666;
+        }
+        
+        .button-container {
+            padding: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        button {
+            background-color: #000000;
+            color: #ffffff;
+            border: none;
+            padding: 15px 40px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background-color: #333333;
+        }
+        
+        button.legitimate {
+            background-color: #ffffff;
+            color: #000000;
+            border: 2px solid #000000;
+        }
+        
+        button.legitimate:hover {
+            background-color: #e8e8e8;
+        }
+        
+        .feedback {
+            display: none;
+            padding: 20px;
+            margin-top: 20px;
+            border: 3px solid #000000;
+        }
+        
+        .feedback.show {
+            display: block;
+        }
+        
+        .feedback.correct {
+            background-color: #ffffff;
+            border-color: #000000;
+        }
+        
+        .feedback.incorrect {
+            background-color: #f5f5f5;
+            border-color: #000000;
+        }
+        
+        .feedback-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .feedback-verdict {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #000000;
+            color: #ffffff;
+        }
+        
+        .red-flags, .legitimate-signals {
+            margin-top: 15px;
+        }
+        
+        .flag-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .flag-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .flag-list li {
+            padding: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid #000000;
+            background-color: #f9f9f9;
+        }
+        
+        .flag-list li:before {
+            content: "⚠ ";
+            font-weight: bold;
+        }
+        
+        .legitimate-signals .flag-list li:before {
+            content: "✓ ";
+        }
+        
+        .technique-box {
+            background-color: #e8e8e8;
+            border: 2px solid #000000;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .technique-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .next-button {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .results {
+            display: none;
+            border: 3px solid #000000;
+            padding: 30px;
+            text-align: center;
+            background-color: #f5f5f5;
+        }
+        
+        .results.show {
+            display: block;
+        }
+        
+        .results-title {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .results-score {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        
+        .results-message {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            line-height: 1.8;
+        }
+        
+        .results-breakdown {
+            margin: 30px 0;
+            text-align: left;
+        }
+        
+        .breakdown-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 2px solid #000000;
+            background-color: #ffffff;
+        }
+        
+        .breakdown-item.correct {
+            border-left: 6px solid #000000;
+        }
+        
+        .breakdown-item.incorrect {
+            border-left: 6px solid #666666;
+        }
+        
+        .progress {
+            text-align: center;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+        
+        .context-note {
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.95em;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎭 Social Engineering Detection Game</h1>
+        
+        <div class="intro">
+            <strong>Can you spot the manipulation?</strong><br>
+            Social engineering isn't just phishing emails - it happens over the phone, in person, via text, and on social media. You'll see 10 real-world scenarios. Decide if each situation is SUSPICIOUS or LEGITIMATE. Learn to recognize the tactics manipulators use to trick you!
+        </div>
+
+        <div class="score-panel">
+            <div class="score-item">
+                <div class="score-number" id="currentQuestion">1</div>
+                <div class="score-label">Scenario #</div>
+            </div>
+            <div class="score-item">
+                <div class="score-number" id="correctCount">0</div>
+                <div class="score-label">Correct</div>
+            </div>
+            <div class="score-item">
+                <div class="score-number" id="incorrectCount">0</div>
+                <div class="score-label">Wrong</div>
+            </div>
+        </div>
+
+        <div class="progress" id="progress">Scenario 1 of 10</div>
+
+        <div id="scenariosContainer"></div>
+
+        <div class="results" id="results">
+            <div class="results-title">🎮 Game Complete!</div>
+            <div class="results-score" id="finalScore"></div>
+            <div class="results-message" id="resultsMessage"></div>
+            <div class="results-breakdown" id="resultsBreakdown"></div>
+            <button onclick="restartGame()">🔄 Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const scenarios = [
+            {
+                id: 1,
+                type: 'Phone Call (Vishing)',
+                icon: '📞',
+                title: 'The "IU IT Helpdesk" Call',
+                situation: `You receive a phone call on your cell phone.
+
+"Hello, this is David from IU IT Helpdesk. We've detected unusual activity on your IU account and need to verify your identity to prevent it from being locked. Can you please confirm your username and password so we can secure your account?"
+
+The caller ID shows "IU - Bloomington" and they seem to know you're an IU student.`,
+                isSuspicious: true,
+                redFlags: [
+                    'Unsolicited call asking for passwords',
+                    'IU IT would NEVER ask for your password over the phone',
+                    'Caller ID can be spoofed (fake) easily',
+                    'Creates urgency: "account will be locked"',
+                    'Asks you to confirm credentials rather than verifying through proper channels',
+                    'No mention of legitimate verification methods (like logging into One.IU yourself)'
+                ],
+                legitimateSignals: [],
+                technique: 'Vishing (Voice Phishing)',
+                techniqueDescription: 'Using phone calls to trick victims into revealing sensitive information. Often impersonates authority figures like IT staff, banks, or government agencies.',
+                whatToDo: 'Hang up and call the official IU IT number (812-855-6789) yourself. Never give passwords over the phone to anyone, even if they claim to be from IT.',
+                explanation: 'This is SUSPICIOUS - a classic vishing attack. IU IT will never call and ask for your password. Scammers spoof caller ID to appear legitimate.'
+            },
+            {
+                id: 2,
+                type: 'In-Person Interaction',
+                icon: '🚪',
+                title: 'The Forgotten Badge',
+                situation: `You're entering your residence hall late at night. As you swipe your CrimsonCard to unlock the door, a person in IU apparel carrying a pizza box and backpack approaches.
+
+"Hey! Thank goodness you're here - I forgot my ID in my room and I've been stuck out here for 20 minutes. Can you let me in? My room is on the third floor."
+
+They seem frustrated and cold, and claim to live in your building.`,
+                isSuspicious: true,
+                redFlags: [
+                    'Asking to enter a secure building without proper ID',
+                    'Tailgating - following you through a secured door',
+                    'Could be a complete stranger, not a resident',
+                    'Pizza box and backpack could be props to look legitimate',
+                    'Appeals to your empathy to bypass security',
+                    'No way to verify they actually live there'
+                ],
+                legitimateSignals: [],
+                technique: 'Tailgating / Piggybacking',
+                techniqueDescription: 'Following an authorized person into a restricted area without proper credentials. Often uses props and social pressure to seem legitimate.',
+                whatToDo: 'Politely say: "I\'m sorry, but I can\'t let anyone in without their own ID. The front desk can help you - they\'re open 24/7." Never let strangers into secure buildings.',
+                explanation: 'This is SUSPICIOUS. Tailgating is a physical security threat. Even if someone seems legitimate, residence hall rules exist for everyone\'s safety. Direct them to the front desk.'
+            },
+            {
+                id: 3,
+                type: 'Text Message (Smishing)',
+                icon: '📱',
+                title: 'The Package Delivery Text',
+                situation: `You receive a text message:
+
+"USPS: Your package is awaiting delivery but we need to confirm your address. Click here to update: usps-delivery-confirm.com/track?id=849273
+
+Failure to confirm within 24 hours will result in package return to sender."
+
+You don't remember ordering anything recently, but the text looks official.`,
+                isSuspicious: true,
+                redFlags: [
+                    'Suspicious domain: "usps-delivery-confirm.com" (not usps.com)',
+                    'Creates urgency: "24 hours or package returned"',
+                    'USPS already has your address if they have a package for you',
+                    'Unexpected message - you didn\'t order anything',
+                    'Link likely leads to a phishing site to steal info or payment',
+                    'Real USPS texts come from short codes, not websites'
+                ],
+                legitimateSignals: [],
+                technique: 'Smishing (SMS Phishing)',
+                techniqueDescription: 'Using text messages to trick victims into clicking malicious links or revealing information. Often impersonates delivery services, banks, or government agencies.',
+                whatToDo: 'Delete the text. If you\'re expecting a package, check USPS.com directly by typing the URL yourself. Never click links in unexpected texts.',
+                explanation: 'This is SUSPICIOUS - smishing attack. The fake domain and urgency are red flags. Real USPS notifications don\'t require you to "confirm your address" - they already have it!'
+            },
+            {
+                id: 4,
+                type: 'In-Person Interaction',
+                icon: '🔧',
+                title: 'The Maintenance Worker',
+                situation: `Someone in work clothes and a tool belt knocks on your dorm room door.
+
+"Hi, I'm with facilities maintenance. We got a report of a water leak in this area and need to check all the rooms. It'll just take a minute to inspect your bathroom and pipes."
+
+They're wearing what looks like a maintenance uniform and have an IU facilities radio clipped to their belt.`,
+                isSuspicious: false,
+                redFlags: [],
+                legitimateSignals: [
+                    'Maintenance staff do perform routine checks and emergency inspections',
+                    'Water leaks require checking multiple rooms to find the source',
+                    'Work uniform and tools are consistent with the job',
+                    'Radio is standard equipment for facilities staff',
+                    'Request is reasonable and specific (checking for water leak)',
+                    'IU residence halls have maintenance staff on-site regularly'
+                ],
+                technique: 'None - Legitimate Scenario',
+                techniqueDescription: 'This is a normal occurrence in residence halls. However, you should still verify by checking their ID badge, and you can call the RPS (Residential Programs and Services) office to confirm.',
+                whatToDo: 'It\'s okay to let them in, but you can verify by: (1) Asking to see their IU ID badge, (2) Calling RPS/facilities to confirm there\'s maintenance in the building. Always trust your instincts.',
+                explanation: 'This is LEGITIMATE. Maintenance staff do need access to rooms for inspections and repairs. However, it\'s always okay to verify their ID badge or call the front desk to confirm before allowing entry.'
+            },
+            {
+                id: 5,
+                type: 'Social Media',
+                icon: '💬',
+                title: 'The Job Offer DM',
+                situation: `You receive a direct message on Instagram from an account claiming to be a recruiter:
+
+"Hi! I came across your profile and think you'd be perfect for a remote position at our company. We're looking for college students to work 10-15 hours/week for $500/week. Very flexible schedule! All you need to do is:
+
+1. Process payments through your bank account
+2. Buy gift cards for our clients
+3. Forward the codes to us
+
+Interested? We need someone to start immediately!"
+
+The account has 5,000 followers and looks professional.`,
+                isSuspicious: true,
+                redFlags: [
+                    'Unsolicited job offer - you never applied',
+                    'Way too high pay for minimal work ($500/week for 10-15 hours)',
+                    'Asked to use YOUR bank account for "processing payments"',
+                    'Buying gift cards is a classic money laundering/scam technique',
+                    'Creates urgency: "need someone immediately"',
+                    'No legitimate company name or interview process',
+                    'Follower count can be fake/purchased',
+                    'This is likely a money mule scam'
+                ],
+                legitimateSignals: [],
+                technique: 'Money Mule Scam',
+                techniqueDescription: 'Recruiting victims to transfer stolen money or goods, making them complicit in money laundering. Victims can face legal consequences for unknowingly participating in criminal activity.',
+                whatToDo: 'Block and report the account. Never use your bank account to process payments for strangers. No legitimate job involves buying gift cards. You could face criminal charges for money laundering.',
+                explanation: 'This is SUSPICIOUS - a money mule scam. You\'d be laundering stolen money and could face criminal charges. No legitimate job pays $500/week for buying gift cards!'
+            },
+            {
+                id: 6,
+                type: 'Email/Request',
+                icon: '📋',
+                title: 'The Professor\'s "Assistant"',
+                situation: `During office hours, a student you don't recognize approaches you in the hallway outside your professor's office.
+
+"Hey, are you in Professor Smith's CHEM C117 class? I'm their TA and I'm collecting the homework that was due today. If you have yours, I can take it to the professor for you so you don't have to wait."
+
+They're wearing an IU lanyard and carrying a folder with other papers.`,
+                isSuspicious: true,
+                redFlags: [
+                    'You don\'t recognize them as the TA',
+                    'Homework collection policies are usually very clear',
+                    'Your professor hasn\'t mentioned a TA collecting homework this way',
+                    'IU lanyard is easy to obtain and doesn\'t verify their identity',
+                    'They could steal your homework to submit as their own',
+                    'Or they could access personal information on your assignment',
+                    'Legitimate TAs are introduced in class and use Canvas'
+                ],
+                legitimateSignals: [],
+                technique: 'Pretexting',
+                techniqueDescription: 'Creating a fabricated scenario (pretext) to trick someone into giving up information or items. The scammer pretends to be in a position of authority or trust.',
+                whatToDo: 'Say: "Thanks, but I\'ll submit it directly to the professor/through Canvas as required." If you\'re unsure who the TAs are, check Canvas or ask the professor.',
+                explanation: 'This is SUSPICIOUS. Never give your homework to someone you don\'t know, even if they claim to be a TA. They could plagiarize it or access your personal information. Submit through official channels only.'
+            },
+            {
+                id: 7,
+                type: 'Phone Call',
+                icon: '📞',
+                title: 'The Parent Emergency',
+                situation: `You receive a call from an unknown number. When you answer, you hear:
+
+"[Your name]! Thank God! This is your mom - I'm using someone else's phone because mine died. I'm at the hospital - I had an accident and need you to send $500 immediately for the emergency room bill. They won't treat me until I pay. Use Venmo to send it to this number: 555-0123. Please hurry!"
+
+The voice sounds distressed but also muffled and you can hear hospital sounds in the background.`,
+                isSuspicious: true,
+                redFlags: [
+                    'Creates extreme emotional urgency and panic',
+                    'Hospitals don\'t require payment before emergency treatment (by law)',
+                    'Asks for immediate money transfer via Venmo (untraceable)',
+                    'Won\'t let you call back or verify',
+                    'Voice is "muffled" - could be anyone',
+                    'Real family would give you time to verify and use insurance',
+                    'This is the "grandparent scam" / "family emergency scam"'
+                ],
+                legitimateSignals: [],
+                technique: 'Emergency Scam / Grandparent Scam',
+                techniqueDescription: 'Impersonating a family member in distress to trigger an emotional response and bypass critical thinking. Uses urgency and fear to prevent verification.',
+                whatToDo: 'Hang up immediately. Call your mom\'s actual phone number. Call another family member to verify. Never send money without independently confirming the emergency through known phone numbers.',
+                explanation: 'This is SUSPICIOUS - a classic emergency scam. Scammers exploit your love for family to make you panic and send money before thinking. Hospitals CANNOT refuse emergency treatment for inability to pay.'
+            },
+            {
+                id: 8,
+                type: 'In-Person Interaction',
+                icon: '📊',
+                title: 'The Survey Researcher',
+                situation: `You're walking through the Student Union when someone with an IU clipboard approaches you.
+
+"Hi! I'm conducting research for a class project on student spending habits. Would you mind answering a few quick questions? It's completely anonymous and will only take 2 minutes."
+
+They show you a professional-looking survey form and explain it's for their Statistics class. The questions ask about your monthly income, credit card limits, and banking institution.`,
+                isSuspicious: true,
+                redFlags: [
+                    'Asking for financial information (income, credit limits, bank)',
+                    'This is sensitive data inappropriate for a "2-minute survey"',
+                    'Legitimate research requires IRB approval at IU',
+                    'No consent form or information about data protection',
+                    'Anyone can carry a clipboard and say it\'s for class',
+                    'Could be collecting data for identity theft or targeted scams',
+                    '"Anonymous" but asking for identifiable financial info'
+                ],
+                legitimateSignals: [],
+                technique: 'Information Gathering / Pretexting',
+                techniqueDescription: 'Using a fake survey or research pretext to collect personal information that can be used for identity theft, financial fraud, or targeted scamming.',
+                whatToDo: 'Politely decline: "I\'m not comfortable sharing financial information." Legitimate research at IU requires ethics board approval and provides consent forms with researcher contact information.',
+                explanation: 'This is SUSPICIOUS. No legitimate class survey needs your income, credit limits, or bank info. This is information gathering for potential identity theft or scams. Real IU research requires formal consent and IRB approval.'
+            },
+            {
+                id: 9,
+                type: 'Email/Online',
+                icon: '🎁',
+                title: 'The Free Textbook Website',
+                situation: `A classmate sends you a link to a website:
+
+"Hey! I found this site that has free PDF versions of all our textbooks including the one for ECON E201. You just need to create an account with your IU email and student ID to verify you're a student, then you can download anything. I saved like $400 this semester!"
+
+The website looks professional and has an IU-themed design. Several other students in the class group chat are talking about using it.`,
+                isSuspicious: true,
+                redFlags: [
+                    'Asking for your IU email AND student ID (sensitive info)',
+                    'Likely pirated/illegal textbooks (copyright violation)',
+                    'Could be phishing site collecting IU credentials',
+                    'Website could contain malware in the "PDFs"',
+                    'IU credentials could be used to access Canvas, grades, financial info',
+                    'Even if classmates use it, doesn\'t make it safe',
+                    'Too good to be true (all textbooks free)'
+                ],
+                legitimateSignals: [],
+                technique: 'Credential Harvesting / Baiting',
+                techniqueDescription: 'Offering something desirable (free textbooks) to trick victims into entering their credentials on a fake site. The collected information is then used to access real accounts.',
+                whatToDo: 'Don\'t create an account. Use legitimate resources: IU library reserves, textbook rental, or buying/renting legally. Never enter your IU credentials on third-party sites.',
+                explanation: 'This is SUSPICIOUS. This is credential phishing disguised as a helpful resource. They\'ll steal your IU login and could access your Canvas, financial aid, or personal information. Use IU Libraries\' course reserves for legitimate free access.'
+            },
+            {
+                id: 10,
+                type: 'In-Person / Campus',
+                icon: '🎓',
+                title: 'The Campus Tour Guide',
+                situation: `It's admitted student day and campus is busy with prospective students and families. Someone in an "IU Campus Tour Guide" shirt approaches you near the Sample Gates.
+
+"Excuse me, are you a current student? Would you mind answering a few questions for these prospective families about your experience at IU? They're specifically interested in the dorms, dining, and campus life."
+
+They introduce you to two families who seem genuinely interested in hearing about student life at IU.`,
+                isSuspicious: false,
+                redFlags: [],
+                legitimateSignals: [
+                    'Admitted student events are real and happen regularly at IU',
+                    'Tour guides do ask current students to share experiences',
+                    'Request is specific and appropriate (dorms, dining, campus life)',
+                    'Not asking for any personal or financial information',
+                    'Families are present and the situation is public',
+                    'This helps prospective students make informed decisions',
+                    'Common practice at universities during visit days'
+                ],
+                technique: 'None - Legitimate Scenario',
+                techniqueDescription: 'This is a normal campus interaction during admitted student events. Current students are valuable resources for prospective families.',
+                whatToDo: 'Feel free to share your experiences! Just stick to general information about campus life, academics, and student resources. Don\'t share your dorm room number, personal schedule, or financial details.',
+                explanation: 'This is LEGITIMATE. During admitted student days, it\'s common for tour guides to connect prospective families with current students. This is appropriate networking and helps IU recruit new students. Just don\'t share personal details like where you live.'
+            }
+        ];
+
+        let currentScenarioIndex = 0;
+        let correctCount = 0;
+        let incorrectCount = 0;
+        let userAnswers = [];
+
+        function initGame() {
+            renderScenarios();
+            showScenario(0);
+        }
+
+        function renderScenarios() {
+            const container = document.getElementById('scenariosContainer');
+            container.innerHTML = scenarios.map((scenario, index) => `
+                <div class="scenario-container" id="scenario-${index}">
+                    <div class="scenario-header">
+                        <div class="scenario-icon">${scenario.icon}</div>
+                        <div class="scenario-type">${scenario.type}</div>
+                    </div>
+                    <div class="scenario-body">
+                        <div class="scenario-title">${scenario.title}</div>
+                        <div class="scenario-text">${scenario.situation.replace(/\n\n/g, '</div><div class="scenario-text">').replace(/\n/g, '<br>')}</div>
+                        <div class="context-note">
+                            <strong>Question:</strong> Is this situation SUSPICIOUS or LEGITIMATE?
+                        </div>
+                    </div>
+                    <div class="button-container">
+                        <button class="legitimate" onclick="checkAnswer(${index}, false)">✓ LEGITIMATE</button>
+                        <button class="suspicious" onclick="checkAnswer(${index}, true)">⚠ SUSPICIOUS</button>
+                    </div>
+                    <div class="feedback" id="feedback-${index}">
+                        <div class="feedback-title">Analysis</div>
+                        <div class="feedback-verdict" id="verdict-${index}"></div>
+                        <div id="explanation-${index}"></div>
+                        <div class="next-button">
+                            <button onclick="nextScenario()">Next Scenario →</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showScenario(index) {
+            document.querySelectorAll('.scenario-container').forEach(el => el.classList.remove('active'));
+            document.getElementById(`scenario-${index}`).classList.add('active');
+            document.getElementById('currentQuestion').textContent = index + 1;
+            document.getElementById('progress').textContent = `Scenario ${index + 1} of ${scenarios.length}`;
+        }
+
+        function checkAnswer(index, userSaidSuspicious) {
+            const scenario = scenarios[index];
+            const isCorrect = userSaidSuspicious === scenario.isSuspicious;
+            
+            // Record answer
+            userAnswers.push({
+                scenario: scenario,
+                userAnswer: userSaidSuspicious,
+                correct: isCorrect
+            });
+
+            // Update score
+            if (isCorrect) {
+                correctCount++;
+                document.getElementById('correctCount').textContent = correctCount;
+            } else {
+                incorrectCount++;
+                document.getElementById('incorrectCount').textContent = incorrectCount;
+            }
+
+            // Show feedback
+            const feedback = document.getElementById(`feedback-${index}`);
+            const verdict = document.getElementById(`verdict-${index}`);
+            const explanation = document.getElementById(`explanation-${index}`);
+
+            feedback.classList.add('show');
+            feedback.classList.add(isCorrect ? 'correct' : 'incorrect');
+
+            if (isCorrect) {
+                verdict.textContent = '✓ CORRECT!';
+            } else {
+                verdict.textContent = '✗ INCORRECT';
+            }
+
+            let explanationHTML = `<p><strong>${scenario.explanation}</strong></p>`;
+
+            if (scenario.isSuspicious && scenario.redFlags.length > 0) {
+                explanationHTML += `
+                    <div class="red-flags">
+                        <div class="flag-title">🚩 Red Flags in This Scenario:</div>
+                        <ul class="flag-list">
+                            ${scenario.redFlags.map(flag => `<li>${flag}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            if (!scenario.isSuspicious && scenario.legitimateSignals.length > 0) {
+                explanationHTML += `
+                    <div class="legitimate-signals">
+                        <div class="flag-title">✓ Why This is Legitimate:</div>
+                        <ul class="flag-list">
+                            ${scenario.legitimateSignals.map(signal => `<li>${signal}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            explanationHTML += `
+                <div class="technique-box">
+                    <div class="technique-title">📚 Technique: ${scenario.technique}</div>
+                    <div>${scenario.techniqueDescription}</div>
+                </div>
+                <div class="technique-box" style="margin-top: 10px;">
+                    <div class="technique-title">🛡️ What Should You Do?</div>
+                    <div>${scenario.whatToDo}</div>
+                </div>
+            `;
+
+            explanation.innerHTML = explanationHTML;
+
+            // Disable buttons
+            const buttons = document.querySelectorAll(`#scenario-${index} .button-container button`);
+            buttons.forEach(btn => btn.disabled = true);
+
+            // Scroll to feedback
+            feedback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function nextScenario() {
+            currentScenarioIndex++;
+            if (currentScenarioIndex < scenarios.length) {
+                showScenario(currentScenarioIndex);
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.querySelectorAll('.scenario-container').forEach(el => el.style.display = 'none');
+            document.querySelector('.score-panel').style.display = 'none';
+            document.querySelector('.progress').style.display = 'none';
+
+            const results = document.getElementById('results');
+            const scoreDisplay = document.getElementById('finalScore');
+            const messageDisplay = document.getElementById('resultsMessage');
+            const breakdownDisplay = document.getElementById('resultsBreakdown');
+
+            const percentage = Math.round((correctCount / scenarios.length) * 100);
+            scoreDisplay.textContent = `${correctCount}/${scenarios.length} Correct (${percentage}%)`;
+
+            let message = '';
+            if (percentage === 100) {
+                message = '🎉 Perfect Score! You\'re a social engineering detection expert! You successfully spotted every manipulation tactic and correctly identified legitimate situations. Stay vigilant - these skills will protect you in real life!';
+            } else if (percentage >= 80) {
+                message = '👏 Excellent Work! You caught most of the social engineering attempts and correctly identified most legitimate situations. Keep practicing your detection skills and always trust your gut when something feels off.';
+            } else if (percentage >= 60) {
+                message = '👍 Good Job! You\'re developing your awareness of social engineering tactics. Review the scenarios you missed and remember: manipulators exploit urgency, authority, and emotion. Take time to verify before acting.';
+            } else {
+                message = '📚 Keep Learning! Social engineering is sophisticated and constantly evolving. The key takeaway: ALWAYS VERIFY before sharing information, giving access, or sending money. When in doubt, slow down and check through official channels.';
+            }
+
+            messageDisplay.textContent = message;
+
+            // Show breakdown
+            breakdownDisplay.innerHTML = '<h3 style="margin-bottom: 15px; font-size: 1.2em;">Your Answers:</h3>' + 
+                userAnswers.map((answer, index) => `
+                    <div class="breakdown-item ${answer.correct ? 'correct' : 'incorrect'}">
+                        <strong>Scenario ${index + 1}: ${answer.scenario.title}</strong><br>
+                        <div style="margin-top: 8px;">
+                            Type: ${answer.scenario.type}<br>
+                            Your answer: <strong>${answer.userAnswer ? 'SUSPICIOUS' : 'LEGITIMATE'}</strong> | 
+                            Correct answer: <strong>${answer.scenario.isSuspicious ? 'SUSPICIOUS' : 'LEGITIMATE'}</strong> | 
+                            Result: <strong>${answer.correct ? '✓ CORRECT' : '✗ WRONG'}</strong>
+                        </div>
+                    </div>
+                `).join('');
+
+            results.classList.add('show');
+            results.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function restartGame() {
+            currentScenarioIndex = 0;
+            correctCount = 0;
+            incorrectCount = 0;
+            userAnswers = [];
+            
+            document.getElementById('correctCount').textContent = '0';
+            document.getElementById('incorrectCount').textContent = '0';
+            
+            document.querySelectorAll('.feedback').forEach(el => {
+                el.classList.remove('show', 'correct', 'incorrect');
+            });
+            
+            document.querySelectorAll('.scenario-container button').forEach(btn => {
+                btn.disabled = false;
+            });
+            
+            document.getElementById('results').classList.remove('show');
+            document.querySelector('.score-panel').style.display = 'flex';
+            document.querySelector('.progress').style.display = 'block';
+            
+            showScenario(0);
+        }
+
+        // Initialize game on load
+        initGame();
+    </script>
+</body>
+</html>

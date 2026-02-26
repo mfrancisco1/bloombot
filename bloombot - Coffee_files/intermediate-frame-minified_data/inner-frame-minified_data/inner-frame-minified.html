@@ -1,0 +1,140 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><!-- base href="https://1058066763-atari-embeds.googleusercontent.com/embeds/16cb204cf3a9d4d223a0a3fd8b0eec5d/inner-frame-minified.html?jsh=m%3B%2F_%2Fscs%2Fabc-static%2F_%2Fjs%2Fk%3Dgapi.lb.en.PCvl17LujMs.O%2Fd%3D1%2Frs%3DAHpOoo-sAn5Asuf3MvShXCH_dsg8tE46Tw%2Fm%3D__features__" -->
+
+
+    <title>Coffee Grounds</title>
+    <script src="inner-frame-minified_data/d3.v5.min.js"></script>
+    <style>
+        .controls {
+            background-color: rgba(255, 255, 255, 0.6);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .textbox {
+            background-color: rgba(255, 255, 255, 0.6);
+            padding: 10px;
+            border-radius: 5px;
+            width: 320px;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <svg id="coffeeGrounds" width="1400" height="1200">
+        <!-- Group for coffee grounds -->
+        <g id="groundGroup"></g>
+        <!-- Group for controls -->
+        <g id="controlsGroup">
+            <foreignObject x="10" y="10" width="240" height="460">
+                <div xmlns="http://www.w3.org/1999/xhtml" class="controls">
+                    <p>Size: <input type="text" id="size" value="40"></p>
+                    <p>Bump Length: <input type="text" id="bump" value="20"></p>
+                    <p>Num of Bumps: <input type="text" id="bumps" value="100"></p>
+                    <p><button onclick="run()">Draw coffee grounds</button></p>
+                </div>
+            </foreignObject>
+            <!-- Second floating text box -->
+            <foreignObject x="650" y="10" width="340" height="1600">
+                <div xmlns="http://www.w3.org/1999/xhtml" class="textbox">
+                   <h3>What Is The Beauty of Drinking Weak Coffee All Day Long?</h3>
+    <ul>
+        <li><strong>Steady Energy</strong>: Since weak coffee has less 
+caffeine, it can provide a more steady and gentle energy boost without 
+the jitters or the sharp spikes and crashes often associated with 
+stronger coffee.</li>
+        <li><strong>Hydration</strong>: Coffee, even when weak, still 
+contains a significant amount of water, so sipping on it all day can 
+contribute to your daily hydration needs.</li>
+        <li><strong>Digestibility</strong>: Weak coffee is generally 
+easier on the stomach and less likely to cause digestive issues, which 
+can be a concern with stronger brews.</li>
+        <li><strong>Taste Enjoyment</strong>: For people who like the 
+flavor of coffee but find strong varieties too intense, weak coffee 
+offers a way to enjoy the taste without being overwhelmed by it.</li>
+        <li><strong>Reduced Anxiety</strong>: High doses of caffeine can
+ sometimes contribute to feelings of anxiety. Lower caffeine levels in 
+weak coffee may help avoid this while still providing enjoyment.</li>
+        <li><strong>Caloric Management</strong>: If you drink coffee 
+with added milk, cream, or sugar, weak coffee tends to require less of 
+these additions, potentially helping you manage calorie intake.</li>
+        <li><strong>Extended Enjoyment</strong>: With a lighter brew, 
+you can enjoy greater volumes of coffee over a longer period of time 
+without the adverse effects that might come with consuming too much 
+caffeine too quickly.</li>
+        <li><strong>Financial Saving</strong>: Given that you can use less coffee grounds to achieve the desired weaker brew, it can be a more economical choice over time.</li>
+        <li><strong>Social Aspect</strong>: Sipping weak coffee at a 
+leisurely pace can be a great way to enjoy social interactions without 
+the rush that comes with highly caffeinated beverages.</li>
+        <li><strong>Mindful Drinking</strong>: Drinking weak coffee 
+allows for a more mindful experience, as you can savor the nuances of 
+the beverage and appreciate its subtle flavors without the overwhelming 
+impact of higher caffeine levels.</li>
+    </ul>
+    <p>In essence, weak coffee offers a balanced way to enjoy the 
+beverage's flavors and social aspects while mitigating potential 
+downsides related to caffeine.
+ - GPT-4 </p>
+                </div>
+            </foreignObject>
+        </g>
+    </svg>
+
+    <script>
+        const svg = d3.select("#coffeeGrounds");
+        const groundGroup = d3.select("#groundGroup");
+
+        function ground(cx, cy, size, variance) {
+            var bs = parseInt(document.getElementById("bumps").value);
+
+           // const coffeeColors = ['#dc8b22', '#d38323', '#cb7c24', '#c37525', '#bb6e26', '#b26726', '#aa6026', '#a25926', '#9a5226', '#924b26', '#8a4426', '#833e25', '#7b3725', '#733024', '#6b2a23', '#642323', '#5c1c22', '#551521', '#4d0e1f', '#46061e', '#3f001d'];
+           const coffeeColors = [
+  '#b9731d', '#b6711c', '#b46f1b', '#b16c19', '#af6a18', '#ac6817', '#a96616', '#a76315',
+  '#a46114', '#a15f13', '#9e5d12', '#9b5b11', '#995810', '#96560f', '#93540e', '#90520d',
+  '#8d500c', '#8a4e0b', '#874b0b', '#84490a', '#814709', '#7e4508', '#7b4308', '#784107',
+  '#753f06', '#713c06', '#6e3a05', '#6b3805', '#683604', '#643404', '#613203', '#5e3003',
+  '#5a2e02', '#572c02', '#532a01', '#502801', '#4d2601', '#492401', '#462200', '#422000'
+];
+
+            const pathData = [];
+            const numPoints = bs; // Number of points for the shape
+
+            for (let i = 0; i < numPoints; i++) {
+                const angle = (i / numPoints) * Math.PI *2;
+                const radius = size + (Math.random() * variance);
+                const x = cx + radius * Math.cos(angle);
+                const y = cy + radius * Math.sin(angle);
+
+                pathData.push([x, y]);
+            }
+
+            const lineFunction = d3.line()
+                .x(d => d[0])
+                .y(d => d[1]);
+
+            groundGroup.append("path")
+                .attr("d", lineFunction(pathData) + " Z") // Close the path
+                .attr("fill", randomColor())
+                .attr("stroke", "black")
+                .attr("stroke-width", "2");
+
+            function randomColor() {
+                return coffeeColors[Math.floor(Math.random() * coffeeColors.length)];
+            }
+        }
+
+        function run() {
+            groundGroup.selectAll("path").remove(); // Clear previous coffee grounds
+
+            var s = parseInt(document.getElementById("size").value);
+            var b = parseInt(document.getElementById("bump").value);
+
+            for (let i = 0; i < 75; i++) {
+                const x = Math.random() * (1000 - s * 4) + s * 2; // Random x-coordinate within the canvas width
+                const y = Math.random() * (1000 - s * 4) + s * 2; // Random y-coordinate within the canvas height
+                var t = s + (s * ((Math.random() * 60)/100));
+                ground(x, y, t, b);
+            }
+        }
+    </script>
+
+</body></html>

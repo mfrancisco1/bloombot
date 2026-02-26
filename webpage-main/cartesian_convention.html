@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cartesian Coordinate System</title>
+<style>
+    body {
+        background: black;
+        color: white;
+        font-family: sans-serif;
+        text-align: center;
+        padding: 20px;
+    }
+    #coordinateCanvas {
+        border: 1px solid white;
+        background: black;
+        display: block;
+        margin: 20px auto;
+        cursor: crosshair;
+    }
+    select, input, button {
+        background: black;
+        color: white;
+        border: 1px solid white;
+        padding: 5px 10px;
+        margin: 5px;
+        cursor: pointer;
+    }
+    button:hover {
+        background: #333;
+    }
+    .controls {
+        margin: 15px 0;
+    }
+    .coordinate-info {
+        font-size: 18px;
+        margin: 10px 0;
+    }
+    .axis-labels {
+        font-size: 16px;
+        margin: 10px 0;
+    }
+</style>
+</head>
+<body>
+
+<h1>Interactive Cartesian Coordinate System</h1>
+
+<canvas id="coordinateCanvas" width="700" height="500"></canvas>
+
+<div class="controls">
+    <button id="randomAxisBtn">Random Axis Names</button>
+    <button id="toggleOrderBtn">Toggle Coordinate Order</button>
+    <button id="resetBtn">Reset Point</button>
+    <button id="resetConventionBtn">Reset to x,y Convention</button>
+</div>
+
+<div class="axis-labels">
+    Horizontal Axis: <span id="xAxisName">x</span> | 
+    Vertical Axis: <span id="yAxisName">y</span>
+</div>
+
+<div class="coordinate-info">
+    Point Location: <span id="coordinates">(0, 0)</span>
+</div>
+
+<div class="coordinate-info">
+    Grid Values: <span id="gridValues">x = 0, y = 0</span>
+</div>
+
+<p style="font-size: 14px; color: #ccc;">
+    Click and drag to move the point around the coordinate plane.<br>
+    Grid shows units from -10 to +10 on both axes.
+</p>
+
+<script>
+let canvas = document.getElementById('coordinateCanvas');
+let ctx = canvas.getContext('2d');
+
+// Coordinate system state
+let pointX = 0;  // Actual coordinate values
+let pointY = 0;
+let xAxisName = 'x';
+let yAxisName = 'y';
+let coordinateOrder = 'normal'; // 'normal' or 'reversed'
+let isDragging = false;
+
+// Canvas settings
+const centerX = canvas.width / 2;
+const centerY = canvas.height / 2;
+const gridSize = 20; // pixels per unit
+const maxUnits = 10; // -10 to +10
+
+// Random axis names
+const axisNames = ['a', 'b', 'c', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'z'];
+
+function drawGrid() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1;
+    
+    // Draw grid lines
+    for (let i = -maxUnits; i <= maxUnits; i++) {
+        // Vertical lines
+        const x = centerX + i * gridSize;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+        
+        // Horizontal lines
+        const y = centerY - i * gridSize;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+    }
+}
+
+function drawAxes() {
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    
+    // X-axis
+    ctx.beginPath();
+    ctx.moveTo(0, centerY);
+    ctx.lineTo(canvas.width, centerY);
+    ctx.stroke();
+    
+    // Y-axis
+    ctx.beginPath();
+    ctx.moveTo(centerX, 0);
+    ctx.lineTo(centerX, canvas.height);
+    ctx.stroke();
+    
+    // Draw axis labels
+    ctx.fillStyle = 'white';
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    
+    // X-axis label
+    ctx.fillText(xAxisName, canvas.width - 20, centerY - 10);
+    
+    // Y-axis label
+    ctx.save();
+    ctx.translate(centerX + 15, 20);
+    ctx.fillText(yAxisName, 0, 0);
+    ctx.restore();
+    
+    // Draw tick marks and numbers
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    
+    for (let i = -maxUnits; i <= maxUnits; i++) {
+        if (i === 0) continue;
+        
+        // X-axis ticks
+        const x = centerX + i * gridSize;
+        ctx.beginPath();
+        ctx.moveTo(x, centerY - 5);
+        ctx.lineTo(x, centerY + 5);
+        ctx.stroke();
+        ctx.fillText(i.toString(), x, centerY + 8);
+        
+        // Y-axis ticks
+        const y = centerY - i * gridSize;
+        ctx.beginPath();
+        ctx.moveTo(centerX - 5, y);
+        ctx.lineTo(centerX + 5, y);
+        ctx.stroke();
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(i.toString(), centerX - 8, y);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+    }
+    
+    // Origin label
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('0', centerX - 8, centerY - 8);
+}
+
+function drawPoint() {
+    const canvasX = centerX + pointX * gridSize;
+    const canvasY = centerY - pointY * gridSize;
+    
+    // Draw point
+    ctx.fillStyle = '#ff4444';
+    ctx.beginPath();
+    ctx.arc(canvasX, canvasY, 8, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Draw point outline
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Draw coordinate lines
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    
+    // Vertical line to x-axis
+    ctx.beginPath();
+    ctx.moveTo(canvasX, canvasY);
+    ctx.lineTo(canvasX, centerY);
+    ctx.stroke();
+    
+    // Horizontal line to y-axis
+    ctx.beginPath();
+    ctx.moveTo(canvasX, canvasY);
+    ctx.lineTo(centerX, canvasY);
+    ctx.stroke();
+    
+    ctx.setLineDash([]);
+    
+    // Draw coordinate label next to point
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    
+    let coordText;
+    if (coordinateOrder === 'normal') {
+        coordText = `(${pointX}, ${pointY})`;
+    } else {
+        coordText = `(${pointY}, ${pointX})`;
+    }
+    
+    // Position label to avoid overlapping with point
+    let labelX = canvasX + 15;
+    let labelY = canvasY - 10;
+    
+    // Adjust position if near canvas edges
+    if (labelX + ctx.measureText(coordText).width > canvas.width - 10) {
+        labelX = canvasX - 15;
+        ctx.textAlign = 'right';
+    }
+    if (labelY < 20) {
+        labelY = canvasY + 25;
+        ctx.textBaseline = 'top';
+    }
+    
+    // Draw background rectangle for label
+    const textMetrics = ctx.measureText(coordText);
+    const padding = 4;
+    const rectWidth = textMetrics.width + padding * 2;
+    const rectHeight = 16;
+    
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    if (ctx.textAlign === 'right') {
+        ctx.fillRect(labelX - rectWidth, labelY - (ctx.textBaseline === 'top' ? 0 : rectHeight), rectWidth, rectHeight);
+    } else {
+        ctx.fillRect(labelX, labelY - (ctx.textBaseline === 'top' ? 0 : rectHeight), rectWidth, rectHeight);
+    }
+    
+    // Draw text
+    ctx.fillStyle = 'white';
+    ctx.fillText(coordText, labelX, labelY);
+}
+
+function updateDisplay() {
+    drawGrid();
+    drawAxes();
+    drawPoint();
+    
+    // Update coordinate display
+    let coordText;
+    if (coordinateOrder === 'normal') {
+        coordText = `(${pointX}, ${pointY})`;
+    } else {
+        coordText = `(${pointY}, ${pointX})`;
+    }
+    
+    document.getElementById('coordinates').textContent = coordText;
+    document.getElementById('gridValues').textContent = `${xAxisName} = ${pointX}, ${yAxisName} = ${pointY}`;
+    document.getElementById('xAxisName').textContent = xAxisName;
+    document.getElementById('yAxisName').textContent = yAxisName;
+}
+
+function getCoordinatesFromMouse(mouseX, mouseY) {
+    const x = Math.round((mouseX - centerX) / gridSize);
+    const y = Math.round((centerY - mouseY) / gridSize);
+    
+    // Clamp to grid bounds
+    return {
+        x: Math.max(-maxUnits, Math.min(maxUnits, x)),
+        y: Math.max(-maxUnits, Math.min(maxUnits, y))
+    };
+}
+
+// Mouse event handlers
+canvas.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    
+    const coords = getCoordinatesFromMouse(mouseX, mouseY);
+    pointX = coords.x;
+    pointY = coords.y;
+    isDragging = true;
+    updateDisplay();
+});
+
+canvas.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    
+    const coords = getCoordinatesFromMouse(mouseX, mouseY);
+    pointX = coords.x;
+    pointY = coords.y;
+    updateDisplay();
+});
+
+canvas.addEventListener('mouseup', () => {
+    isDragging = false;
+});
+
+canvas.addEventListener('mouseleave', () => {
+    isDragging = false;
+});
+
+// Button event handlers
+document.getElementById('randomAxisBtn').addEventListener('click', () => {
+    const availableNames = [...axisNames];
+    
+    // Pick random name for x-axis
+    const xIndex = Math.floor(Math.random() * availableNames.length);
+    xAxisName = availableNames[xIndex];
+    availableNames.splice(xIndex, 1);
+    
+    // Pick different random name for y-axis
+    const yIndex = Math.floor(Math.random() * availableNames.length);
+    yAxisName = availableNames[yIndex];
+    
+    updateDisplay();
+});
+
+document.getElementById('toggleOrderBtn').addEventListener('click', () => {
+    coordinateOrder = coordinateOrder === 'normal' ? 'reversed' : 'normal';
+    updateDisplay();
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+    pointX = 0;
+    pointY = 0;
+    updateDisplay();
+});
+
+document.getElementById('resetConventionBtn').addEventListener('click', () => {
+    xAxisName = 'x';
+    yAxisName = 'y';
+    coordinateOrder = 'normal';
+    updateDisplay();
+});
+
+// Initialize
+updateDisplay();
+</script>
+
+</body>
+</html>

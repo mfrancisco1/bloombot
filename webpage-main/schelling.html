@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Schelling Segregation Model — Interactive</title>
+<style>
+  :root{
+    --ui-bg: #111827;
+    --panel-bg: #0f172a;
+    --accent: #06b6d4;
+    --muted: #94a3b8;
+    --white:#ffffff;
+  }
+  body{ font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:0; background:linear-gradient(180deg,#041024 0%, #071236 100%); color:var(--white); display:flex; flex-direction:column; min-height:100vh;}
+  header{padding:16px 20px; display:flex; gap:20px; align-items:center; border-bottom:1px solid rgba(255,255,255,0.04);}
+  h1{font-size:18px;margin:0}
+  main{display:flex; gap:18px; padding:16px; flex:1;}
+  .left{width:720px; background:rgba(255,255,255,0.02); padding:12px; border-radius:10px}
+  canvas{background:#0b1220; display:block; width:100%; height:auto; border-radius:8px; box-shadow: 0 6px 18px rgba(0,0,0,0.6);}
+  .controls{width:360px; background:rgba(255,255,255,0.02); padding:12px; border-radius:10px; display:flex; flex-direction:column; gap:12px}
+  .row{display:flex; gap:8px; align-items:center;}
+  label{font-size:13px; color:var(--muted); min-width:120px;}
+  input[type=range]{width:100%}
+  .small{font-size:13px;color:var(--muted)}
+  button{background:var(--accent); border: none; color:#001; padding:8px 10px; border-radius:8px; cursor:pointer; font-weight:600}
+  button.ghost{background:transparent; color:var(--white); border:1px solid rgba(255,255,255,0.06)}
+  .stats{display:flex; gap:8px; flex-wrap:wrap}
+  .stat{background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:8px; font-size:13px}
+  footer{padding:12px 20px; color:var(--muted); font-size:13px; border-top:1px solid rgba(255,255,255,0.03)}
+  .legend{display:flex; gap:8px; align-items:center}
+  .swatch{width:18px;height:18px;border-radius:4px; display:inline-block; margin-right:6px}
+  select,input[type=number]{background:#061226;border:1px solid rgba(255,255,255,0.03); color:var(--white); padding:6px;border-radius:6px}
+  .small-button{padding:6px 8px;font-size:13px;border-radius:6px}
+  .muted{color:var(--muted)}
+  .link{color:var(--accent); text-decoration:underline; cursor:pointer}
+  .help{font-size:13px;color:var(--muted); line-height:1.3}
+</style>
+</head>
+<body>
+<header>
+  <h1>Interactive Schelling Segregation Model</h1>
+  <div class="legend small muted" style="margin-left:12px">
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="swatch" style="background:#ef4444"></span><span>Group A</span>
+      <span class="swatch" style="background:#60a5fa; margin-left:12px"></span><span>Group B</span>
+      <span class="swatch" style="background:#020617; border:1px solid rgba(255,255,255,0.05)"></span><span>Empty</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="left">
+    <canvas id="gridCanvas" width="720" height="720"></canvas>
+    <div style="display:flex; justify-content:space-between; margin-top:10px; align-items:center;">
+      <div class="stats">
+        <div class="stat" id="statSatisfied">Satisfied: —</div>
+        <div class="stat" id="statAvgSim">Avg similar neighbors: —</div>
+        <div class="stat" id="statMoves">Moves this run: 0</div>
+        <div class="stat" id="statIter">Iteration: 0</div>
+      </div>
+      <div>
+        <button id="startBtn">Start</button>
+        <button id="stepBtn" class="ghost small-button">Step</button>
+        <button id="resetBtn" class="ghost small-button">Reset</button>
+      </div>
+    </div>
+    <p class="help" style="margin-top:8px">
+      This simulation implements Schelling's basic idea: two types of agents occupy cells on a grid with some empty cells. Each agent checks its neighbors; if fewer than the chosen fraction are the same type (tolerance), the agent is dissatisfied and moves. Try changing tolerance, vacancy, radius, and update rule.
+    </p>
+  </div>
+
+  <div class="controls">
+    <div class="row">
+      <label for="gridSize">Grid size</label>
+      <input id="gridSize" type="range" min="20" max="120" value="60" />
+      <input id="gridSizeNum" type="number" min="10" max="200" value="60" style="width:64px;margin-left:6px" />
+    </div>
+
+    <div class="row">
+      <label for="vacancy">Empty fraction</label>
+      <input id="vacancy" type="range" min="0" max="0.6" step="0.01" value="0.10" />
+      <input id="vacancyNum" type="number" min="0" max="0.9" step="0.01" value="0.10" style="width:64px;margin-left:6px" />
+    </div>
+
+    <div class="row">
+      <label for="fracA">Fraction group A</label>
+      <input id="fracA" type="range" min="0.1" max="0.9" step="0.01" value="0.5" />
+      <input id="fracANum" type="number" min="0.05" max="0.95" step="0.01" value="0.5" style="width:64px;margin-left:6px" />
+    </div>
+
+    <div class="row">
+      <label for="tolerance">Tolerance (%)</label>
+      <input id="tolerance" type="range" min="0" max="100" value="30" />
+      <input id="toleranceNum" type="number" min="0" max="100" value="30" style="width:64px;margin-left:6px" />
+    </div>
+
+    <div class="row">
+      <label for="radius">Neighborhood radius</label>
+      <input id="radius" type="range" min="1" max="5" value="1" />
+      <input id="radiusNum" type="number" min="1" max="10" value="1" style="width:64px;margin-left:6px" />
+    </div>
+
+    <div class="row">
+      <label for="rule">Update rule</label>
+      <select id="rule">
+        <option value="async">Asynchronous (move dissatisfied in random order)</option>
+        <option value="sync">Synchronous (compute all dissatisfied then move)</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label for="speed">Speed (ms/step)</label>
+      <input id="speed" type="range" min="10" max="1000" step="10" value="120" />
+      <input id="speedNum" type="number" min="10" max="5000" value="120" style="width:64px;margin-left:6px" />
+    </div>
+
+    <div style="display:flex; gap:8px; margin-top:6px;">
+      <button id="randomizeColors" class="ghost small-button">Randomize Colors</button>
+      <button id="fillClusters" class="ghost small-button">Pre-cluster (seed)</button>
+    </div>
+
+    <div style="margin-top:8px">
+      <label class="small muted">Neighborhood type: Moore (square)</label>
+    </div>
+
+    <div style="margin-top:8px">
+      <div class="muted small">Notes: This is an implementation of the classic Schelling model (see Schelling, 1969). The "tolerance" is the minimum percent of neighbors of the same type required for an agent to be satisfied. Higher tolerance tends to produce larger clusters.</div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  Implemented for exploration; see Schelling (1969) Models of Segregation. :contentReference[oaicite:1]{index=1}
+</footer>
+
+<script>
+/* Schelling model interactive single-file implementation
+   Controls and logic included.
+   - Grid: toroidal wrapping is off (edges are edges)
+   - Agents: 0 = empty, 1 = group A (red), 2 = group B (blue)
+   - Satisfaction: an agent surveys all neighbors within 'radius' (Moore)
+     and requires similarNeighbors / totalNeighbors >= tolerance
+   - Move rules:
+       async: pick dissatisfied agents in random order, for each find nearest
+              empty cell that would satisfy, else random empty cell.
+       sync:  mark dissatisfied, then move all of them to randomly chosen empties.
+   - Stats: percent satisfied, avg similar neighbors, moves count
+*/
+
+(() => {
+  // DOM
+  const canvas = document.getElementById('gridCanvas');
+  const ctx = canvas.getContext('2d', {alpha:false});
+  const startBtn = document.getElementById('startBtn');
+  const stepBtn = document.getElementById('stepBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const gridSizeRange = document.getElementById('gridSize');
+  const gridSizeNum = document.getElementById('gridSizeNum');
+  const vacancyRange = document.getElementById('vacancy');
+  const vacancyNum = document.getElementById('vacancyNum');
+  const fracARange = document.getElementById('fracA');
+  const fracANum = document.getElementById('fracANum');
+  const tolRange = document.getElementById('tolerance');
+  const tolNum = document.getElementById('toleranceNum');
+  const radiusRange = document.getElementById('radius');
+  const radiusNum = document.getElementById('radiusNum');
+  const ruleSelect = document.getElementById('rule');
+  const speedRange = document.getElementById('speed');
+  const speedNum = document.getElementById('speedNum');
+  const randBtn = document.getElementById('randomizeColors');
+  const clusterBtn = document.getElementById('fillClusters');
+  const statSatisfied = document.getElementById('statSatisfied');
+  const statAvgSim = document.getElementById('statAvgSim');
+  const statMoves = document.getElementById('statMoves');
+  const statIter = document.getElementById('statIter');
+
+  // state
+  let gridSize = parseInt(gridSizeRange.value,10);
+  let vacancy = parseFloat(vacancyRange.value);
+  let fracA = parseFloat(fracARange.value);
+  let tolerance = parseFloat(tolRange.value)/100;
+  let radius = parseInt(radiusRange.value,10);
+  let rule = ruleSelect.value;
+  let speed = parseInt(speedRange.value,10);
+
+  let grid = []; // 1D array for speed: index = r*size + c
+  let empties = []; // indices
+  let iter = 0;
+  let movesCount = 0;
+  let running = false;
+  let handle = null;
+
+  // colors
+  const colors = {
+    0: '#020617', // empty
+    1: '#ef4444', // A
+    2: '#60a5fa'  // B
+  };
+
+  // helper
+  function idx(r,c){ return r*gridSize + c; }
+  function rc(i){ return [Math.floor(i/gridSize), i % gridSize]; }
+
+  // (re)build grid
+  function initGrid(seedClusters=false){
+    gridSize = parseInt(gridSizeRange.value,10);
+    vacancy = parseFloat(vacancyRange.value);
+    fracA = parseFloat(fracARange.value);
+    tolerance = parseFloat(tolRange.value)/100;
+    radius = parseInt(radiusRange.value,10);
+    rule = ruleSelect.value;
+    speed = parseInt(speedRange.value,10);
+
+    grid = new Array(gridSize*gridSize).fill(0);
+    empties = [];
+
+    // compute counts
+    const total = gridSize*gridSize;
+    const emptyCount = Math.round(total * vacancy);
+    const agentsCount = total - emptyCount;
+    const aCount = Math.round(agentsCount * fracA);
+    const bCount = agentsCount - aCount;
+
+    // fill an array of values
+    const vals = [];
+    for(let i=0;i<aCount;i++) vals.push(1);
+    for(let i=0;i<bCount;i++) vals.push(2);
+    for(let i=0;i<emptyCount;i++) vals.push(0);
+
+    // if seedClusters: create a few clumps to start with
+    if(seedClusters){
+      // place some clustered patches manually (random centers)
+      const patches = 6;
+      const patchRadius = Math.max(2, Math.floor(gridSize/20));
+      let placed = 0;
+      for(let p=0;p<patches && placed < vals.length; p++){
+        const centerR = Math.floor(Math.random()*gridSize);
+        const centerC = Math.floor(Math.random()*gridSize);
+        const groupType = (p%2===0) ? 1 : 2;
+        for(let dr=-patchRadius; dr<=patchRadius; dr++){
+          for(let dc=-patchRadius; dc<=patchRadius; dc++){
+            const r = centerR + dr;
+            const c = centerC + dc;
+            if(r<0||c<0||r>=gridSize||c>=gridSize) continue;
+            const id = idx(r,c);
+            grid[id] = groupType;
+            placed++;
+          }
+        }
+      }
+      // fill remaining with random assignment from vals
+      const leftovers = [];
+      for(let v of vals) leftovers.push(v);
+      for(let i=0;i<grid.length;i++){
+        if(grid[i]===0 && leftovers.length>0){
+          const pick = Math.floor(Math.random()*leftovers.length);
+          grid[i] = leftovers.splice(pick,1)[0];
+        }
+      }
+    } else {
+      // random shuffle fill
+      for(let i=0;i<grid.length;i++){
+        const r = Math.floor(Math.random()*vals.length);
+        grid[i] = vals.splice(r,1)[0];
+      }
+    }
+
+    // collect empties
+    empties = [];
+    for(let i=0;i<grid.length;i++) if(grid[i]===0) empties.push(i);
+
+    iter = 0; movesCount = 0;
+    updateStats();
+    resizeCanvas();
+    draw();
+  }
+
+  // compute neighbors for an index (Moore neighborhood within radius)
+  function neighborsOf(i){
+    const [r,c] = rc(i);
+    let similar=0, total=0;
+    for(let dr=-radius; dr<=radius; dr++){
+      for(let dc=-radius; dc<=radius; dc++){
+        if(dr===0 && dc===0) continue;
+        const nr = r+dr, nc = c+dc;
+        if(nr<0 || nc<0 || nr>=gridSize || nc>=gridSize) continue;
+        const other = grid[idx(nr,nc)];
+        if(other===0) continue;
+        total++;
+        if(other === grid[i]) similar++;
+      }
+    }
+    return {similar, total};
+  }
+
+  // satisfaction check for index i (true if satisfied OR empty)
+  function isSatisfied(i){
+    const t = grid[i];
+    if(t===0) return true;
+    const {similar, total} = neighborsOf(i);
+    if(total===0) {
+      // if no neighbors, treat as satisfied (or optionally choose differently)
+      return true;
+    }
+    return (similar / total) >= tolerance;
+  }
+
+  // compute global stats
+  function computeStats(){
+    let satisfied=0, totalAgents=0, sumSimNeighbors=0, neighCount=0;
+    for(let i=0;i<grid.length;i++){
+      if(grid[i]===0) continue;
+      totalAgents++;
+      const {similar,total} = neighborsOf(i);
+      if(total>0) {
+        sumSimNeighbors += (similar/total);
+        neighCount++;
+      } else {
+        sumSimNeighbors += 1; // treat alone as fully similar to avoid skew
+        neighCount++;
+      }
+      if(isSatisfied(i)) satisfied++;
+    }
+    const pctSatisfied = totalAgents ? Math.round((satisfied/totalAgents)*10000)/100 : 100;
+    const avgSim = neighCount ? Math.round((sumSimNeighbors/neighCount)*10000)/100 : 100;
+    return {pctSatisfied,avgSim,movesCount,iter};
+  }
+
+  function updateStats(){
+    const s = computeStats();
+    statSatisfied.textContent = `Satisfied: ${s.pctSatisfied}%`;
+    statAvgSim.textContent = `Avg similar neighbors: ${s.avgSim}%`;
+    statMoves.textContent = `Moves this run: ${s.movesCount}`;
+    statIter.textContent = `Iteration: ${s.iter}`;
+  }
+
+  // draw grid
+  function resizeCanvas(){
+    // make canvas square based on left panel width
+    const w = Math.min(720, Math.floor(document.querySelector('.left').clientWidth));
+    canvas.width = w;
+    canvas.height = w;
+  }
+
+  function draw(){
+    const cellSize = canvas.width / gridSize;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(let r=0;r<gridSize;r++){
+      for(let c=0;c<gridSize;c++){
+        const i = idx(r,c);
+        ctx.fillStyle = colors[grid[i]];
+        ctx.fillRect(c*cellSize, r*cellSize, Math.ceil(cellSize), Math.ceil(cellSize));
+      }
+    }
+    // optional grid lines if cellSize large
+    const cellSizeNum = canvas.width / gridSize;
+    if(cellSizeNum >= 8){
+      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+      ctx.lineWidth = 0.5;
+      for(let k=1;k<gridSize;k++){
+        const pos = k*cellSizeNum;
+        ctx.beginPath(); ctx.moveTo(pos, 0); ctx.lineTo(pos, canvas.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, pos); ctx.lineTo(canvas.width, pos); ctx.stroke();
+      }
+    }
+  }
+
+  // find an empty cell index that would satisfy 'type' agent (look near first, then random)
+  function findSatisfyingEmptyForType(type){
+    // try empties in a shuffled order up to some attempts; prefer empties that satisfy
+    const empt = empties.slice();
+    shuffleArray(empt);
+    for(let id of empt){
+      // temporarily place and test satisfaction
+      grid[id] = type;
+      const ok = isSatisfied(id);
+      grid[id] = 0;
+      if(ok) return id;
+    }
+    // if none satisfy, return a random empty (if any)
+    return empt.length ? empt[Math.floor(Math.random()*empt.length)] : null;
+  }
+
+  // one simulation step (one iteration)
+  function stepSimulation(){
+    iter++;
+    const dissatisfied = [];
+    if(rule === 'async'){
+      // gather dissatisfied agents
+      for(let i=0;i<grid.length;i++){
+        if(grid[i]===0) continue;
+        if(!isSatisfied(i)) dissatisfied.push(i);
+      }
+      shuffleArray(dissatisfied);
+      for(let i of dissatisfied){
+        if(grid[i]===0) continue; // might have moved already into that cell
+        const type = grid[i];
+        const target = findSatisfyingEmptyForType(type);
+        if(target!==null && target!==undefined){
+          // move
+          grid[target] = type;
+          grid[i] = 0;
+          // update empties: replace target removed, add i
+          const ti = empties.indexOf(target);
+          if(ti>=0) empties.splice(ti,1);
+          empties.push(i);
+          movesCount++;
+        }
+      }
+    } else {
+      // sync: compute dissatisfied and a shuffle of empties, then assign
+      for(let i=0;i<grid.length;i++){
+        if(grid[i]===0) continue;
+        if(!isSatisfied(i)) dissatisfied.push(i);
+      }
+      if(dissatisfied.length===0) { updateStats(); draw(); return; }
+      const newEmpties = empties.slice();
+      shuffleArray(newEmpties);
+      // attempt to find satisfying empties: for each dissatisfied agent pick first empty (shuffled) that would satisfy
+      const assignments = [];
+      for(let agentIdx of dissatisfied){
+        const type = grid[agentIdx];
+        let assigned = null;
+        for(let j=0;j<newEmpties.length;j++){
+          const e = newEmpties[j];
+          grid[e] = type;
+          const ok = isSatisfied(e);
+          grid[e] = 0;
+          if(ok){
+            assigned = e;
+            newEmpties.splice(j,1);
+            break;
+          }
+        }
+        if(assigned === null && newEmpties.length>0){
+          // fallback: assign random empty
+          assigned = newEmpties.shift();
+        }
+        if(assigned!==null){
+          assignments.push({from: agentIdx, to: assigned});
+        }
+      }
+      // perform assignments
+      for(let a of assignments){
+        const t = grid[a.from];
+        grid[a.to] = t;
+        grid[a.from] = 0;
+        // update empties array: remove a.to and add a.from
+        const r = empties.indexOf(a.to);
+        if(r>=0) empties.splice(r,1);
+        empties.push(a.from);
+        movesCount++;
+      }
+    }
+    updateStats();
+    draw();
+  }
+
+  // utilities
+  function shuffleArray(a){
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+  }
+
+  // controls wiring
+  function wire() {
+    // sync numeric displays
+    function bindRangeToNumber(range, num){
+      range.addEventListener('input', ()=>{ num.value = range.value; });
+      num.addEventListener('input', ()=>{ range.value = num.value; range.dispatchEvent(new Event('input')); });
+    }
+    bindRangeToNumber(gridSizeRange, gridSizeNum);
+    bindRangeToNumber(vacancyRange, vacancyNum);
+    bindRangeToNumber(fracARange, fracANum);
+    bindRangeToNumber(tolRange, tolNum);
+    bindRangeToNumber(radiusRange, radiusNum);
+    bindRangeToNumber(speedRange, speedNum);
+
+    gridSizeRange.addEventListener('change', ()=> initGrid(false));
+    gridSizeNum.addEventListener('change', ()=> initGrid(false));
+    vacancyRange.addEventListener('change', ()=> initGrid(false));
+    vacancyNum.addEventListener('change', ()=> initGrid(false));
+    fracARange.addEventListener('change', ()=> initGrid(false));
+    fracANum.addEventListener('change', ()=> initGrid(false));
+    tolRange.addEventListener('change', ()=> { tolerance = parseFloat(tolRange.value)/100; updateStats(); });
+    tolNum.addEventListener('change', ()=> { tolerance = parseFloat(tolNum.value)/100; tolRange.value = tolNum.value; updateStats(); });
+    radiusRange.addEventListener('change', ()=> { radius = parseInt(radiusRange.value,10); radiusNum.value = radius; updateStats(); draw(); });
+    radiusNum.addEventListener('change', ()=> { radius = parseInt(radiusNum.value,10); radiusRange.value = radius; initGrid(false); });
+    ruleSelect.addEventListener('change', ()=> rule = ruleSelect.value);
+    speedRange.addEventListener('input', ()=> { speed = parseInt(speedRange.value,10); speedNum.value = speed; });
+    speedNum.addEventListener('change', ()=> { speed = parseInt(speedNum.value,10); speedRange.value = speed; });
+
+    startBtn.addEventListener('click', ()=>{
+      if(running){ stop(); startBtn.textContent = 'Start'; }
+      else { start(); startBtn.textContent = 'Pause'; }
+    });
+    stepBtn.addEventListener('click', ()=> { stepSimulation(); });
+    resetBtn.addEventListener('click', ()=> { stop(); initGrid(false); startBtn.textContent = 'Start'; });
+
+    randBtn.addEventListener('click', ()=> { initGrid(false); });
+    clusterBtn.addEventListener('click', ()=> { initGrid(true); });
+
+    // canvas resizing on window
+    window.addEventListener('resize', ()=>{
+      resizeCanvas();
+      draw();
+    });
+
+    // allow clicking a cell to cycle through states (0->1->2->0)
+    canvas.addEventListener('click', (e)=>{
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const c = Math.floor((x / canvas.width) * gridSize);
+      const r = Math.floor((y / canvas.height) * gridSize);
+      const i = idx(r,c);
+      grid[i] = (grid[i]+1) % 3;
+      empties = [];
+      for(let k=0;k<grid.length;k++) if(grid[k]===0) empties.push(k);
+      updateStats(); draw();
+    });
+  }
+
+  function start(){
+    if(running) return;
+    running = true;
+    handle = setInterval(()=>{
+      stepSimulation();
+      // stop if no dissatisfied agents
+      const anyDissatisfied = grid.some((val, i) => val!==0 && !isSatisfied(i));
+      if(!anyDissatisfied){
+        // keep running until next tick? We'll auto-pause when stabilized
+        stop();
+        startBtn.textContent = 'Start';
+      }
+    }, speed);
+  }
+
+  function stop(){
+    running = false;
+    if(handle) { clearInterval(handle); handle = null; }
+  }
+
+  // initial
+  wire();
+  initGrid(false);
+})();
+</script>
+</body>
+</html>

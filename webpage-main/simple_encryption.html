@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encryption Methods Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #ffffff;
+            color: #000000;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        h1 {
+            border-bottom: 3px solid #000000;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        
+        h2 {
+            margin-top: 40px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 5px;
+        }
+        
+        .definition {
+            background-color: #f5f5f5;
+            border: 2px solid #000000;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .method-container {
+            border: 2px solid #000000;
+            padding: 20px;
+            margin-bottom: 30px;
+            background-color: #fafafa;
+        }
+        
+        .method-title {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        
+        .method-description {
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #000000;
+            background-color: #ffffff;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        button {
+            background-color: #000000;
+            color: #ffffff;
+            border: none;
+            padding: 12px 30px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background-color: #333333;
+        }
+        
+        .output {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #ffffff;
+            border: 2px solid #000000;
+            min-height: 60px;
+            word-wrap: break-word;
+        }
+        
+        .output-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .example {
+            background-color: #e8e8e8;
+            padding: 10px;
+            margin-top: 10px;
+            border-left: 4px solid #000000;
+        }
+        
+        .arrow {
+            margin: 10px 0;
+            font-size: 1.5em;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Methods of Encryption: Interactive Demo</h1>
+    
+    <div class="definition">
+        <strong>Transposition:</strong> Switching the symbols within the plaintext<br>
+        <strong>Substitution:</strong> Substituting different symbols for the symbols in the plaintext
+    </div>
+
+    <h2>1. Transposition Cipher (Reversal Method)</h2>
+    <div class="method-container">
+        <div class="method-description">
+            The letters are rearranged but remain the same. This simple reversal method reads the message backwards.
+        </div>
+        
+        <div class="example">
+            <strong>Example:</strong> "HELLO" → "OLLEH"<br>
+            Notice: Same letters (H,E,L,L,O), just rearranged
+        </div>
+        
+        <div class="input-group">
+            <label for="transInput">Enter your plaintext:</label>
+            <textarea id="transInput" placeholder="Type your message here...">HELLO WORLD</textarea>
+        </div>
+        
+        <button onclick="encryptTransposition()">Encrypt (Transpose)</button>
+        <button onclick="decryptTransposition()">Decrypt (Transpose)</button>
+        
+        <div class="output-label">Ciphertext:</div>
+        <div class="output" id="transOutput"></div>
+    </div>
+
+    <h2>2. Transposition Cipher (Rail Fence Method)</h2>
+    <div class="method-container">
+        <div class="method-description">
+            Letters are written in a zigzag pattern across multiple "rails" and then read off row by row.
+        </div>
+        
+        <div class="example">
+            <strong>Example with 3 rails:</strong> "HELLO WORLD"<br>
+            <pre>
+Rail 1: H . . . O . . . R . .     → H O R
+Rail 2: . E . L . W . L . D      → E L W L D
+Rail 3: . . L . . . O . . .      → L O
+            </pre>
+            Result: "HORELWLDLO"
+        </div>
+        
+        <div class="input-group">
+            <label for="railInput">Enter your plaintext:</label>
+            <textarea id="railInput" placeholder="Type your message here...">HELLO WORLD</textarea>
+        </div>
+        
+        <div class="input-group">
+            <label for="railCount">Number of rails:</label>
+            <input type="number" id="railCount" value="3" min="2" max="10">
+        </div>
+        
+        <button onclick="encryptRailFence()">Encrypt (Rail Fence)</button>
+        <button onclick="decryptRailFence()">Decrypt (Rail Fence)</button>
+        
+        <div class="output-label">Ciphertext:</div>
+        <div class="output" id="railOutput"></div>
+    </div>
+
+    <h2>3. Substitution Cipher (Caesar Cipher)</h2>
+    <div class="method-container">
+        <div class="method-description">
+            Each letter is replaced with another letter by shifting it a fixed number of positions in the alphabet.
+        </div>
+        
+        <div class="example">
+            <strong>Example with shift of 3:</strong><br>
+            A→D, B→E, C→F, D→G, E→H, F→I...<br>
+            "HELLO" → "KHOOR"<br>
+            Notice: Different letters, but pattern remains (H becomes K, E becomes H, etc.)
+        </div>
+        
+        <div class="input-group">
+            <label for="caesarInput">Enter your plaintext:</label>
+            <textarea id="caesarInput" placeholder="Type your message here...">HELLO WORLD</textarea>
+        </div>
+        
+        <div class="input-group">
+            <label for="caesarShift">Shift amount (1-25):</label>
+            <input type="number" id="caesarShift" value="3" min="1" max="25">
+        </div>
+        
+        <button onclick="encryptCaesar()">Encrypt (Substitute)</button>
+        <button onclick="decryptCaesar()">Decrypt (Substitute)</button>
+        
+        <div class="output-label">Ciphertext:</div>
+        <div class="output" id="caesarOutput"></div>
+    </div>
+
+    <h2>4. Substitution Cipher (Custom Alphabet)</h2>
+    <div class="method-container">
+        <div class="method-description">
+            Each letter is replaced with a completely different letter using a substitution alphabet.
+        </div>
+        
+        <div class="example">
+            <strong>Example:</strong><br>
+            Normal:   ABCDEFGHIJKLMNOPQRSTUVWXYZ<br>
+            Substitution: QWERTYUIOPASDFGHJKLZXCVBNM<br>
+            "HELLO" → "ITSSG"
+        </div>
+        
+        <div class="input-group">
+            <label for="subInput">Enter your plaintext:</label>
+            <textarea id="subInput" placeholder="Type your message here...">HELLO WORLD</textarea>
+        </div>
+        
+        <div class="input-group">
+            <label for="subKey">Substitution Alphabet (26 unique letters):</label>
+            <input type="text" id="subKey" value="QWERTYUIOPASDFGHJKLZXCVBNM" maxlength="26">
+        </div>
+        
+        <button onclick="encryptSubstitution()">Encrypt (Substitute)</button>
+        <button onclick="decryptSubstitution()">Decrypt (Substitute)</button>
+        
+        <div class="output-label">Ciphertext:</div>
+        <div class="output" id="subOutput"></div>
+    </div>
+
+    <script>
+        // TRANSPOSITION - Simple Reversal
+        function encryptTransposition() {
+            const input = document.getElementById('transInput').value;
+            const output = input.split('').reverse().join('');
+            document.getElementById('transOutput').textContent = output;
+        }
+
+        function decryptTransposition() {
+            encryptTransposition(); // Reversal is symmetric
+        }
+
+        // TRANSPOSITION - Rail Fence
+        function encryptRailFence() {
+            const text = document.getElementById('railInput').value.replace(/\s/g, '');
+            const rails = parseInt(document.getElementById('railCount').value);
+            
+            if (rails < 2) {
+                alert('Number of rails must be at least 2');
+                return;
+            }
+            
+            const fence = Array.from({ length: rails }, () => []);
+            let rail = 0;
+            let direction = 1;
+            
+            for (let char of text) {
+                fence[rail].push(char);
+                rail += direction;
+                
+                if (rail === 0 || rail === rails - 1) {
+                    direction *= -1;
+                }
+            }
+            
+            const result = fence.flat().join('');
+            document.getElementById('railOutput').textContent = result;
+        }
+
+        function decryptRailFence() {
+            const cipher = document.getElementById('railInput').value.replace(/\s/g, '');
+            const rails = parseInt(document.getElementById('railCount').value);
+            
+            if (rails < 2) {
+                alert('Number of rails must be at least 2');
+                return;
+            }
+            
+            // Calculate positions
+            const fence = Array.from({ length: rails }, () => []);
+            let rail = 0;
+            let direction = 1;
+            
+            for (let i = 0; i < cipher.length; i++) {
+                fence[rail].push(i);
+                rail += direction;
+                
+                if (rail === 0 || rail === rails - 1) {
+                    direction *= -1;
+                }
+            }
+            
+            // Fill with cipher text
+            let index = 0;
+            for (let i = 0; i < rails; i++) {
+                for (let j = 0; j < fence[i].length; j++) {
+                    fence[i][j] = cipher[index++];
+                }
+            }
+            
+            // Read in zigzag
+            rail = 0;
+            direction = 1;
+            let result = '';
+            const positions = Array.from({ length: rails }, () => 0);
+            
+            for (let i = 0; i < cipher.length; i++) {
+                result += fence[rail][positions[rail]++];
+                rail += direction;
+                
+                if (rail === 0 || rail === rails - 1) {
+                    direction *= -1;
+                }
+            }
+            
+            document.getElementById('railOutput').textContent = result;
+        }
+
+        // SUBSTITUTION - Caesar Cipher
+        function encryptCaesar() {
+            const input = document.getElementById('caesarInput').value.toUpperCase();
+            const shift = parseInt(document.getElementById('caesarShift').value);
+            let output = '';
+            
+            for (let char of input) {
+                if (char >= 'A' && char <= 'Z') {
+                    const shifted = ((char.charCodeAt(0) - 65 + shift) % 26) + 65;
+                    output += String.fromCharCode(shifted);
+                } else {
+                    output += char;
+                }
+            }
+            
+            document.getElementById('caesarOutput').textContent = output;
+        }
+
+        function decryptCaesar() {
+            const input = document.getElementById('caesarInput').value.toUpperCase();
+            const shift = parseInt(document.getElementById('caesarShift').value);
+            let output = '';
+            
+            for (let char of input) {
+                if (char >= 'A' && char <= 'Z') {
+                    const shifted = ((char.charCodeAt(0) - 65 - shift + 26) % 26) + 65;
+                    output += String.fromCharCode(shifted);
+                } else {
+                    output += char;
+                }
+            }
+            
+            document.getElementById('caesarOutput').textContent = output;
+        }
+
+        // SUBSTITUTION - Custom Alphabet
+        function encryptSubstitution() {
+            const input = document.getElementById('subInput').value.toUpperCase();
+            const key = document.getElementById('subKey').value.toUpperCase();
+            
+            if (key.length !== 26 || new Set(key).size !== 26) {
+                alert('Substitution alphabet must contain exactly 26 unique letters');
+                return;
+            }
+            
+            let output = '';
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            
+            for (let char of input) {
+                if (char >= 'A' && char <= 'Z') {
+                    const index = alphabet.indexOf(char);
+                    output += key[index];
+                } else {
+                    output += char;
+                }
+            }
+            
+            document.getElementById('subOutput').textContent = output;
+        }
+
+        function decryptSubstitution() {
+            const input = document.getElementById('subInput').value.toUpperCase();
+            const key = document.getElementById('subKey').value.toUpperCase();
+            
+            if (key.length !== 26 || new Set(key).size !== 26) {
+                alert('Substitution alphabet must contain exactly 26 unique letters');
+                return;
+            }
+            
+            let output = '';
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            
+            for (let char of input) {
+                if (char >= 'A' && char <= 'Z') {
+                    const index = key.indexOf(char);
+                    output += alphabet[index];
+                } else {
+                    output += char;
+                }
+            }
+            
+            document.getElementById('subOutput').textContent = output;
+        }
+
+        // Initialize with encrypted examples
+        window.onload = function() {
+            encryptTransposition();
+            encryptRailFence();
+            encryptCaesar();
+            encryptSubstitution();
+        };
+    </script>
+</body>
+</html>

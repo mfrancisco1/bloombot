@@ -1,0 +1,1958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luddy Program Minors Courses Network Visualization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #DC143C; /* linear-gradient(135deg, #DC143C 0%,  #620001 100%); */
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: #FFFDD0 /* rgba(255, 255, 255, 0.1); */
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .controls-wrapper {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .main-controls {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        input[type="file"] {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            color: white;
+            padding: 5px 10px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        select, input[type="range"], button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            color: white;
+            padding: 5px 10px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        select, input[type="range"], button, input[type="file"] {
+            font-size: 0.7rem;
+            padding: 2px 4px;
+        }
+        .control-group label {
+            font-size: 0.7rem;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        select option {
+            background: #2a5298;
+            color: white;
+        }
+
+        input[type="range"] {
+            width: 120px;
+        }
+
+        .side-panel {
+            width: 250px;
+            background: #FFFDD0; /* rgba(0, 0, 0, 0.3); */
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            margin-bottom: 20px;
+        }
+
+        .panel-section h3 {
+            margin: 0 0 10px 0;
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .category-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .category-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+
+        .category-control input[type="checkbox"] {
+            margin: 0;
+        }
+
+        .category-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .node-list {
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+        }
+
+        .node-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 2px 0;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+
+        .node-item:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .node-item.hidden {
+            opacity: 0.3;
+        }
+
+        .node-item.pinned {
+            font-weight: bold;
+        }
+
+        .pin-indicator {
+            width: 8px;
+            height: 8px;
+            background: #ffd700;
+            border-radius: 50%;
+            opacity: 0;
+        }
+
+        .node-item.pinned .pin-indicator {
+            opacity: 1;
+        }
+
+        .viz-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #network {
+            width: 100%;
+            height: 900px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            background: rgba(40, 40, 40, 0.7);
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            max-width: 250px;
+            z-index: 1000;
+        }
+
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            margin-right: 8px;
+            border-radius: 50%;
+        }
+
+        .info-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            max-width: 350px;
+        }
+
+        .node-minor { fill: #ff6b6b; }
+        .node-requirement { fill: #4ecdc4; }
+        .node-course { fill: #45b7d1; }
+        .node-course-group { fill: #f9ca24; }
+
+        .link-required { stroke: #ff6b6b; stroke-width: 3; }
+        .link-select-one { stroke: #4ecdc4; stroke-width: 2; }
+        .link-select-multiple { stroke: #45b7d1; stroke-width: 2; }
+        .link-elective { stroke: #f9ca24; stroke-width: 1; }
+
+        .highlighted {
+            stroke: #fff;
+            stroke-width: 3;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
+        }
+
+        .dimmed {
+            opacity: 0.2;
+        }
+
+        .pinned-node {
+            stroke: #ffd700;
+            stroke-width: 3;
+            filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.6));
+        }
+
+        .hidden-node {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .hidden-link {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Luddy Program Minors Requirements and Course Relationships</h1>
+            <p>Interactive visualization for exploring academic program relationships</p>
+        </div>
+
+        <div class="controls-wrapper">
+            <div class="main-controls">
+                <div class="control-group">
+                    <label>Load Data File:</label>
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        <input type="file" id="fileInput" accept=".json" style="color: white;">
+                        <button id="loadButton" disabled>Load</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                  <label>Link Distance:</label>
+                  <input type="range" id="distanceSlider" min="20" max="200" step="10" value="80">
+                </div>
+                <div class="control-group">
+                  <label>Link Strength:</label>
+                  <input type="range" id="strengthSlider" min="0" max="1" step="0.1" value="0.8">
+                </div>
+                <div class="control-group">
+                    <label>Force Strength:</label>
+                    <input type="range" id="forceSlider" min="-100" max="100" step="10" value="50">
+                </div>
+                <div class="control-group">
+                    <button id="resetView">Reset View</button>
+                </div>
+                <div class="control-group">
+                    <button id="unpinAll">Unpin All</button>
+                </div>
+                <div class="control-group">
+                  <button id="pinRequirements">Pin Requirements</button>
+                </div>
+                <div class="control-group">
+                  <button id="pinGroups">Pin Course Groups</button>
+                </div>
+                <div class="control-group">
+                  <button id="nudgeRequirements">Nudge Requirements</button>
+                </div>
+                <div class="control-group">
+                  <button id="nudgeGroups">Nudge Course Groups</button>
+                </div>
+               <!--  <div class="control-group">
+                    <button id="downloadSample">Download Sample</button>
+                </div> -->
+               <!--  <div class="control-group">
+                    <button id="loadTestData">Load Test Data</button>
+                </div> -->
+            </div>
+
+            <!-- div class="side-panel">
+                <div class="panel-section">
+                    <h3>Node Controls</h3>
+                    <div class="node-list" id="nodeList">
+                         Will be populated by JavaScript
+                    </div>
+                </div>
+            </div> -->
+        </div>
+
+        <div class="viz-container">
+            <svg id="network"></svg>
+            
+  
+
+            <div class="info-panel">
+                <strong>Enhanced Controls:</strong><br>
+                • <strong>Load Data:</strong> Select JSON file and click Load button<br>
+                • <strong>Pin Nodes:</strong> Right-click to pin/unpin<br>
+                • <strong>Hide Nodes:</strong> Click in node list to toggle visibility<br>
+                • <strong>Highlight:</strong> Left-click nodes for connections<br>
+                • <strong>Drag:</strong> Move nodes (pinned nodes stay fixed)<br>
+                • <strong>Zoom/Pan:</strong> Mouse wheel and drag background
+            </div>
+        </div>
+
+        <div class="tooltip" id="tooltip"></div>
+    </div>
+
+    <script>
+        // Enhanced network data structure with visibility and pinning state
+        const networkData = {
+            nodes: [],
+            links: []
+        };
+
+        // Node states
+        const nodeStates = {
+            pinned: new Set(),
+            hidden: new Set()
+        };
+
+        // Data will be loaded from JSON file
+        let minorsData = [];
+
+        // Global variables for file handling
+        let selectedFile = null;
+
+        // Load data from JSON file
+        async function loadDataFromFile(file) {
+            console.log("=== STARTING FILE LOAD ===");
+            console.log("File object:", file);
+            showStatus("Loading file...", "info");
+            
+            try {
+                console.log("About to read file text...");
+                const text = await file.text();
+                console.log("✓ File text loaded successfully");
+                console.log("Text length:", text.length);
+                console.log("First 500 characters:", text.substring(0, 500));
+                console.log("Last 100 characters:", text.substring(text.length - 100));
+                
+                console.log("About to parse JSON...");
+                const data = JSON.parse(text);
+                console.log("✓ JSON parsed successfully");
+                console.log("Parsed data type:", typeof data);
+                console.log("Is array:", Array.isArray(data));
+                console.log("Data length:", data.length);
+                console.log("First program:", data[0]);
+                
+                // Validate data structure
+                if (!Array.isArray(data)) {
+                    throw new Error("JSON must contain an array of programs");
+                }
+                
+                if (data.length === 0) {
+                    throw new Error("JSON array is empty - no programs found");
+                }
+                
+                // Basic validation of program structure
+                data.forEach((program, index) => {
+                    console.log(`Validating program ${index}:`, program.name);
+                    if (!program.name || !program.id || !program.requirements) {
+                        throw new Error(`Program at index ${index} is missing required fields (name, id, requirements)`);
+                    }
+                });
+                
+                console.log("✓ Data validation passed");
+                console.log("Setting minorsData...");
+                minorsData = data;
+                console.log("✓ minorsData set, length:", minorsData.length);
+                
+                console.log("About to call rebuildVisualization...");
+                rebuildVisualization();
+                console.log("✓ rebuildVisualization completed");
+                showStatus(`Successfully loaded ${data.length} programs!`, "success");
+                console.log("=== FILE LOAD COMPLETED SUCCESSFULLY ===");
+                
+            } catch (error) {
+                console.log("❌ ERROR in loadDataFromFile:");
+                console.error("Error details:", error);
+                console.error("Error stack:", error.stack);
+                showStatus(`Error loading file: ${error.message}`, "error");
+            }
+        }
+
+        // Download sample JSON file
+        function downloadSampleData() {
+            const sampleData = [
+              
+            ];
+
+            const dataStr = JSON.stringify(sampleData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'sample-academic-programs.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showStatus("Sample file downloaded!", "success");
+        }
+
+        // Show status messages
+        function showStatus(message, type = "info") {
+            const statusDiv = document.createElement('div');
+            statusDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 5px;
+                color: white;
+                font-weight: bold;
+                z-index: 10000;
+                transition: opacity 0.3s;
+                ${type === 'error' ? 'background: #e74c3c;' : 
+                  type === 'success' ? 'background: #27ae60;' : 'background: #3498db;'}
+            `;
+            statusDiv.textContent = message;
+            document.body.appendChild(statusDiv);
+            
+            setTimeout(() => {
+                statusDiv.style.opacity = '0';
+                setTimeout(() => document.body.removeChild(statusDiv), 300);
+            }, 3000);
+        }
+
+        // Global visualization elements
+        let simulation, node, link, label, svg, g, zoom;
+
+        // Build network data
+        function buildNetworkData() {
+            console.log("buildNetworkData called with", minorsData.length, "minors");
+            let nodeId = 0;
+            const nodeMap = new Map();
+            networkData.nodes = [];
+            networkData.links = [];
+
+            if (minorsData.length === 0) {
+                console.log("No minors data available");
+                return;
+            }
+
+            // Add minor nodes
+            minorsData.forEach(minor => {
+                console.log("Processing minor:", minor.name);
+                const minorNode = {
+                    id: nodeId++,
+                    name: minor.name,
+                    type: 'minor',
+                    minorId: minor.id,
+                    group: 1
+                };
+                networkData.nodes.push(minorNode);
+                nodeMap.set(`minor_${minor.id}`, minorNode);
+
+                // Process requirements
+                minor.requirements.forEach(req => {
+                    const reqNode = {
+                        id: nodeId++,
+                        name: req.type,
+                        type: 'requirement',
+                        minorId: minor.id,
+                        group: 2
+                    };
+                    networkData.nodes.push(reqNode);
+                    nodeMap.set(`req_${minor.id}_${req.type}`, reqNode);
+
+                    // Link minor to requirement
+                    networkData.links.push({
+                        source: minorNode.id,
+                        target: reqNode.id,
+                        type: 'minor-to-req',
+                        value: 3
+                    });
+
+                    // Process courses
+                    if (req.courses) {
+                        req.courses.forEach(course => {
+                            // Extract full course code (e.g., "INFO-I 400" from "INFO-I 400 Course Title")
+                            const courseCodeMatch = course.match(/^([A-Z]+-[A-Z]\s+\d+)/);
+                            const courseKey = courseCodeMatch ? courseCodeMatch[1] : course.split(' ').slice(0, 2).join(' ');
+                            
+                            let courseNode = nodeMap.get(`course_${courseKey}`);
+                            
+                            if (!courseNode) {
+                                courseNode = {
+                                    id: nodeId++,
+                                    name: course,
+                                    code: courseKey,
+                                    type: 'course',
+                                    group: 3
+                                };
+                                networkData.nodes.push(courseNode);
+                                nodeMap.set(`course_${courseKey}`, courseNode);
+                                console.log("Created new course node:", courseKey, "for", course);
+                            } else {
+                                console.log("Found existing course node:", courseKey, "for", course);
+                            }
+
+                            networkData.links.push({
+                                source: reqNode.id,
+                                target: courseNode.id,
+                                type: req.type.includes('Required') ? 'required' : 
+                                      req.type.includes('Select One') ? 'select-one' : 'elective',
+                                value: req.type.includes('Required') ? 2 : 1
+                            });
+                        });
+                    }
+
+                    // Process course groups
+                    if (req.groups) {
+                        req.groups.forEach(group => {
+                            const groupNode = {
+                                id: nodeId++,
+                                name: group.name,
+                                type: 'course-group',
+                                minorId: minor.id,
+                                group: 4
+                            };
+                            networkData.nodes.push(groupNode);
+
+                            networkData.links.push({
+                                source: reqNode.id,
+                                target: groupNode.id,
+                                type: 'select-group',
+                                value: 2
+                            });
+
+                            group.courses.forEach(course => {
+                                // Extract full course code (e.g., "INFO-I 400" from "INFO-I 400 Course Title")
+                                const courseCodeMatch = course.match(/^([A-Z]+-[A-Z]\s+\d+)/);
+                                const courseKey = courseCodeMatch ? courseCodeMatch[1] : course.split(' ').slice(0, 2).join(' ');
+                                
+                                let courseNode = nodeMap.get(`course_${courseKey}`);
+                                
+                                if (!courseNode) {
+                                    courseNode = {
+                                        id: nodeId++,
+                                        name: course,
+                                        code: courseKey,
+                                        type: 'course',
+                                        group: 3
+                                    };
+                                    networkData.nodes.push(courseNode);
+                                    nodeMap.set(`course_${courseKey}`, courseNode);
+                                    console.log("Created new course node in group:", courseKey, "for", course);
+                                } else {
+                                    console.log("Found existing course node in group:", courseKey, "for", course);
+                                }
+
+                                networkData.links.push({
+                                    source: groupNode.id,
+                                    target: courseNode.id,
+                                    type: 'group-to-course',
+                                    value: 1
+                                });
+                            });
+                        });
+                    }
+                });
+            });
+            
+            console.log("Network data built:", networkData.nodes.length, "nodes,", networkData.links.length, "links");
+        }
+
+        // Update node and link visibility
+        function updateVisibility() {
+            if (!node || !link || !label) return;
+
+            // Update node visibility
+            node.classed("hidden-node", d => {
+                return nodeStates.hidden.has(d.id);
+            });
+
+            // Update link visibility
+            link.classed("hidden-link", d => {
+                const sourceHidden = nodeStates.hidden.has(d.source.id);
+                const targetHidden = nodeStates.hidden.has(d.target.id);
+                return sourceHidden || targetHidden;
+            });
+
+            // Update label visibility
+            label.style("opacity", d => {
+                const nodeHidden = nodeStates.hidden.has(d.id);
+                return nodeHidden ? 0 : 1;
+            });
+
+            // Update node list UI
+            updateNodeList();
+        }
+
+        // Setup and update node list
+        function updateNodeList() {
+            const container = d3.select("#nodeList");
+            container.selectAll("*").remove();
+
+            // Group nodes by type
+            const nodesByType = d3.group(networkData.nodes, d => d.type);
+            
+            ['minor', 'requirement', 'course-group', 'course'].forEach(type => {
+                if (!nodesByType.has(type)) return;
+
+                const typeNodes = nodesByType.get(type);
+                typeNodes.sort((a, b) => a.name.localeCompare(b.name));
+
+                typeNodes.forEach(d => {
+                    const item = container.append("div")
+                        .attr("class", "node-item")
+                        .classed("hidden", nodeStates.hidden.has(d.id))
+                        .classed("pinned", nodeStates.pinned.has(d.id))
+                        .on("click", function() {
+                            toggleNodeVisibility(d.id);
+                        });
+
+                    item.append("div").attr("class", "pin-indicator");
+
+                    item.append("span")
+                        .style("color", getNodeColor(d.type))
+                        .text(d.code || (d.name.length > 25 ? d.name.substring(0, 25) + "..." : d.name));
+                });
+            });
+        }
+
+        // Toggle individual node visibility
+        function toggleNodeVisibility(nodeId) {
+            if (nodeStates.hidden.has(nodeId)) {
+                nodeStates.hidden.delete(nodeId);
+            } else {
+                nodeStates.hidden.add(nodeId);
+            }
+            updateVisibility();
+        }
+
+        // Toggle node pinning
+        function toggleNodePin(nodeId) {
+            const nodeData = networkData.nodes.find(n => n.id === nodeId);
+            if (!nodeData) return;
+
+            if (nodeStates.pinned.has(nodeId)) {
+                // Unpin
+                nodeStates.pinned.delete(nodeId);
+                nodeData.fx = null;
+                nodeData.fy = null;
+            } else {
+                // Pin
+                nodeStates.pinned.add(nodeId);
+                nodeData.fx = nodeData.x;
+                nodeData.fy = nodeData.y;
+            }
+
+            // Update visual state
+            node.classed("pinned-node", d => nodeStates.pinned.has(d.id));
+            updateNodeList();
+            simulation.alpha(0.3).restart();
+        }
+
+        function pinNodesByType(type) {
+            networkData.nodes.forEach(d => {
+                if (d.type === type) {
+                    nodeStates.pinned.add(d.id);
+                    d.fx = d.x;   // lock position
+                    d.fy = d.y;
+                }
+            });
+
+            // Update visuals
+            node.classed("pinned-node", d => nodeStates.pinned.has(d.id));
+            updateNodeList();
+            simulation.alpha(0.3).restart();
+        }
+
+        // function nudgePinnedNodesTowardMinor(type, stepFactor = 0.3) {
+        //     networkData.nodes.forEach(d => {
+        //         if (d.type === type && nodeStates.pinned.has(d.id)) {
+        //             // find any link to a minor
+        //             const linkToMinor = networkData.links.find(l =>
+        //                 (l.source.id === d.id && networkData.nodes[l.target.id].type === "minor") ||
+        //                 (l.target.id === d.id && networkData.nodes[l.source.id].type === "minor")
+        //             );
+
+        //             if (linkToMinor) {
+        //                 const minorNode = (networkData.nodes[linkToMinor.source.id].type === "minor")
+        //                     ? networkData.nodes[linkToMinor.source.id]
+        //                     : networkData.nodes[linkToMinor.target.id];
+
+        //                 // Move stepFactor % closer to the minor
+        //                 d.fx = d.fx + (minorNode.x - d.fx) * stepFactor;
+        //                 d.fy = d.fy + (minorNode.y - d.fy) * stepFactor;
+        //             }
+        //         }
+        //     });
+
+        //     simulation.alpha(0.3).restart();
+        // }
+        function nudgePinnedNodesToward(type, towardType, stepFactor = 0.3) {
+            networkData.nodes.forEach(d => {
+                if (d.type === type && nodeStates.pinned.has(d.id)) {
+                    // find any link to a node of the towardType
+                    const link = networkData.links.find(l =>
+                        (l.source.id === d.id && networkData.nodes[l.target.id].type === towardType) ||
+                        (l.target.id === d.id && networkData.nodes[l.source.id].type === towardType)
+                    );
+
+                    if (link) {
+                        const targetNode = (networkData.nodes[link.source.id].type === towardType)
+                            ? networkData.nodes[link.source.id]
+                            : networkData.nodes[link.target.id];
+
+                        // Move stepFactor % closer to target node
+                        d.fx = d.fx + (targetNode.x - d.fx) * stepFactor;
+                        d.fy = d.fy + (targetNode.y - d.fy) * stepFactor;
+                    }
+                }
+            });
+
+            simulation.alpha(0.3).restart();
+        }
+
+        // Get node color by type
+        function getNodeColor(type) {
+            const colors = {
+                'minor': '#ff6b6b',
+                'requirement': '#4ecdc4',
+                'course-group': '#f9ca24',
+                'course': '#45b7d1'
+            };
+            return colors[type] || '#95a5a6';
+        }
+
+        // Initialize the visualization
+        function initVisualization() {
+            svg = d3.select("#network");
+            const width = 1000;
+            const height = 700;
+            
+            svg.attr("width", width).attr("height", height);
+
+            g = svg.append("g");
+
+            // Add zoom behavior
+            zoom = d3.zoom()
+                .scaleExtent([0.1, 4])
+                .on("zoom", (event) => {
+                    g.attr("transform", event.transform);
+                });
+
+            svg.call(zoom);
+
+            // Create force simulation
+            simulation = d3.forceSimulation(networkData.nodes)
+                .force("link", d3.forceLink(networkData.links).id(d => d.id).distance(80).strength(0.8))
+                .force("charge", d3.forceManyBody().strength(-50))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("collision", d3.forceCollide().radius(20));
+
+            // Create links
+            link = g.append("g")
+                .selectAll("line")
+                .data(networkData.links)
+                .enter().append("line")
+                .attr("class", d => `link-${d.type}`)
+                .style("stroke", d => {
+                    switch(d.type) {
+                        case 'required': return '#ff6b6b';
+                        case 'select-one': return '#4ecdc4';
+                        case 'select-group': return '#f9ca24';
+                        default: return '#45b7d1';
+                    }
+                })
+                .style("stroke-width", d => Math.sqrt(d.value) * 2)
+                .style("opacity", 0.7);
+
+            // Create nodes
+            node = g.append("g")
+                .selectAll("circle")
+                .data(networkData.nodes)
+                .enter().append("circle")
+                .attr("r", d => {
+                    switch(d.type) {
+                        case 'minor': return 15;
+                        case 'requirement': return 10;
+                        case 'course-group': return 8;
+                        case 'course': return 6;
+                        default: return 5;
+                    }
+                })
+                .attr("class", d => `node-${d.type}`)
+                .style("fill", d => getNodeColor(d.type))
+                .style("stroke", "#fff")
+                .style("stroke-width", 2)
+                .call(d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended));
+
+            // Add labels
+            label = g.append("g")
+                .selectAll("text")
+                .data(networkData.nodes)
+                .enter().append("text")
+                .text(d => {
+                    if (d.type === 'course') {
+                        return d.code || d.name.split(' ')[0];
+                    }
+                    if (d.type === 'minor') {
+                        // Show longer minor names (e.g. up to 40 chars)
+                        return d.name.length > 40 ? d.name.substring(0, 40) + "..." : d.name;
+                    }
+                    return d.name.length > 20 ? d.name.substring(0, 20) + "..." : d.name;
+                })
+                .style("font-size", d => {
+                    switch(d.type) {
+                        case 'minor': return "12px";
+                        case 'requirement': return "10px";
+                        default: return "8px";
+                    }
+                })
+                .style("fill", "#fff")
+                .style("text-anchor", "middle")
+                .style("pointer-events", "none")
+                .style("text-shadow", "1px 1px 2px rgba(0,0,0,0.8)");
+
+            // Tooltip
+            const tooltip = d3.select("#tooltip");
+
+            // Add interactivity
+            node
+                .on("mouseover", function(event, d) {
+                    tooltip.transition().duration(200).style("opacity", .9);
+                    tooltip.html(`
+                        <strong>${d.name}</strong><br>
+                        Type: ${d.type}<br>
+                        ${d.minorId ? `Minor: ${minorsData.find(m => m.id === d.minorId)?.name || d.minorId}` : ''}<br>
+                        ${nodeStates.pinned.has(d.id) ? '<em>📌 Pinned</em><br>' : ''}
+                        <small>Left-click: Highlight | Right-click: Pin/Unpin</small>
+                    `)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mouseout", function() {
+                    tooltip.transition().duration(500).style("opacity", 0);
+                })
+                .on("click", function(event, d) {
+                    event.preventDefault();
+                    highlightConnections(d, node, link);
+                })
+                .on("contextmenu", function(event, d) {
+                    event.preventDefault();
+                    toggleNodePin(d.id);
+                });
+
+            // Simulation tick
+            simulation.on("tick", () => {
+                link
+                    .attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+
+                node
+                    .attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
+
+                label
+                    .attr("x", d => d.x)
+                    .attr("y", d => d.y + 4);
+            });
+
+            // Setup controls
+            setupControls();
+            updateNodeList();
+
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                // Only unpin if the node wasn't already pinned
+                if (!nodeStates.pinned.has(d.id)) {
+                    d.fx = null;
+                    d.fy = null;
+                }
+            }
+
+            function highlightConnections(selectedNode, nodes, links) {
+                // Reset all
+                nodes.classed("highlighted", false).classed("dimmed", false);
+                links.classed("highlighted", false).classed("dimmed", false);
+
+                // Find connected nodes
+                const connectedNodes = new Set([selectedNode.id]);
+                networkData.links.forEach(link => {
+                    if (link.source.id === selectedNode.id) {
+                        connectedNodes.add(link.target.id);
+                    }
+                    if (link.target.id === selectedNode.id) {
+                        connectedNodes.add(link.source.id);
+                    }
+                });
+
+                // Highlight connected nodes and dim others
+                nodes.classed("highlighted", d => connectedNodes.has(d.id))
+                     .classed("dimmed", d => !connectedNodes.has(d.id));
+
+                // Highlight connected links and dim others
+                links.classed("highlighted", d => 
+                    connectedNodes.has(d.source.id) && connectedNodes.has(d.target.id))
+                     .classed("dimmed", d => 
+                    !(connectedNodes.has(d.source.id) && connectedNodes.has(d.target.id)));
+            }
+        }
+
+        function setupControls() {
+            // Populate minor filter
+            const minorFilter = d3.select("#minorFilter");
+            minorsData.forEach(minor => {
+                minorFilter.append("option")
+                    .attr("value", minor.id)
+                    .text(minor.name);
+            });
+
+            d3.select("#pinRequirements").on("click", () => pinNodesByType("requirement"));
+            d3.select("#pinGroups").on("click", () => pinNodesByType("course-group"));
+            d3.select("#nudgeRequirements").on("click", () => nudgePinnedNodesToward("requirement", "minor"));
+            d3.select("#nudgeGroups").on("click", () => nudgePinnedNodesToward("course-group", "requirement"));
+
+
+            // Minor filter functionality
+            minorFilter.on("change", function() {
+                const selectedMinor = this.value;
+
+                if (selectedMinor === "") {
+                    // Show all
+                    node.style("opacity", d => nodeStates.hidden.has(d.id) ? 0 : 1);
+                    link.style("opacity", d => {
+                        const sourceHidden = nodeStates.hidden.has(d.source.id);
+                        const targetHidden = nodeStates.hidden.has(d.target.id);
+                        return sourceHidden || targetHidden ? 0 : 0.7;
+                    });
+                    label.style("opacity", d => nodeStates.hidden.has(d.id) ? 0 : 1);
+                } else {
+                    // Filter by minor
+                    node.style("opacity", d => {
+                        const baseVisible = !nodeStates.hidden.has(d.id);
+                        const minorMatch = d.minorId === selectedMinor || d.type === 'course';
+                        return baseVisible && minorMatch ? 1 : 0.2;
+                    });
+                    link.style("opacity", d => {
+                        const sourceVisible = (!nodeStates.hidden.has(d.source.id)) &&
+                                            (d.source.minorId === selectedMinor || d.source.type === 'course');
+                        const targetVisible = (!nodeStates.hidden.has(d.target.id)) &&
+                                            (d.target.minorId === selectedMinor || d.target.type === 'course');
+                        return sourceVisible && targetVisible ? 0.7 : 0.1;
+                    });
+                    label.style("opacity", d => {
+                        const baseVisible = !nodeStates.hidden.has(d.id);
+                        const minorMatch = d.minorId === selectedMinor || d.type === 'course';
+                        return baseVisible && minorMatch ? 1 : 0.2;
+                    });
+                }
+            });
+
+            // Zoom control
+            d3.select("#zoomSlider").on("input", function() {
+                const scale = +this.value;
+                svg.transition().duration(500).call(
+                    zoom.transform,
+                    d3.zoomIdentity.scale(scale)
+                );
+            });
+
+            // Force strength control
+            d3.select("#forceSlider").on("input", function() {
+                const strength = -this.value;
+                simulation.force("charge").strength(strength);
+                simulation.alpha(0.3).restart();
+            });
+
+            d3.select("#distanceSlider").on("input", function() {
+                const distance = +this.value;
+                simulation.force("link").distance(distance);
+                simulation.alpha(0.3).restart();
+            });
+
+            d3.select("#strengthSlider").on("input", function() {
+                const strength = +this.value;
+                simulation.force("link").strength(strength);
+                simulation.alpha(0.3).restart();
+            });
+
+            // Reset view button
+            d3.select("#resetView").on("click", function() {
+                // Reset zoom
+                svg.transition().duration(1000).call(
+                    zoom.transform,
+                    d3.zoomIdentity
+                );
+                
+                // Reset slider
+                d3.select("#zoomSlider").property("value", 1);
+                
+                // Reset highlight states
+                node.classed("highlighted", false).classed("dimmed", false);
+                link.classed("highlighted", false).classed("dimmed", false);
+                
+                // Restart simulation
+                simulation.alpha(0.3).restart();
+            });
+
+            // Unpin all button
+            d3.select("#unpinAll").on("click", function() {
+                nodeStates.pinned.clear();
+                networkData.nodes.forEach(d => {
+                    d.fx = null;
+                    d.fy = null;
+                });
+                node.classed("pinned-node", false);
+                updateNodeList();
+                simulation.alpha(0.3).restart();
+            });
+
+            // File input handler - just store the file, don't load yet
+            d3.select("#fileInput").on("change", function(event) {
+                const file = event.target.files[0];
+                console.log("File selected:", file);
+                selectedFile = file;
+                
+                // Enable/disable load button based on file selection
+                const loadButton = d3.select("#loadButton");
+                if (file) {
+                    loadButton.property("disabled", false);
+                    console.log("File details:", {
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        lastModified: file.lastModified
+                    });
+                    showStatus(`File selected: ${file.name}`, "info");
+                } else {
+                    loadButton.property("disabled", true);
+                    selectedFile = null;
+                    console.log("No file selected");
+                }
+            });
+
+            // Load button handler
+            d3.select("#loadButton").on("click", function() {
+                console.log("=== LOAD BUTTON CLICKED ===");
+                console.log("selectedFile:", selectedFile);
+                if (selectedFile) {
+                    console.log("Calling loadDataFromFile with:", selectedFile.name);
+                    loadDataFromFile(selectedFile);
+                } else {
+                    console.log("No file selected!");
+                    showStatus("No file selected!", "error");
+                }
+            });
+
+            // Download sample button
+            d3.select("#downloadSample").on("click", function() {
+                downloadSampleData();
+            });
+
+            // Test data button - bypass file loading entirely
+            d3.select("#loadTestData").on("click", function() {
+                console.log("=== LOADING TEST DATA DIRECTLY ===");
+                const testData = 
+                
+                console.log("Test data:", testData);
+                minorsData = testData;
+                rebuildVisualization();
+                showStatus("Test data loaded successfully!", "success");
+            });
+        }
+
+  function rebuildVisualization() {
+    console.log("rebuildVisualization called, minorsData length:", minorsData.length);
+
+    // Clear existing visualization
+    const networkSvg = d3.select("#network");
+    networkSvg.selectAll("*").remove();
+
+    // Reset states
+    nodeStates.pinned.clear();
+    nodeStates.hidden.clear();
+
+    // Reset minor filter dropdown
+    const minorFilter = d3.select("#minorFilter");
+    minorFilter.selectAll("option").remove();
+    minorFilter.append("option").attr("value", "").text("All Minors");
+    minorsData.forEach(minor => {
+      minorFilter.append("option")
+        .attr("value", minor.id)
+        .text(minor.name);
+    });
+
+    // Build network
+    buildNetworkData();
+
+    if (networkData.nodes.length === 0) {
+      showStatus("Warning: No nodes were created from the data", "error");
+      return;
+    }
+
+    initVisualization();
+    console.log("Visualization initialized with", networkData.nodes.length, "nodes");
+  }
+
+  // Initialize with bundled test data so something appears on startup
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log("=== LOADING DEFAULT STARTUP DATA ===");
+    minorsData = [
+      {
+        "name": "Minor in Animal-Computer Interaction",
+        "id": "animal_computer_interaction",
+        "requirements": [
+          {
+            "type": "Required Courses",
+            "courses": [
+              "ABEH-A 101 Introduction to Animal Behavior",
+              "INFO-I 216 Human, Animals, and Artificial Intelligence",
+              "INFO-I 411 Animal-Computer Interaction Methods",
+              "INFO-I 414 Seminar in Animal-Computer Interaction"
+            ]
+          },
+          {
+            "type": "Elective Groups",
+            "groups": [
+              {
+                "name": "Animal Behavior, Cognition, and Conservation Management",
+                "courses": [
+                  "ABEH-A 400 Advanced Workshop in Animal Behavior",
+                  "BIOL-L 453 Sensory Ecology",
+                  "BIOL-Z 460 Animal Behavior",
+                  "COGS-Q 345 Animal Cognition",
+                  "GEOG-G 448 Capitalism and Nature",
+                  "INFO-I 400 Topics in Informatics (Topic: Technological Nature)",
+                  "INFO-I 412 Direct Observation and Design",
+                  "SPEA-E 460 Wildlife Management"
+                ]
+              },
+              {
+                "name": "Artificial Intelligence and Data Analytics",
+                "courses": [
+                  "COGS-Q 351 Introduction to Artificial Intelligence and Computer Simulation",
+                  "CSCI-B 351 Introduction to Artificial Intelligence",
+                  "CSCI-B 355 Autonomous Robotics",
+                  "ENGR-E 434 Big Data Applications",
+                  "ENGR-E 483 Information Visualization",
+                  "ENGR-E 484 Scientific Visualization",
+                  "INFO-I 368 Introduction to Network Science",
+                  "INFO-I 413 Usable Artificial Intelligence",
+                  "INFO-I 422 Data Visualization"
+                ]
+              },
+              {
+                "name": "Augmented and Virtual Reality",
+                "courses": [
+                  "CSCI-B 453 Game Development",
+                  "INFO-I 304 Introduction to Virtual Reality",
+                  "INFO-I 442 Creating Virtual Assets",
+                  "INFO-I 443 Building Virtual Worlds",
+                  "INFO-I 444 Artificial Life in Virtual Reality"
+                ]
+              },
+              {
+                "name": "Geospatial Information System",
+                "courses": [
+                  "GEOG-G 336 Environmental Remote Sensing",
+                  "GEOG-G 436 Advanced Remote Sensing: Digital Image Processing",
+                  "GEOG-G 438 Advanced Geographic Information Systems",
+                  "GEOG-G 439 GIS and Environmental Analysis",
+                  "GEOG-G 478 Global Change, Food and Farming Systems",
+                  "GEOG-G 488 Applied Spatial Statistics"
+                ]
+              },
+              {
+                "name": "IoT Systems and Physical Fabrication",
+                "courses": [
+                  "CSCI-P 442 Digital Systems",
+                  "ENGR-E 314 Embedded Systems",
+                  "ENGR-E 327 Automated Fabrication Machines",
+                  "INFO-I 341 Prototyping with Arduino Tools",
+                  "INFO-I 400 Topics in Informatics (Topic: Makerspace: Design & Fabrication)",
+                  "INFO-I 440 Human Robot Interaction"
+                ]
+              },
+              {
+                "name": "Mobile App Development",
+                "courses": [
+                  "CSCI-C 323 Mobile App Development",
+                  "INFO-I 342 Mobile Programming",
+                  "INFO-I 400 Topics in Informatics (Topic: Cross-Platform Mobile Programming)"
+                ]
+              },
+              {
+                "name": "Qualitative Methods and Design",
+                "courses": [
+                  "INFO-I 370 Methods for HCC",
+                  "INFO-I 426 Informatics in Disasters and Emergency Response",
+                  "INFO-I 440 Human-Robot Interaction"
+                ]
+              },
+              {
+                "name": "Technology Entrepreneurship",
+                "courses": [
+                  "INFO-I 436 Technology Innovation",
+                  "INFO-I 437 Design Strategy",
+                  "INFO-I 438 Technology Entrepreneurship"
+                ]
+              },
+              {
+                "name": "Web and Database Design",
+                "courses": [
+                  "CSCI-B 461 Database Concepts",
+                  "CSCI-P 462 Database Application Design and Implementation",
+                  "INFO-I 360 Web Design"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Minor in Computer Science",
+        "id": "computer_science",
+        "requirements": [
+          {
+            "type": "Required Courses",
+            "courses": [
+              "CSCI-C 212 Introduction to Software Systems",
+              "CSCI-C 241 Discrete Structures for Computer Science"
+            ]
+          },
+          {
+            "type": "Programming Foundation",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "CSCI-C 200 Introduction to Computers and Programming",
+                  "CSCI-C 211 Introduction to Computer Science"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Intermediate Requirement",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "CSCI-C 335 Computer Structures",
+                  "CSCI-C 343 Data Structures"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Advanced Electives",
+            "courses": [
+              "At least five additional CSCI (B, C, P) credit hours at the 300/400 level",
+              "CSCI-Y 390 or Y 499 may be completed for a total of 3 credit hours"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Minor in Data Science",
+        "id": "data_science",
+        "requirements": [
+          {
+            "type": "Programming Foundation",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "CSCI-C 200 Introduction to Computers and Programming",
+                  "CSCI-C 211 Introduction to Computer Science (If completing with CSCI-C 211, knowledge of Python is expected)"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Required Courses",
+            "courses": [
+              "CSCI-C 241 Discrete Structures for Computer Science"
+            ]
+          },
+          {
+            "type": "Data Structures Requirement",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "CSCI-A 310 Problem Solving Using Data",
+                  "CSCI-C 343 Data Structures"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Data Representation Requirement",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "DSCI-D 321 Data Representation",
+                  "CSCI-B 461 Database Concepts",
+                  "CSCI-P 434 Distributed Systems"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Analytics Requirement",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "DSCI-D 351 Big Data Analytics",
+                  "CSCI-B 351 Introduction to Artificial Intelligence",
+                  "CSCI-B 365 Introduction to Data Analysis and Mining",
+                  "CSCI-B 403 Introduction to Algorithm Design and Analysis",
+                  "CSCI-B 455 Principles of Machine Learning",
+                  "CSCI-B 457 Introduction to Computer Vision",
+                  "CSCI-B 461 Database Concepts",
+                  "CSCI-P 434 Distributed Systems",
+                  "STAT-S 350 Introduction to Statistical Inference"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Minor in Data & Network Analytics",
+        "id": "data_network_analytics",
+        "requirements": [
+          {
+            "type": "Required Courses",
+            "courses": [
+              "INFO-I 123 Data Fluency",
+              "INFO-I 368 Introduction to Network Science"
+            ]
+          },
+          {
+            "type": "Programming Foundation",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "COGS-Q 260",
+                  "CSCI-A 201",
+                  "CSCI-C 200",
+                  "CSCI-C 211",
+                  "INFO-I 210"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Analytics Requirement",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "INFO-I 369",
+                  "INFO-I 422"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Electives",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "COGS-Q 320",
+                  "INFO-I 369 (If not already taken above)",
+                  "INFO-I 399",
+                  "INFO-I 400",
+                  "INFO-I 422 (If not already taken above)",
+                  "INFO-I 423",
+                  "INFO-I 427",
+                  "INFO-I 468",
+                  "INFO-I 469"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Minor in Human-Centered Computing (Informatics Majors)",
+        "id": "human_centered_computing_informatics",
+        "requirements": [
+          {
+            "type": "Electives",
+            "groups": [
+              {
+                "name": "Choose Five Courses",
+                "courses": [
+                  "CSCI-A 216 Digital Multimedia Concepts and Technologies",
+                  "INFO-I 303 Organizational Informatics",
+                  "INFO-I 304 Introduction to Virtual Reality",
+                  "INFO-I 310 Multimedia Arts and Technology",
+                  "INFO-I 330 Legal and Social Informatics of Security",
+                  "INFO-I 341 Prototyping for Arduino Tools",
+                  "INFO-I 360 Web Design",
+                  "INFO-I 370 Methods of HCC",
+                  "INFO-I 399 Current Topics in Informatics (3 credit hour approved topic)",
+                  "INFO-I 400 Topics in Informatics (3 credit hour approved topic)",
+                  "INFO-I 407 Introduction to Health Informatics",
+                  "INFO-I 426 Informatics in Disasters and Emergency Response",
+                  "INFO-I 436 Technology Innovation",
+                  "INFO-I 437 Design Strategy",
+                  "INFO-I 438 Technology Entrepreneurship",
+                  "INFO-I 440 Human Robot Interaction",
+                  "INFO-I 441 Interaction Design Practice",
+                  "INFO-I 453 Computer and Information Ethics",
+                  "INFO-I 469 Collective Intelligence",
+                  "INFO-I 487 Introduction to Virtual Heritage",
+                  "INFO-I 488 Advanced Topics in Virtual Heritage"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Minor in Human-Centered Computing (Non-Informatics Majors)",
+        "id": "human_centered_computing_non_informatics",
+        "requirements": [
+          {
+            "type": "Required Courses",
+            "courses": [
+              "INFO-I 300 Human-Computer Interaction Design and Programming"
+            ]
+          },
+          {
+            "type": "Foundation Requirement",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "INFO-I 101 Introduction to Informatics (minimum grade of C required)",
+                  "CSCI-A 110 Introduction to Computers and Computing"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Social Informatics Requirement",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "INFO-I 202 Social Informatics",
+                  "INFO-I 222 The Information Society"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Electives",
+            "groups": [
+              {
+                "name": "Choose Two Courses",
+                "courses": [
+                  "INFO-I 303 Organizational Informatics",
+                  "INFO-I 304 Introduction to Virtual Reality",
+                  "INFO-I 310 Multimedia Arts and Technology",
+                  "INFO-I 330 Legal and Social Informatics of Security",
+                  "INFO-I 341 Prototyping for Arduino Tools",
+                  "INFO-I 360 Web Design",
+                  "INFO-I 370 Methods of HCC",
+                  "INFO-I 399 Current Topics in Informatics (3 credit hour approved topic)",
+                  "INFO-I 400 Topics in Informatics (3 credit hour approved topic)",
+                  "INFO-I 407 Introduction to Health Informatics",
+                  "INFO-I 426 Informatics in Disasters and Emergency Response",
+                  "INFO-I 436 Technology Innovation",
+                  "INFO-I 437 Design Strategy",
+                  "INFO-I 438 Technology Entrepreneurship",
+                  "INFO-I 440 Human Robot Interaction",
+                  "INFO-I 441 Interaction Design Practice",
+                  "INFO-I 453 Computer and Information Ethics",
+                  "INFO-I 469 Collective Intelligence",
+                  "INFO-I 487 Introduction to Virtual Heritage",
+                  "INFO-I 488 Advanced Topics in Virtual Heritage"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Minor in Human-Computer Interaction/Design",
+        "id": "human_computer_interaction_design",
+        "requirements": [
+          {
+            "type": "Required Courses",
+            "courses": [
+              "INFO-I 245 Interaction Design Thinking",
+              "INFO-I 246 Use and Usability",
+              "INFO-I 345 Interaction Design Research",
+              "INFO-I 346 Prototyping and Evaluation"
+            ]
+          },
+          {
+            "type": "Electives",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "INFO-I 303 Organizational Informatics",
+                  "INFO-I 310 Multimedia Arts and Technology",
+                  "INFO-I 311 Application Development",
+                  "INFO-I 360 Web Design",
+                  "INFO-I 399 Current Topics in Informatics (3 hour approved topic)",
+                  "INFO-I 400 Topics in Informatics (3 hour approved topic)",
+                  "INFO-I 436 Technology Innovation",
+                  "INFO-I 437 Design Strategy",
+                  "INFO-I 438 Technology Entrepreneurship",
+                  "INFO-I 440 Human Robot Interaction"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Minor in Informatics",
+        "id": "informatics",
+        "requirements": [
+          {
+            "type": "Required Courses",
+            "courses": [
+              "INFO-I 101 Introduction to Informatics (minimum grade of C required)"
+            ]
+          },
+          {
+            "type": "Programming Foundation",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "INFO-I 210 Information Infrastructure I",
+                  "CSCI-A 201 Introduction to Programming I",
+                  "CSCI-C 200 Introduction to Computers and Programming",
+                  "CSCI-C 211 Introduction to Computer Science"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Advanced Courses",
+            "courses": [
+              "9 credit hours of INFO courses at the 300/400 level",
+              "INFO-I 389 Serve IT Internship in Informatics (no more than 3 credit hours)",
+              "INFO-I 390 Undergraduate Independent Study (no more than 3 credit hours)",
+              "INFO-I 391 Internship in Informatics Professional Practice (no more than 3 credit hours)"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Specialized Minor in Informatics",
+        "id": "specialized_informatics",
+        "requirements": [
+          {
+            "type": "Program Enrollment Requirement",
+            "courses": [
+              "Must be enrolled in: BL-Informatics BS, BL-Informatics BS-TSAP, BL-Informatics BS/MS BS, or BL-Informatics BS/HCI MS BS"
+            ]
+          },
+          {
+            "type": "Advanced Courses",
+            "courses": [
+              "At least 9 credits at the 300 level or above"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Minor in Information Technology",
+        "id": "information_technology",
+        "requirements": [
+          {
+            "type": "Programming Path",
+            "groups": [
+              {
+                "name": "Choose One Path",
+                "courses": [
+                  "CSCI-C 200 Introduction to Computers and Programming",
+                  "CSCI-C 211 Introduction to Computer Science",
+                  "CSCI-A 201 Introduction to Programming I and CSCI-A 202 Introduction to Programming II",
+                  "INFO-I 210 Information Infrastructure I and INFO-I 211 Information Infrastructure II"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Required Courses",
+            "courses": [
+              "CSCI-A 338 Network Technologies and Administration"
+            ]
+          },
+          {
+            "type": "Elective Requirement",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "CSCI-A 321 Computing Tools for Scientific Research",
+                  "CSCI-A 348 Mastering the World Wide Web"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Advanced Courses",
+            "courses": [
+              "At least 3 additional CSCI credit hours at the 300/400 level"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Minor in Intelligence Studies",
+        "id": "intelligence_studies",
+        "requirements": [
+          {
+            "type": "Required Courses",
+            "courses": [
+              "ILS-Z 115 Evaluating Intelligence and Information",
+              "ILS-Z 221 Intelligence Analytics"
+            ]
+          },
+          {
+            "type": "First Elective Group",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "CJUS-P 407 Terrorism",
+                  "ENGR-E 483 Information Visualization",
+                  "GEOG-G 237 Mapping our World",
+                  "INTL-I 210 Diplomacy, Security, Governance",
+                  "INTL-L 250 Introduction to International Law and Legal Institutions",
+                  "MSCH-C 206 Media Reporting in a Global World",
+                  "POLS-Y 311 Democracy and National Security",
+                  "SPEA-J 202 Criminal Justice Data, Methods, and Resources"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Second Elective Group",
+            "groups": [
+              {
+                "name": "Choose Two",
+                "courses": [
+                  "ILS-Z 311 Spy Tech for Non-Technical Spies",
+                  "ILS-Z 331 Strategic Intelligence",
+                  "ILS-Z 351 Moles, Deception, and Counterintelligence",
+                  "ILS-Z 399 Topics in Information and Library Science (Topic: Dark Arts: Corporate Espionage)",
+                  "GEOG-G 336 Environmental Remote Sensing",
+                  "INFO-I 427 Search Informatics",
+                  "INFO-I 453 Computer and Information Ethics",
+                  "INTL-I 422 Contested Territories/Conflicted Identities",
+                  "POLS-Y 360 United States Foreign Policy",
+                  "POLS-Y 368 Russian and Soviet Foreign Policy",
+                  "POLS-Y 209 Protests in a Global World",
+                  "POLS-Y 239 US Foreign Policy and the Muslim World",
+                  "SPEA-J 324 Technology, Crime, and Public Safety",
+                  "SPEA-V 272 Terrorism and Public Policy"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Minor in Intelligent Systems Engineering",
+        "id": "intelligent_systems_engineering",
+        "requirements": [
+          {
+            "type": "Required Courses",
+            "courses": [
+              "ENGR-E 101 Innovation and Design"
+            ]
+          },
+          {
+            "type": "Foundation Courses",
+            "groups": [
+              {
+                "name": "Choose Two",
+                "courses": [
+                  "ENGR-E110 Engineering Computer Architectures",
+                  "ENGR-E111 Software Systems Engineering",
+                  "ENGR-E201 Computer Systems Engineering",
+                  "ENGR-E210 Engineering Cyber-Physical Systems",
+                  "ENGR-E221 Intelligent Systems I",
+                  "ENGR-E222 Intelligent Systems II",
+                  "ENGR-E225 Introduction to Circuits",
+                  "ENGR-E250 Systems, Signals, and Control"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Advanced Courses",
+            "courses": [
+              "Three additional courses (9 credit hours) from 300-level or 400-level Intelligent Systems Engineering courses"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Minor in Security Informatics",
+        "id": "security_informatics",
+        "requirements": [
+          {
+            "type": "Required Courses",
+            "courses": [
+              "CSCI-C 291 System Programming with C and Unix",
+              "INFO-I 130 Introduction to Cybersecurity",
+              "INFO-I 230 Analytical Foundations of Security",
+              "INFO-I 231/CSCI-C 231 Introduction to the Mathematics of Cybersecurity",
+              "INFO-I 430/CSCI-B 430 Security for Networked Systems",
+              "INFO-I 433/CSCI-B 433 Systems & Protocol Security & Information Assurance"
+            ]
+          },
+          {
+            "type": "Electives",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "BUS-S 433 Information Systems Security",
+                  "CSCI-B 490 Seminar in Computer Science (Topic: Active Cyber Defense)",
+                  "INFO-I 330 Legal and Social Informatics of Security",
+                  "INFO-I 399 Current Topics in Informatics (3 credit hour approved topic)",
+                  "INFO-I 400 Topics in Informatics (3 credit hour approved topic)",
+                  "INFO-I 453 Computer and Information Ethics"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Minor in Virtual Reality",
+        "id": "virtual_reality",
+        "requirements": [
+          {
+            "type": "Required Courses",
+            "courses": [
+              "INFO-I 304 Introduction to Virtual Reality",
+              "INFO-I 442 Creating Virtual Assets",
+              "INFO-I 443 Building Virtual Worlds",
+              "INFO-I 444 Artificial Life in Virtual Reality"
+            ]
+          },
+          {
+            "type": "Skill Set Groups",
+            "groups": [
+              {
+                "name": "Artificial Intelligence",
+                "courses": [
+                  "COGS-Q 320 Computation in the Cognitive and Information Sciences",
+                  "CSCI-B 351 Introduction to Artificial Intelligence",
+                  "CSCI-B 355 Autonomous Robotics",
+                  "INFO-I 216 Humans, Animals, and Artificial Intelligence",
+                  "INFO-I 413 Usable Artificial Intelligence",
+                  "INFO-I 440 Human Robot Interaction",
+                  "INFO-I 469 Collective Intelligence"
+                ]
+              },
+              {
+                "name": "Data Analytics",
+                "courses": [
+                  "ENGR-E 434 Big Data Applications",
+                  "ENGR-E 484 Scientific Visualization",
+                  "INFO-I 123 Data Fluency",
+                  "INFO-I 368 Performance Analytics",
+                  "INFO-I 421 Applications of Data Mining",
+                  "INFO-I 422 Data Visualization",
+                  "INFO-I 423 Big Data Applications and Analytics",
+                  "INFO-I 424 Big Data Software and Projects",
+                  "INFO-I 427 Search Informatics",
+                  "INFO-I 435 Management, Access, and Use of Big and Complex Data",
+                  "INFO-I 468 Network Science Applications"
+                ]
+              },
+              {
+                "name": "Game Design",
+                "courses": [
+                  "CSCI-C 292 Introduction to Game Programming",
+                  "MSCH-G 310 Game Design I",
+                  "MSCH-G 320 Game Art and Sound"
+                ]
+              },
+              {
+                "name": "Mobile App Development",
+                "courses": [
+                  "CSCI-C 323 Mobile App Development",
+                  "INFO-I 342 Mobile Programming",
+                  "INFO-I 400 Topics in Informatics (topic: Cross-platform Mobile Programming)"
+                ]
+              },
+              {
+                "name": "Virtual Reality",
+                "courses": [
+                  "INFO-I 400 Topics in Informatics (topic: Applied Augmented Reality)",
+                  "INFO-I 400 Topics in Informatics (topic: Intro to Virtual Reality World Design & Culture)",
+                  "INFO-I 400 Topics in Informatics (topic: VR Animation, Light, and Sound)"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Minor in Web Design and Development",
+        "id": "web_design_development",
+        "requirements": [
+          {
+            "type": "Required Courses",
+            "courses": [
+              "INFO-I 360 Web Design"
+            ]
+          },
+          {
+            "type": "Programming Foundation",
+            "groups": [
+              {
+                "name": "Choose One",
+                "courses": [
+                  "CSCI-A 201 Introduction to Programming I",
+                  "CSCI-C 200 Introduction to Computers and Programming",
+                  "CSCI-C 211 Introduction to Computer Science",
+                  "COGS-Q 260 Programming for the Cognitive and Information Sciences",
+                  "INFO-I 210 Information Infrastructure I"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Electives",
+            "groups": [
+              {
+                "name": "Choose Three",
+                "courses": [
+                  "INFO-I 308 Information Representation",
+                  "INFO-I 363 Visual Design for the Web",
+                  "INFO-I 365 JavaScript",
+                  "INFO-I 389 Serve IT Internship in Informatics (3 total hours)",
+                  "INFO-I 400 (Topic: Cross-Platform Mobile Programming)",
+                  "INFO-I 400 (Topic: Mobile HCI Design)"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    rebuildVisualization();
+    showStatus("Startup data loaded! You can also load your own JSON file.", "success");
+  });
+</script>
+    </body>
+</html>

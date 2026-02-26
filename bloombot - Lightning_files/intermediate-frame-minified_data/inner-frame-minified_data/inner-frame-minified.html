@@ -1,0 +1,236 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><!-- base href="https://1081515197-atari-embeds.googleusercontent.com/embeds/16cb204cf3a9d4d223a0a3fd8b0eec5d/inner-frame-minified.html?jsh=m%3B%2F_%2Fscs%2Fabc-static%2F_%2Fjs%2Fk%3Dgapi.lb.en.PCvl17LujMs.O%2Fd%3D1%2Frs%3DAHpOoo-sAn5Asuf3MvShXCH_dsg8tE46Tw%2Fm%3D__features__" -->
+<style>
+    body {
+/*        display: flex;*/
+        justify-content: space-between;
+        font-family: sans-serif;
+    }
+    .inputs {
+        width: 100%;
+        font-size: 1.5em;
+    }
+    .content {
+        width: 100%;
+    }
+    .svgdisplay {
+        text-align: center;
+    }
+    .footnote {
+        position: fixed; /* Fixed positioning */
+        bottom: 10px; /* Adjust as needed */
+        left: 0;
+        right: 0;
+        text-align: right;
+        background-color: #ffffff;
+        padding: 10px;
+        font-size: 10px;
+    }
+</style>
+
+
+
+    <meta charset="utf-8">
+    <title>Zigzag Generator</title>
+    <script src="inner-frame-minified_data/d3.v5.min.js"></script>
+</head>
+<body>
+
+<table>
+    <tbody><tr>
+        <td style="width:20%">
+  
+<div class="inputs">
+    <p>
+    <label for="widthInput">Width:</label>
+    <input type="number" id="widthInput" value="900">
+    </p>
+    <p>
+    <label for="heightInput">Height:</label>
+    <input type="number" id="heightInput" value="40">
+    </p>
+    <p>
+    <label for="zigzagInput">Zigzags:</label>
+    <input type="number" id="zigzagInput" value="45">
+    </p>
+    <p>
+    <button onclick="generateZigzag()">Generate Your Lightning</button>
+    </p>
+</div>
+</td>
+        <td style="width:20%">
+  
+<div class="inputs">
+    <p>
+    <label for="thicknessInput">Thickness:</label>
+    <input type="number" id="thicknessInput" value="12">
+    </p>
+    <p>
+
+    <label for="color_select">Color Palette:</label>
+    <select id="color_select">
+        <option value="sunrise" selected="selected">Sunrise</option>
+        <option value="blues">Blues</option>
+        <option value="pinks">Pinks</option>
+        <option value="greys">Greys</option>
+        <option value="greens">Greens</option>
+        <option value="purples">Purples</option>
+        <option value="sunset">Sunset   </option>
+    </select>
+    </p>
+    <!-- <p><button onclick="toggleAlignment()">Toggle Alignment</button></p> -->
+</div>
+
+
+</td>
+        <td style="width:40%">
+<div class="content">
+<p><b>What is the meaning and symbolism of the zigzag pattern on Navajo (Diné) rugs?</b></p>
+<p>
+<i>The zigzag pattern is often featured in Navajo rugs and is commonly 
+referred to as a "lightning" pattern (Tłʼiish) by the Navajo people. In 
+Navajo culture, the zigzag pattern is said to symbolize the lightning 
+bolt, which is a key element in Navajo mythology and spiritual 
+practices. 
+</i></p><i>
+<p>
+This ceremonial symbolism represents the power, potency, and speed of 
+natural forces that can potentially bring rain, a crucial resource in 
+the arid Southwest where the Navajo Nation is located.
+</p>
+</i><p><i>
+
+However, interpretations can vary widely and the meaning can change 
+based on the context and the particular rug design. Each rug is unique 
+and carries its own cultural and personal significance, it's always best
+ to ask the weaver or the native expert for accurate information.</i><sup>*</sup>
+</p>
+<p>
+Listen how to pronounce <a href="https://navajowotd.com/word/atsiniltlish/">atsiniltł'ish</a> (<i>lightning</i> or <i>electricity</i>) in Navajo.
+</p>
+
+</div>
+
+</td>
+    </tr>
+    <tr>
+        <td style="width:100%" colspan="3">
+<div class="svgdisplay" id="svgContainer"></div>
+  </td>
+    </tr>
+</tbody></table>
+<!-- Footnote -->
+<div class="footnote">
+    <sup>*</sup> GPT-4 on November 23, 2023
+</div>
+<script>
+    let colorPalettes = {
+"sunrise": ['#fff9f5', '#fff5eb', '#fff0e0', '#ffebd6', '#ffe5cc', '#ffdfc2', '#ffd9b8', '#ffd3ae', '#ffcda4', '#ffc79a', '#ffc190', '#ffbb86', '#ffb57c', '#ffaf72', '#ffa968', '#ffa35e', '#ff9d54', '#ff974a', '#ff9140', '#ff8b36', '#ff852c'],
+        "blues": ['#ffc0cb', '#f8b7ce', '#f2afd1', '#eba6d4', '#e49dd7', '#dd95da', '#d58cdd', '#ce84e0', '#c67be2', '#bd73e5', '#b56ae8', '#ab61ea', '#a259ed', '#9850ef', '#8d47f1', '#813ef4', '#7435f6', '#642bf8', '#5220fb', '#3a13fd', '#0000ff'],
+        "pinks": ['#ffe0eb', '#ffdbe9', '#ffd6e7', '#ffd2e5', '#ffcde3', '#ffc8e1', '#ffc3e0', '#ffbfde', '#ffbadc', '#ffb5da', '#ffb0d8', '#ffabd6', '#ffa6d4', '#ffa1d2', '#ff9bd1', '#ff96cf', '#ff91cd', '#ff8bcb', '#ff85c9', '#ff80c7', '#ff7ac5', '#ff73c3', '#ff6dc1', '#ff66bf', '#ff5fbd', '#ff57bb'],
+        "greens": ['#ffe0eb', '#f6dbe2', '#edd5da', '#e4d0d2', '#dbcbc9', '#d2c6c1', '#c9c0b9', '#c1bbb0', '#b8b6a8', '#afb1a0', '#a6ab98', '#9ea690', '#95a188', '#8d9c81', '#849779', '#7c9171', '#738c6a', '#6b8762', '#62825b', '#5a7d53', '#51784c'],
+        "greys": ['#c6a9b3', '#bfa4ae', '#b89fa8', '#b19aa2', '#aa959d', '#a49097', '#9d8c92', '#96878c', '#8f8287', '#897e81', '#82797c', '#7c7477', '#757072', '#6f6b6c', '#686767', '#9dadb5', '#9aa5a9', '#969d9e', '#919593', '#8c8e89', '#868680', '#817f77', '#7b786e', '#757066', '#6f695d', '#686356', '#625c4e', '#5c5546', '#554e3f', '#4f4838'],
+        "purples": ['#b89ff5', '#bd98ea', '#c190e0', '#c489d6', '#c781cc', '#c97ac2', '#cb72b9', '#cd6aaf', '#ce62a5', '#cf599c', '#cf5092', '#cf4689', '#cf3b80', '#cf2f77', '#cf1f6e', '#2d6c94', '#416e96', '#507098', '#5d739b', '#68759e', '#7278a2', '#7b7aa8', '#827dae', '#8980b5', '#8f83bd', '#9386c7', '#9689d2', '#968ddf', '#9491ee', '#8e96ff'],
+        "sunset": ['#ffd653', '#fece4f', '#fdc64a', '#fcbe46', '#fbb642', '#faae3e', '#f9a639', '#f79e35', '#f59531', '#f48d2d', '#f28428', '#f07c24', '#ee7320', '#ec6a1c', '#ea6017', '#e75613', '#e54c0f', '#e2400a', '#e03306', '#dd2203', '#da0000'],
+        // Add more color palettes similarly
+        // "3": ['#...'],
+        // "4": ['#...'],
+        // Add more palettes as needed
+    };
+
+
+
+    function createZigZag(width, height, zigzags, thickness){
+        var viewBoxWidth = width * 1.1;// + width / 5;
+        var viewBoxHeight = height + thickness * 2;// + height / 5;
+
+        // Create the SVG
+        var svg = d3.select("#svgContainer").append("svg")
+            .attr("width", viewBoxWidth)
+            .attr("height", viewBoxHeight)
+            .attr("viewBox", 0 + " " + -thickness + " " + (viewBoxWidth+thickness) + " " + (viewBoxHeight+thickness))
+            .attr("xmlns", "http://www.w3.org/2000/svg") // Add the namespace,
+            .on("click", function() { // On click functionality
+            var serializer = new XMLSerializer();
+            var svgString = serializer.serializeToString(this);
+            var dataUrl = "data:image/svg+xml," + encodeURIComponent(svgString);
+            var dlLink = document.createElement('a');
+            dlLink.download = 'zigzag.svg';
+            dlLink.href = dataUrl;
+            dlLink.dataset.downloadurl = ["image/svg+xml", dlLink.download, dlLink.href].join(':');
+            document.body.appendChild(dlLink);
+            dlLink.click();
+            document.body.removeChild(dlLink);
+        });
+
+        // Define a zigzag line generator
+        var zigzag = d3.line()
+            .x(function(d) { return d[0]; })
+            .y(function(d) { return d[1]; });
+
+        // Initialize zigzagData for calculating zigzag points
+        var zigzagData = [];
+
+        // Generate zigzag points
+        for (var i = 0; i < zigzags; i++) {
+            zigzagData.push([(i * width) / zigzags, ((i % 2 === 0) ? 0 : height) + thickness ]);
+        }
+
+        // Add end point
+        //zigzagData.push([width, (zigzags % 2 === 0) ? 0 : height]);
+
+        
+        // Add the zigzag line to the SVG
+        svg.append("path")
+            .attr("d", zigzag(zigzagData))
+            .attr("stroke", "black")
+             // .attr("viewBox", 0 + " " + -thickness + " " + viewBoxWidth+thickness + " " + viewBoxHeight+thickness)
+            .attr("stroke-width", thickness)
+            .attr("fill", "none");
+    }
+
+    function generateZigzag() {
+        var width = parseInt(document.getElementById("widthInput").value);
+        var height = parseInt(document.getElementById("heightInput").value);
+        var zigzags = parseInt(document.getElementById("zigzagInput").value);
+        var thickness = parseInt(document.getElementById("thicknessInput").value);
+        var palette = document.getElementById("color_select").value;
+
+        //let selectedPalette = colorPalettes[palette];
+
+        // Clear previous SVG if exists
+        d3.select("#svgContainer").selectAll("*").remove();
+        
+        //createZigZag(width, height, zigzags, thickness);
+
+        // specify your own hex color palette
+        generateZigZags(12, zigzags, width, height, thickness, palette);
+    }
+
+    function generateZigZags(numZigzags, zigzags, width, height, maxThickness, colorPalette) {
+  
+    // Loops through the desired number of zigzags
+    for(let i = 0; i < numZigzags; i++) {
+
+        // Sets random line thickness
+        let thickness = Math.random() * maxThickness;
+  
+        // Creates zigzag with random number of sections
+        let zigzagsSections = Math.floor(Math.random() * zigzags) + zigzags/2;
+        createZigZag(width, height, zigzagsSections, thickness);
+  
+        // Randomly sets a color from the color palette
+        let colorIndex = Math.floor(Math.random() * colorPalettes[colorPalette].length);
+        let color = colorPalettes[colorPalette][colorIndex];
+  
+  
+        // Sets the color and thickness of the line
+        d3.select(`#svgContainer svg:nth-child(${i+1}) path`)
+        .attr("stroke", color)
+        .attr("stroke-width", thickness);
+    }
+}
+</script>
+
+
+</body></html>

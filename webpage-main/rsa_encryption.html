@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSA Encryption Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #ffffff;
+            color: #000000;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        h1 {
+            border-bottom: 3px solid #000000;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        
+        h2 {
+            margin-top: 40px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 5px;
+        }
+        
+        .definition {
+            background-color: #f5f5f5;
+            border: 2px solid #000000;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .method-container {
+            border: 2px solid #000000;
+            padding: 20px;
+            margin-bottom: 30px;
+            background-color: #fafafa;
+        }
+        
+        .method-description {
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #000000;
+            background-color: #ffffff;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        button {
+            background-color: #000000;
+            color: #ffffff;
+            border: none;
+            padding: 12px 30px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background-color: #333333;
+        }
+        
+        .output {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #ffffff;
+            border: 2px solid #000000;
+            min-height: 60px;
+            word-wrap: break-word;
+        }
+        
+        .output-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .example {
+            background-color: #e8e8e8;
+            padding: 10px;
+            margin-top: 10px;
+            border-left: 4px solid #000000;
+            font-size: 0.9em;
+        }
+        
+        .warning {
+            background-color: #ffe6e6;
+            border: 2px solid #000000;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .key-display {
+            background-color: #e8f4e8;
+            border: 2px solid #000000;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .key-pair {
+            margin: 10px 0;
+        }
+        
+        .math-steps {
+            background-color: #f0f0f0;
+            border: 2px solid #000000;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 0.9em;
+        }
+        
+        .math-steps div {
+            margin: 5px 0;
+        }
+        
+        .error {
+            color: #cc0000;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>RSA Encryption: Interactive Demo</h1>
+    
+    <div class="definition">
+        <strong>RSA (Asymmetric Encryption):</strong> Uses two different keys - a public key for encryption and a private key for decryption. This solves the key distribution problem of symmetric encryption.
+    </div>
+
+    <div class="warning">
+        <strong>⚠ Educational Demo Only:</strong> This uses small numbers for learning. Real RSA uses primes with hundreds of digits!
+    </div>
+
+    <h2>Step 1: Generate RSA Keys</h2>
+    <div class="method-container">
+        <div class="method-description">
+            Choose two prime numbers to generate your public and private keys. The math behind RSA is shown step-by-step.
+        </div>
+        
+        <div class="example">
+            <strong>RSA Key Generation Process:</strong><br>
+            1. Choose two prime numbers: p and q<br>
+            2. Calculate n = p × q (part of both keys)<br>
+            3. Calculate φ(n) = (p-1) × (q-1)<br>
+            4. Choose e (public exponent, commonly 65537 or small prime)<br>
+            5. Calculate d (private exponent) where (d × e) mod φ(n) = 1<br>
+            <br>
+            <strong>Public Key:</strong> (e, n) - Share this freely<br>
+            <strong>Private Key:</strong> (d, n) - Keep this secret!
+        </div>
+        
+        <div class="input-group">
+            <label for="primeP">Prime number p (try: 61, 67, 71, 73):</label>
+            <input type="number" id="primeP" value="61" min="2">
+        </div>
+        
+        <div class="input-group">
+            <label for="primeQ">Prime number q (try: 53, 59, 47, 43):</label>
+            <input type="number" id="primeQ" value="53" min="2">
+        </div>
+        
+        <button onclick="generateKeys()">Generate Keys</button>
+        <button onclick="useSuggestedPrimes()">Use Suggested Primes (61, 53)</button>
+        
+        <div id="mathSteps" class="math-steps" style="display: none;"></div>
+        <div id="keyDisplay" class="key-display" style="display: none;"></div>
+    </div>
+
+    <h2>Step 2: Encrypt a Message</h2>
+    <div class="method-container">
+        <div class="method-description">
+            Anyone with the <strong>public key</strong> can encrypt a message. Only the holder of the private key can decrypt it.
+        </div>
+        
+        <div class="example">
+            <strong>How it works:</strong><br>
+            • Text is converted to numbers (A=01, B=02, etc.)<br>
+            • Each number is encrypted: ciphertext = (plaintext^e) mod n<br>
+            • Only someone with the private key can decrypt it
+        </div>
+        
+        <div class="input-group">
+            <label for="plaintext">Enter message to encrypt (short text or number):</label>
+            <textarea id="plaintext" placeholder="Type your message here...">HELLO</textarea>
+        </div>
+        
+        <button onclick="encryptMessage()">Encrypt with Public Key</button>
+        
+        <div class="output-label">Encrypted Message (Ciphertext):</div>
+        <div class="output" id="encryptOutput"></div>
+    </div>
+
+    <h2>Step 3: Decrypt a Message</h2>
+    <div class="method-container">
+        <div class="method-description">
+            Only the holder of the <strong>private key</strong> can decrypt messages encrypted with the public key.
+        </div>
+        
+        <div class="example">
+            <strong>How it works:</strong><br>
+            • Each encrypted number is decrypted: plaintext = (ciphertext^d) mod n<br>
+            • Numbers are converted back to text<br>
+            • This only works with the correct private key
+        </div>
+        
+        <div class="input-group">
+            <label for="ciphertext">Encrypted message (will auto-fill from encryption above):</label>
+            <textarea id="ciphertext" placeholder="Paste encrypted message here..."></textarea>
+        </div>
+        
+        <button onclick="decryptMessage()">Decrypt with Private Key</button>
+        
+        <div class="output-label">Decrypted Message:</div>
+        <div class="output" id="decryptOutput"></div>
+    </div>
+
+    <script>
+        let publicKey = null;
+        let privateKey = null;
+        let n = null;
+
+        function isPrime(num) {
+            if (num < 2) return false;
+            if (num === 2) return true;
+            if (num % 2 === 0) return false;
+            
+            for (let i = 3; i <= Math.sqrt(num); i += 2) {
+                if (num % i === 0) return false;
+            }
+            return true;
+        }
+
+        function gcd(a, b) {
+            while (b !== 0) {
+                let temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        function modInverse(e, phi) {
+            let m0 = phi, t, q;
+            let x0 = 0, x1 = 1;
+
+            if (phi === 1) return 0;
+
+            while (e > 1) {
+                q = Math.floor(e / phi);
+                t = phi;
+                phi = e % phi;
+                e = t;
+                t = x0;
+                x0 = x1 - q * x0;
+                x1 = t;
+            }
+
+            if (x1 < 0) x1 += m0;
+
+            return x1;
+        }
+
+        function useSuggestedPrimes() {
+            document.getElementById('primeP').value = 61;
+            document.getElementById('primeQ').value = 53;
+            generateKeys();
+        }
+
+        function generateKeys() {
+            const p = parseInt(document.getElementById('primeP').value);
+            const q = parseInt(document.getElementById('primeQ').value);
+            
+            // Validate primes
+            if (!isPrime(p)) {
+                alert(`${p} is not a prime number! Try: 61, 67, 71, 73, 79, 83, 89, 97`);
+                return;
+            }
+            
+            if (!isPrime(q)) {
+                alert(`${q} is not a prime number! Try: 53, 59, 47, 43, 41, 37, 31, 29`);
+                return;
+            }
+            
+            if (p === q) {
+                alert('p and q must be different prime numbers!');
+                return;
+            }
+            
+            // Calculate n and phi(n)
+            n = p * q;
+            const phi = (p - 1) * (q - 1);
+            
+            // Choose e (public exponent)
+            let e = 65537; // Common choice
+            if (e >= phi) {
+                // For small primes, use smaller e
+                e = 17;
+                if (e >= phi) e = 7;
+                if (e >= phi) e = 5;
+                if (e >= phi) e = 3;
+            }
+            
+            // Make sure e and phi are coprime
+            while (gcd(e, phi) !== 1) {
+                e++;
+            }
+            
+            // Calculate d (private exponent)
+            const d = modInverse(e, phi);
+            
+            publicKey = e;
+            privateKey = d;
+            
+            // Display math steps
+            const mathSteps = document.getElementById('mathSteps');
+            mathSteps.style.display = 'block';
+            mathSteps.innerHTML = `
+                <strong>Mathematical Steps:</strong><br>
+                <div>1. p = ${p}, q = ${q} (both prime numbers)</div>
+                <div>2. n = p × q = ${p} × ${q} = ${n}</div>
+                <div>3. φ(n) = (p-1) × (q-1) = ${p-1} × ${q-1} = ${phi}</div>
+                <div>4. e = ${e} (public exponent, coprime with φ(n))</div>
+                <div>5. d = ${d} (private exponent, where d × e ≡ 1 mod φ(n))</div>
+            `;
+            
+            // Display keys
+            const keyDisplay = document.getElementById('keyDisplay');
+            keyDisplay.style.display = 'block';
+            keyDisplay.innerHTML = `
+                <div class="key-pair"><strong>🔓 PUBLIC KEY (share freely):</strong> (e=${e}, n=${n})</div>
+                <div class="key-pair"><strong>🔐 PRIVATE KEY (keep secret):</strong> (d=${d}, n=${n})</div>
+            `;
+            
+            // Clear previous encryption/decryption
+            document.getElementById('encryptOutput').textContent = '';
+            document.getElementById('decryptOutput').textContent = '';
+            document.getElementById('ciphertext').value = '';
+        }
+
+        function modPow(base, exponent, modulus) {
+            if (modulus === 1) return 0;
+            let result = 1;
+            base = base % modulus;
+            while (exponent > 0) {
+                if (exponent % 2 === 1) {
+                    result = (result * base) % modulus;
+                }
+                exponent = Math.floor(exponent / 2);
+                base = (base * base) % modulus;
+            }
+            return result;
+        }
+
+        function textToNumbers(text) {
+            // Convert text to two-digit numbers (A=01, B=02, etc.)
+            const numbers = [];
+            for (let char of text.toUpperCase()) {
+                if (char >= 'A' && char <= 'Z') {
+                    numbers.push(char.charCodeAt(0) - 64); // A=1, B=2, etc.
+                } else if (char === ' ') {
+                    numbers.push(0); // Space = 0
+                }
+            }
+            return numbers;
+        }
+
+        function numbersToText(numbers) {
+            let text = '';
+            for (let num of numbers) {
+                if (num === 0) {
+                    text += ' ';
+                } else if (num >= 1 && num <= 26) {
+                    text += String.fromCharCode(num + 64); // 1=A, 2=B, etc.
+                } else {
+                    text += '?';
+                }
+            }
+            return text;
+        }
+
+        function encryptMessage() {
+            if (!publicKey || !n) {
+                alert('Please generate keys first!');
+                return;
+            }
+            
+            const plaintext = document.getElementById('plaintext').value;
+            if (!plaintext) {
+                alert('Please enter a message to encrypt!');
+                return;
+            }
+            
+            // Convert to numbers
+            const numbers = textToNumbers(plaintext);
+            
+            // Check if numbers are too large for n
+            const maxNum = Math.max(...numbers);
+            if (maxNum >= n) {
+                alert(`Message values too large for this key size (max: ${n-1}). Use larger primes or shorter message!`);
+                return;
+            }
+            
+            // Encrypt each number
+            const encrypted = numbers.map(num => modPow(num, publicKey, n));
+            
+            // Display
+            const output = document.getElementById('encryptOutput');
+            output.innerHTML = `
+                <strong>Original text:</strong> ${plaintext.toUpperCase()}<br>
+                <strong>As numbers:</strong> [${numbers.join(', ')}]<br>
+                <strong>Encrypted:</strong> [${encrypted.join(', ')}]<br>
+                <br>
+                <em>Calculation: Each number^${publicKey} mod ${n}</em>
+            `;
+            
+            // Auto-fill ciphertext field
+            document.getElementById('ciphertext').value = encrypted.join(',');
+        }
+
+        function decryptMessage() {
+            if (!privateKey || !n) {
+                alert('Please generate keys first!');
+                return;
+            }
+            
+            const ciphertextInput = document.getElementById('ciphertext').value;
+            if (!ciphertextInput) {
+                alert('Please enter an encrypted message!');
+                return;
+            }
+            
+            try {
+                // Parse encrypted numbers
+                const encrypted = ciphertextInput.split(',').map(s => parseInt(s.trim()));
+                
+                // Decrypt each number
+                const decrypted = encrypted.map(num => modPow(num, privateKey, n));
+                
+                // Convert back to text
+                const text = numbersToText(decrypted);
+                
+                // Display
+                const output = document.getElementById('decryptOutput');
+                output.innerHTML = `
+                    <strong>Encrypted numbers:</strong> [${encrypted.join(', ')}]<br>
+                    <strong>Decrypted numbers:</strong> [${decrypted.join(', ')}]<br>
+                    <strong>Decrypted text:</strong> ${text}<br>
+                    <br>
+                    <em>Calculation: Each number^${privateKey} mod ${n}</em>
+                `;
+            } catch (error) {
+                alert('Error decrypting message. Please check the format.');
+            }
+        }
+
+        // Initialize with example
+        window.onload = function() {
+            generateKeys();
+        };
+    </script>
+</body>
+</html>

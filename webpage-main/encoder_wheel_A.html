@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encoder Wheel Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 900px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        
+        .encoder-display {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+            position: relative;
+        }
+        
+        #encoderCanvas {
+            border: 2px solid #333;
+            cursor: grab;
+            background: white;
+        }
+        
+        #encoderCanvas:active {
+            cursor: grabbing;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background: #4CAF50;
+            color: white;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        button:active {
+            transform: scale(0.95);
+        }
+        
+        .status {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            font-size: 18px;
+        }
+        
+        .sensor-status {
+            padding: 10px 20px;
+            border-radius: 5px;
+            background: #e0e0e0;
+            font-weight: bold;
+        }
+        
+        .sensor-status.active {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .table-container {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #333;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .clear-btn {
+            background: #f44336;
+            margin-top: 10px;
+        }
+        
+        .clear-btn:hover {
+            background: #da190b;
+        }
+        
+        .info {
+            text-align: center;
+            color: #666;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .two-column {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap; /* allows stacking on small screens */
+        }
+
+        .left-column, .right-column {
+            flex: 1;
+            min-width: 500px; /* ensures columns don't shrink too much */
+        }
+
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .right-column {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+    </style>
+</head>
+<body>
+    <!-- <div class="container">
+        <h1>Optical Encoder Wheel Simulator</h1>
+        
+        <div class="encoder-display">
+            <canvas id="encoderCanvas" width="550" height="550"></canvas>
+        </div>
+        
+        <div class="controls">
+            <button onclick="rotateWheel(-5)">◀ Rotate CCW</button>
+            <button onclick="rotateWheel(5)">Rotate CW ▶</button>
+        </div>
+        
+        <div class="status">
+            <div id="sensorA" class="sensor-status">Sensor A: 0</div>
+            <div id="sensorB" class="sensor-status">Sensor B: 0</div>
+        </div>
+        
+        <div class="info">
+            Click and drag the wheel to rotate freely, or use the buttons<br>
+            Two rings with offset patterns create quadrature encoding
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time (ms)</th>
+                        <th>Sensor A</th>
+                        <th>Sensor B</th>
+                        <th>Direction</th>
+                    </tr>
+                </thead>
+                <tbody id="signalTable">
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="text-align: center;">
+            <button class="clear-btn" onclick="clearTable()">Clear Table</button>
+        </div>
+    </div> -->
+    <div class="two-column">
+    <div class="left-column">
+        <div class="encoder-display">
+            <canvas id="encoderCanvas" width="550" height="550"></canvas>
+        </div>
+
+        <div class="controls">
+            <button onclick="rotateWheel(-5)">◀ Rotate CCW</button>
+            <button onclick="rotateWheel(5)">Rotate CW ▶</button>
+        </div>
+
+        <div class="status">
+            <div id="sensorA" class="sensor-status">Sensor A: 0</div>
+            <div id="sensorB" class="sensor-status">Sensor B: 0</div>
+        </div>
+    </div>
+
+    <div class="right-column">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time (ms)</th>
+                        <th>Sensor A</th>
+                        <th>Sensor B</th>
+                        <th>Direction</th>
+                    </tr>
+                </thead>
+                <tbody id="signalTable"></tbody>
+            </table>
+        </div>
+
+        <div style="text-align: center;">
+            <button class="clear-btn" onclick="clearTable()">Clear Table</button>
+        </div>
+    </div>
+</div>
+
+    <script>
+        const canvas = document.getElementById('encoderCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let angle = 0;
+        let lastSensorA = 0;
+        let lastSensorB = 0;
+        let startTime = Date.now();
+        let isDragging = false;
+        let lastMouseAngle = 0;
+        
+        const segments = 8; // Number of segments per ring
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const outerRadius = 180;
+        const middleRadius = 130;
+        const innerRadius = 80;
+        
+        // Sensor positions (angles in degrees)
+        const sensorAAngle = 0;
+        const sensorBAngle = 180; // Same angle, but reading different ring
+        
+        function drawWheel() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw outer ring (for Sensor A) - normal pattern
+            for (let i = 0; i < segments; i++) {
+                const startAngle = (i * 360 / segments + angle) * Math.PI / 180;
+                const endAngle = ((i + 1) * 360 / segments + angle) * Math.PI / 180;
+                
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, outerRadius, startAngle, endAngle);
+                ctx.arc(centerX, centerY, middleRadius, endAngle, startAngle, true);
+                ctx.closePath();
+                
+                ctx.fillStyle = i % 2 === 0 ? '#000' : '#fff';
+                ctx.fill();
+                ctx.strokeStyle = '#666';
+                ctx.stroke();
+            }
+            
+            // Draw inner ring (for Sensor B) - offset pattern by 1/2 segment for quadrature
+            const offsetAngle = (360 / segments) / 2; // Half segment offset
+            for (let i = 0; i < segments; i++) {
+                const startAngle = (i * 360 / segments + angle + offsetAngle) * Math.PI / 180;
+                const endAngle = ((i + 1) * 360 / segments + angle + offsetAngle) * Math.PI / 180;
+                
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, middleRadius, startAngle, endAngle);
+                ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
+                ctx.closePath();
+                
+                ctx.fillStyle = i % 2 === 0 ? '#000' : '#fff';
+                ctx.fill();
+                ctx.strokeStyle = '#666';
+                ctx.stroke();
+            }
+            
+            // Draw center hub
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI);
+            ctx.fillStyle = '#888';
+            ctx.fill();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw ring labels
+            ctx.fillStyle = '#fa5722';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            
+            // Label outer ring
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(Math.PI / 4);
+            ctx.fillText('Ring A', 0, -(outerRadius + middleRadius) / 2);
+            ctx.restore();
+            
+            // Label inner ring
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(-Math.PI / 4);
+            ctx.fillText('Ring B', 0, -(middleRadius + innerRadius) / 2);
+            ctx.restore();
+            
+            // Draw sensors
+            drawSensor(sensorAAngle, outerRadius, middleRadius, 'A', '#ff5722');
+            drawSensor(sensorBAngle, middleRadius, innerRadius, 'B', '#2196F3');
+        }
+        
+        function drawSensor(sensorAngle, outerR, innerR, label, color) {
+            const rad = (sensorAngle - 90) * Math.PI / 180;
+            const readRadius = (outerR + innerR) / 2;
+            const sensorX = centerX + Math.cos(rad) * (outerRadius + 40);
+            const sensorY = centerY + Math.sin(rad) * (outerRadius + 40);
+            
+            // Sensor body
+            ctx.fillStyle = color;
+            ctx.fillRect(sensorX - 15, sensorY - 25, 30, 50);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(sensorX - 15, sensorY - 25, 30, 50);
+            
+            // Sensor label
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, sensorX, sensorY);
+            
+            // Sensing beam
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(sensorX, sensorY);
+            const beamRad = (sensorAngle - 90) * Math.PI / 180;
+            ctx.lineTo(centerX + Math.cos(beamRad) * readRadius, 
+                      centerY + Math.sin(beamRad) * readRadius);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Sensing point
+            ctx.beginPath();
+            ctx.arc(centerX + Math.cos(beamRad) * readRadius, 
+                   centerY + Math.sin(beamRad) * readRadius, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            // Sensor label
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, sensorX, sensorY);
+        }
+        
+        function getSensorValue(sensorAngle, ringOffsetAngle) {
+            // Calculate which segment the sensor is pointing at for its specific ring
+            const normalizedAngle = ((sensorAngle - angle - ringOffsetAngle) % 360 + 360) % 360;
+            const segmentIndex = Math.floor(normalizedAngle / (360 / segments));
+            return segmentIndex % 2 === 0 ? 1 : 0;
+        }
+        
+        function updateSensors() {
+            const offsetAngle = (360 / segments) / 2;
+            const sensorA = getSensorValue(sensorAAngle, 0); // Outer ring
+            const sensorB = getSensorValue(sensorBAngle, offsetAngle); // Inner ring with offset
+            
+            // Update display
+            const sensorAEl = document.getElementById('sensorA');
+            const sensorBEl = document.getElementById('sensorB');
+            
+            sensorAEl.textContent = `Sensor A: ${sensorA}`;
+            sensorBEl.textContent = `Sensor B: ${sensorB}`;
+            
+            sensorAEl.className = 'sensor-status' + (sensorA ? ' active' : '');
+            sensorBEl.className = 'sensor-status' + (sensorB ? ' active' : '');
+            
+            // Log changes
+            if (sensorA !== lastSensorA || sensorB !== lastSensorB) {
+                logSignal(sensorA, sensorB);
+                lastSensorA = sensorA;
+                lastSensorB = sensorB;
+            }
+        }
+        
+        function logSignal(sensorA, sensorB) {
+            const currentTime = Date.now() - startTime;
+            const table = document.getElementById('signalTable');
+            
+            // Determine direction from quadrature signals
+            let direction = '-';
+            
+            // Quadrature decoding logic
+            const state = (lastSensorA << 3) | (lastSensorB << 2) | (sensorA << 1) | sensorB;
+            
+            // CW transitions: 0b0001, 0b0111, 0b1110, 0b1000
+            // CCW transitions: 0b0010, 0b1011, 0b1101, 0b0100
+            const cwStates = [0b0001, 0b0111, 0b1110, 0b1000];
+            const ccwStates = [0b0010, 0b1011, 0b1101, 0b0100];
+            
+            if (cwStates.includes(state)) {
+                direction = 'CW';
+            } else if (ccwStates.includes(state)) {
+                direction = 'CCW';
+            }
+            
+            const row = table.insertRow(0);
+            row.insertCell(0).textContent = currentTime.toFixed(0);
+            row.insertCell(1).textContent = sensorA;
+            row.insertCell(2).textContent = sensorB;
+            row.insertCell(3).textContent = direction;
+        }
+        
+        function rotateWheel(degrees) {
+            const steps = 20;
+            const stepSize = degrees / steps;
+            let step = 0;
+            
+            const interval = setInterval(() => {
+                angle += stepSize;
+                angle = angle % 360;
+                drawWheel();
+                updateSensors();
+                step++;
+                if (step >= steps) clearInterval(interval);
+            }, 16);
+        }
+        
+        function clearTable() {
+            document.getElementById('signalTable').innerHTML = '';
+            startTime = Date.now();
+        }
+        
+        // Mouse interaction
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left - centerX;
+            const y = e.clientY - rect.top - centerY;
+            lastMouseAngle = Math.atan2(y, x) * 180 / Math.PI;
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left - centerX;
+            const y = e.clientY - rect.top - centerY;
+            const currentMouseAngle = Math.atan2(y, x) * 180 / Math.PI;
+            
+            const deltaAngle = currentMouseAngle - lastMouseAngle;
+            angle += deltaAngle;
+            angle = angle % 360;
+            
+            lastMouseAngle = currentMouseAngle;
+            
+            drawWheel();
+            updateSensors();
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            isDragging = false;
+        });
+        
+        // Initial draw
+        drawWheel();
+        updateSensors();
+    </script>
+</body>
+</html>

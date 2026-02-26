@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Encoder Design & Simulator — Offscreen Integrated</title>
+<style>
+  :root{
+    --bg:#f7fafc; --panel:#fff; --muted:#6b7280; --accent:#2563eb; --border:#e5e7eb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;background:var(--bg);color:#111827}
+  .container{max-width:1400px;margin:0 auto;padding:20px}
+  h1{text-align:center;margin:0 0 8px;font-size:28px}
+  .subtitle{text-align:center;color:var(--muted);margin-bottom:24px;font-size:14px}
+  .layout{display:grid;grid-template-columns:280px 1fr 340px;gap:20px;align-items:start}
+  @media(max-width:1200px){.layout{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px}
+  .panel-title{font-size:16px;font-weight:700;margin-bottom:12px}
+  .field{margin-bottom:12px}
+  .label{display:block;margin-bottom:6px;font-size:13px;color:var(--muted);font-weight:600}
+  select,input[type=range]{width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:white;font-size:14px}
+  input[type=range]{height:6px; background:linear-gradient(90deg,#cbd5e1,#e6eefb)}
+  .value-display{font-weight:700}
+  .info-box{background:#f8fafc;border:1px solid var(--border);padding:10px;border-radius:8px;font-size:13px;color:var(--muted);margin-top:12px}
+  .canvas-container{display:flex;flex-direction:column;align-items:center;gap:12px}
+  #encoderCanvas{border:2px solid #333;border-radius:8px;cursor:grab;background:white}
+  #encoderCanvas.dragging-sensor{cursor:crosshair}
+  .controls{display:flex;gap:8px}
+  button{padding:8px 14px;font-size:14px;font-weight:600;border-radius:6px;border:none;cursor:pointer}
+  .btn-primary{background:#10b981;color:white}
+  .btn-danger{background:#dc2626;color:white}
+  .sensor-status{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .sensor{min-width:80px;padding:8px;border-radius:8px;background:#e5e7eb;font-weight:700;text-align:center}
+  .sensor.active{background:#10b981;color:white}
+  .table-container{max-height:340px;overflow:auto;border:1px solid var(--border);border-radius:8px;margin-bottom:12px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{padding:8px 6px;text-align:left;border-bottom:1px solid var(--border)}
+  th{background:#111827;color:#fff;position:sticky;top:0;font-weight:600;font-size:11px}
+  .hint{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Encoder Design & Simulator</h1>
+  <p class="subtitle">...</p>
+
+  <div class="layout">
+    <!-- Left controls -->
+    <div class="panel">
+      <div class="panel-title">Design Controls</div>
+      <div class="field">
+        <label class="label">Encoder Type</label>
+        <select id="encoderType">
+          <option value="single">Single Track</option>
+          <option value="quadrature">Quadrature</option>
+          <option value="gray">Gray Code</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label">Steps: <span id="stepsVal" class="value-display">16</span></label>
+        <input id="steps" type="range" min="8" max="64" step="4" value="16">
+      </div>
+
+      <div class="field">
+        <label class="label">Slit Width: <span id="slitVal" class="value-display">0.45</span></label>
+        <input id="slitWidth" type="range" min="0.3" max="1.7" step="0.05" value="0.45">
+      </div>
+
+      <div class="info-box">
+        <div style="margin-bottom:6px;font-weight:700">Pattern Info</div>
+        <div><strong>Type:</strong> <span id="infoType">Single Track</span></div>
+        <div><strong>Resolution:</strong> <span id="infoRes">16 steps</span></div>
+        <div><strong>Sensors:</strong> <span id="sensorCount">1</span></div>
+        <div id="grayInfo" style="display:none;margin-top:6px"><strong>Tracks:</strong> <span id="bitsInfo"></span></div>
+      </div>
+
+      <div class="hint" style="margin-top:12px">
+        - Drag sensors to reposition — click/drag wheel to rotate<br>
+        - Table logs each black-to-white transition (offscreen sampling)
+      </div>
+    </div>
+
+    <!-- Center canvas -->
+    <div class="panel">
+      <div class="canvas-container">
+        <canvas id="encoderCanvas" width="620" height="620"></canvas>
+        <div class="controls">
+          <button class="btn-primary" id="rotCCW">◀ Rotate CCW</button>
+          <button class="btn-primary" id="rotCW">Rotate CW ▶</button>
+        </div>
+        <button class="btn-primary" id="downloadSVG" style="margin-top:8px;">Download Wheel SVG</button>
+
+      </div>
+    </div>
+
+    <!-- Right data -->
+    <div class="panel">
+      <div class="panel-title">Sensor Readings</div>
+      <div class="sensor-status" id="sensorStatusContainer"></div>
+      <div class="table-container">
+        <table id="dataTable">
+          <thead id="tableHeader"></thead>
+          <tbody id="signalTable"></tbody>
+        </table>
+      </div>
+      <button class="btn-danger" id="clearBtn" style="width:100%">Clear Data</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- canvas setup ---
+const canvas = document.getElementById('encoderCanvas');
+const ctx = canvas.getContext('2d');
+
+// offscreen pattern canvas (black/white only)
+const patternCanvas = document.createElement('canvas');
+patternCanvas.width = canvas.width;
+patternCanvas.height = canvas.height;
+const pctx = patternCanvas.getContext('2d');
+
+// geometry and state
+const centerX = canvas.width/2;
+const centerY = canvas.height/2;
+const outerRadius = 200;
+const innerRadius = 60;
+
+let angle = 0;
+let startTime = Date.now();
+
+let state = { encoderType: 'single', steps: 16, slitWidth: 0.45 };
+const sensorColors = ['#ff5722','#2196F3','#4CAF50','#FF9800','#9C27B0','#E91E63'];
+
+let sensors = [];
+let lastSampled = [];   // last sampled values from patternCanvas
+let lastLogged = null;  // last values actually logged to table
+
+// utility
+function decimalToGray(n){ return n ^ (n >> 1); }
+
+// initialize sensors for each mode
+function initializeSensors(){
+  sensors = [];
+  if(state.encoderType === 'single'){
+    const radius = (outerRadius + innerRadius)/2;
+    sensors = [{angle:0, radius, label:'A'}];
+  } else if(state.encoderType === 'quadrature'){
+    const trackWidth = (outerRadius - innerRadius)/5;
+    const r1 = outerRadius - trackWidth;
+    const r2 = innerRadius + trackWidth*2;
+    sensors = [{angle:0, radius:r1, label:'A'}, {angle:0, radius:r2, label:'B'}];
+  } else {
+    const bits = Math.ceil(Math.log2(state.steps));
+    const trackWidth = (outerRadius - innerRadius)/(bits+1);
+    for(let b=0;b<bits;b++){ const r = outerRadius - (b+0.5)*trackWidth; sensors.push({angle:0, radius:r, label:String(b)}); }
+  }
+  lastSampled = sensors.map(()=>0);
+  lastLogged = null;
+  updateSensorStatusDisplay();
+  updateTableHeader();
+  clearTable();
+}
+
+// Draw pattern (black/white only) onto patternCanvas
+function drawPatternToOffscreen(){
+  const ctxp = pctx;
+  ctxp.clearRect(0,0,patternCanvas.width,patternCanvas.height);
+  // black background disk
+  ctxp.fillStyle = '#000';
+  ctxp.beginPath(); ctxp.arc(centerX, centerY, outerRadius, 0, Math.PI*2); ctxp.fill();
+  // draw tracks depending on mode
+  if(state.encoderType === 'single') drawSinglePattern(ctxp, angle);
+  else if(state.encoderType === 'quadrature') drawQuadraturePattern(ctxp, angle);
+  else drawGrayPattern(ctxp, angle);
+  // inner hub
+  ctxp.fillStyle = '#666'; ctxp.beginPath(); ctxp.arc(centerX, centerY, innerRadius, 0, Math.PI*2); ctxp.fill();
+}
+
+function drawSinglePattern(ctxp, ang){
+  const radius = (outerRadius + innerRadius)/2;
+  const trackWidth = (outerRadius - innerRadius)/2;
+  const angleStep = 360 / state.steps;
+  for(let i=0;i<state.steps;i++){
+    if(i%2===0){
+      const startA = (i*angleStep - state.slitWidth*angleStep/2 + ang) * Math.PI/180;
+      const endA = (i*angleStep + state.slitWidth*angleStep/2 + ang) * Math.PI/180;
+      ctxp.fillStyle = '#fff';
+      ctxp.beginPath();
+      ctxp.arc(centerX, centerY, radius + trackWidth/2, startA, endA);
+      ctxp.arc(centerX, centerY, radius - trackWidth/2, endA, startA, true);
+      ctxp.closePath(); ctxp.fill();
+    }
+  }
+}
+
+function drawQuadraturePattern(ctxp, ang){
+  const trackWidth = (outerRadius - innerRadius)/5;
+  const r1 = outerRadius - trackWidth;
+  const r2 = innerRadius + trackWidth*2;
+  const angleStep = 360 / state.steps;
+  const phaseOffset = angleStep/4;
+  // outer A
+  for(let i=0;i<state.steps;i++){
+    if(i%2===0){
+      const s = (i*angleStep - state.slitWidth*angleStep/2 + ang)*Math.PI/180;
+      const e = (i*angleStep + state.slitWidth*angleStep/2 + ang)*Math.PI/180;
+      ctxp.fillStyle = '#fff'; ctxp.beginPath();
+      ctxp.arc(centerX, centerY, r1 + trackWidth/2, s, e); ctxp.arc(centerX, centerY, r1 - trackWidth/2, e, s, true);
+      ctxp.closePath(); ctxp.fill();
+    }
+  }
+  // inner B (phase shifted)
+  for(let i=0;i<state.steps;i++){
+    if(i%2===0){
+      const s = (i*angleStep + phaseOffset - state.slitWidth*angleStep/2 + ang)*Math.PI/180;
+      const e = (i*angleStep + phaseOffset + state.slitWidth*angleStep/2 + ang)*Math.PI/180;
+      ctxp.fillStyle = '#fff'; ctxp.beginPath();
+      ctxp.arc(centerX, centerY, r2 + trackWidth/2, s, e); ctxp.arc(centerX, centerY, r2 - trackWidth/2, e, s, true);
+      ctxp.closePath(); ctxp.fill();
+    }
+  }
+}
+
+function drawGrayPattern(ctxp, ang){
+  const bits = Math.ceil(Math.log2(state.steps));
+  const actualSteps = Math.pow(2, bits);
+  const trackWidth = (outerRadius - innerRadius)/(bits+1);
+  const angleStep = 360 / actualSteps;
+  for(let bit=0;bit<bits;bit++){
+    const radius = outerRadius - (bit+0.5)*trackWidth;
+    for(let i=0;i<actualSteps;i++){
+      const gray = decimalToGray(i);
+      const bitVal = (gray >> (bits-1-bit)) & 1;
+      if(bitVal===1){
+        const s = (i*angleStep + ang)*Math.PI/180;
+        const e = ((i+1)*angleStep + ang)*Math.PI/180;
+        ctxp.fillStyle = '#fff'; ctxp.beginPath();
+        ctxp.arc(centerX, centerY, radius + trackWidth/3, s, e);
+        ctxp.arc(centerX, centerY, radius - trackWidth/3, e, s, true);
+        ctxp.closePath(); ctxp.fill();
+      }
+    }
+  }
+}
+
+// draw visible canvas: copy pattern then overlays
+function drawVisible(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // copy pattern image
+  ctx.drawImage(patternCanvas, 0, 0);
+  // draw overlay elements (colored sensors, arrows, labels)
+  drawSensorsOverlay();
+  // center hub highlight
+  ctx.strokeStyle = '#333'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(centerX, centerY, innerRadius+2, 0, Math.PI*2); ctx.stroke();
+}
+
+// overlay drawing (no effect on sensor sampling)
+function drawSensorsOverlay(){
+  sensors.forEach((sensor, idx) => {
+    const rad = (sensor.angle - 90) * Math.PI/180;
+    const color = sensorColors[idx % sensorColors.length];
+    const dotX = centerX + Math.cos(rad) * sensor.radius;
+    const dotY = centerY + Math.sin(rad) * sensor.radius;
+    // dashed line from label area
+    const labelDistance = outerRadius + 60;
+    const labelX = centerX + Math.cos(rad) * labelDistance;
+    const labelY = centerY + Math.sin(rad) * labelDistance;
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.setLineDash([4,4]); ctx.beginPath(); ctx.moveTo(labelX, labelY); ctx.lineTo(dotX, dotY); ctx.stroke(); ctx.setLineDash([]);
+    // arrowhead
+    const arrowAngle = Math.atan2(dotY-labelY, dotX-labelX);
+    ctx.fillStyle = color; ctx.beginPath();
+    ctx.moveTo(dotX, dotY);
+    ctx.lineTo(dotX - 8*Math.cos(arrowAngle - Math.PI/6), dotY - 8*Math.sin(arrowAngle - Math.PI/6));
+    ctx.lineTo(dotX - 8*Math.cos(arrowAngle + Math.PI/6), dotY - 8*Math.sin(arrowAngle + Math.PI/6));
+    ctx.closePath(); ctx.fill();
+    // dot
+    ctx.beginPath(); ctx.arc(dotX, dotY, 5, 0, Math.PI*2); ctx.fillStyle = color; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    // label box
+    ctx.fillStyle = color; ctx.fillRect(labelX - 22, labelY - 16, 44, 32);
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5; ctx.strokeRect(labelX - 22, labelY - 16, 44, 32);
+    ctx.fillStyle = 'white'; ctx.font = 'bold 13px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(sensor.label, labelX, labelY);
+  });
+}
+
+// sample from pattern canvas only (robust sampling)
+function getSensorReading(sensorAngle, radiusToCheck){
+  const rad = (sensorAngle - 90) * Math.PI/180;
+  let x = Math.round(centerX + Math.cos(rad) * radiusToCheck);
+  let y = Math.round(centerY + Math.sin(rad) * radiusToCheck);
+  x = Math.max(0, Math.min(patternCanvas.width-1, x));
+  y = Math.max(0, Math.min(patternCanvas.height-1, y));
+  try{
+    const img = pctx.getImageData(x,y,1,1).data;
+    const brightness = (img[0] + img[1] + img[2]) / 3;
+    // strict threshold: treat only bright whites as 1
+    return brightness > 200 ? 1 : 0;
+  }catch(e){
+    console.error('sampling error', e);
+    return 0;
+  }
+}
+
+// update sensors: sample, update UI, and log flips
+function updateSensors(){
+  const current = sensors.map(s => getSensorReading(s.angle, s.radius));
+  // update status display
+  sensors.forEach((s, idx) => {
+    const el = document.getElementById(`sensor${idx}`);
+    if(el){ el.textContent = `${s.label}: ${current[idx]}`; el.className = 'sensor' + (current[idx] ? ' active' : ''); }
+  });
+  // ensure lastSampled initialized
+  if(!lastSampled || lastSampled.length !== current.length){ lastSampled = [...current]; return; }
+  // detect flips
+  let flipped = false;
+  for(let i=0;i<current.length;i++){ if(current[i] !== lastSampled[i]){ flipped = true; break; } }
+  if(flipped){
+    logSignal(current);
+    lastLogged = [...current];
+  }
+  lastSampled = [...current];
+}
+
+// UI helpers
+function updateSensorStatusDisplay(){
+  const container = document.getElementById('sensorStatusContainer'); container.innerHTML = '';
+  sensors.forEach((s, idx) => {
+    const div = document.createElement('div'); div.id = `sensor${idx}`; div.className = 'sensor'; div.textContent = `${s.label}: 0`; container.appendChild(div);
+  });
+}
+
+function updateTableHeader(){
+  const header = document.getElementById('tableHeader'); header.innerHTML = '';
+  const row = document.createElement('tr');
+  const thTime = document.createElement('th'); thTime.textContent = 'Time (ms)'; row.appendChild(thTime);
+  sensors.forEach(s => { const th = document.createElement('th'); th.textContent = s.label; row.appendChild(th); });
+  if(state.encoderType === 'quadrature'){ const thd = document.createElement('th'); thd.textContent = 'Dir'; row.appendChild(thd); }
+  header.appendChild(row);
+}
+
+function logSignal(values){
+  try{
+    const table = document.getElementById('signalTable');
+    const row = table.insertRow(0);
+    row.insertCell(0).textContent = (Date.now() - startTime).toFixed(0);
+    values.forEach(v => row.insertCell(-1).textContent = v);
+    if(state.encoderType === 'quadrature' && values.length >= 2){
+      let direction = '-';
+      const prev = lastLogged && lastLogged.length >=2 ? lastLogged : lastSampled;
+      const prevA = prev && prev[0] ? 1 : 0;
+      const prevB = prev && prev[1] ? 1 : 0;
+      const quad = (prevA << 3) | (prevB << 2) | (values[0] << 1) | values[1];
+      const cw = [0b0001,0b0111,0b1110,0b1000], ccw = [0b0010,0b1011,0b1101,0b0100];
+      if(cw.includes(quad)) direction = 'CW'; else if(ccw.includes(quad)) direction = 'CCW';
+      row.insertCell(-1).textContent = direction;
+    }
+  }catch(e){ console.error('logSignal', e); }
+}
+
+function rotateWheel(deg){
+  angle = (angle + deg) % 360;
+  drawPatternToOffscreen();
+  drawVisible();
+  updateSensors();
+}
+
+function clearTable(){ document.getElementById('signalTable').innerHTML = ''; startTime = Date.now(); lastLogged = null; }
+
+function updateUI(){
+  document.getElementById('stepsVal').textContent = state.steps;
+  document.getElementById('slitVal').textContent = state.slitWidth.toFixed(2);
+  const typeNames = {single:'Single Track', quadrature:'Quadrature', gray:'Gray Code'};
+  document.getElementById('infoType').textContent = typeNames[state.encoderType];
+  document.getElementById('infoRes').textContent = `${state.steps} steps (${(360/state.steps).toFixed(2)}° per step)`;
+  document.getElementById('sensorCount').textContent = sensors.length;
+  if(state.encoderType === 'gray'){ const bits = Math.ceil(Math.log2(state.steps)); document.getElementById('grayInfo').style.display = 'block'; document.getElementById('bitsInfo').textContent = `${bits} tracks (${Math.pow(2,bits)} positions)`; } else { document.getElementById('grayInfo').style.display = 'none'; }
+  drawPatternToOffscreen();
+  drawVisible();
+  updateSensors();
+}
+
+// mouse handling: support sensor drag and wheel drag
+let isDraggingSensor = false, isDraggingWheel = false, draggingSensorIndex = -1, lastMouseAngle = 0;
+let isPointerDown = false;
+
+function getMousePos(e){
+  const rect = canvas.getBoundingClientRect();
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function getSensorAtPoint(x,y){
+  for(let i=0;i<sensors.length;i++){
+    const s = sensors[i];
+    const rad = (s.angle - 90) * Math.PI/180;
+    const dotX = centerX + Math.cos(rad) * s.radius;
+    const dotY = centerY + Math.sin(rad) * s.radius;
+    const labelDistance = outerRadius + 60;
+    const labelX = centerX + Math.cos(rad) * labelDistance;
+    const labelY = centerY + Math.sin(rad) * labelDistance;
+    if(Math.abs(x - labelX) < 22 && Math.abs(y - labelY) < 18) return i;
+    const dist = Math.hypot(x - dotX, y - dotY);
+    if(dist < 10) return i;
+  }
+  return -1;
+}
+
+canvas.addEventListener('mousedown', (e) => {
+  isPointerDown = true;
+  const pos = getMousePos(e);
+  const x = pos.x - centerX, y = pos.y - centerY;
+  const dist = Math.hypot(x,y);
+  const sensorIdx = getSensorAtPoint(pos.x,pos.y);
+  if(sensorIdx >= 0){
+    isDraggingSensor = true; draggingSensorIndex = sensorIdx; canvas.classList.add('dragging-sensor');
+  } else if(dist <= outerRadius && dist >= innerRadius){
+    isDraggingWheel = true; lastMouseAngle = Math.atan2(y,x) * 180/Math.PI;
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if(!isPointerDown) return;
+  const pos = getMousePos(e);
+  const x = pos.x - centerX, y = pos.y - centerY;
+  if(isDraggingSensor && draggingSensorIndex >= 0){
+    const newAngle = (Math.atan2(y,x) * 180/Math.PI + 90) % 360;
+    sensors[draggingSensorIndex].angle = newAngle;
+    drawVisible();
+    updateSensors();
+  } else if(isDraggingWheel){
+    const currentMouseAngle = Math.atan2(y,x) * 180/Math.PI;
+    const delta = currentMouseAngle - lastMouseAngle;
+    angle = (angle + delta) % 360;
+    lastMouseAngle = currentMouseAngle;
+    drawPatternToOffscreen();
+    drawVisible();
+    updateSensors();
+  }
+});
+
+canvas.addEventListener('mouseup', () => { isPointerDown = false; isDraggingSensor = false; isDraggingWheel = false; draggingSensorIndex = -1; canvas.classList.remove('dragging-sensor'); });
+canvas.addEventListener('mouseleave', () => { isPointerDown = false; isDraggingSensor = false; isDraggingWheel = false; draggingSensorIndex = -1; canvas.classList.remove('dragging-sensor'); });
+
+// UI bindings
+document.getElementById('encoderType').addEventListener('change', function(){ state.encoderType = this.value; initializeSensors(); updateUI(); });
+document.getElementById('steps').addEventListener('input', function(){ const newSteps = parseInt(this.value); const oldBits = state.encoderType === 'gray' ? Math.ceil(Math.log2(state.steps)) : 0; const newBits = state.encoderType === 'gray' ? Math.ceil(Math.log2(newSteps)) : 0; state.steps = newSteps; if(oldBits !== newBits && state.encoderType === 'gray'){ initializeSensors(); } updateUI(); });
+document.getElementById('slitWidth').addEventListener('input', function(){ state.slitWidth = parseFloat(this.value); updateUI(); });
+document.getElementById('rotCCW').addEventListener('click', () => rotateWheel(-5));
+document.getElementById('rotCW').addEventListener('click', () => rotateWheel(5));
+document.getElementById('clearBtn').addEventListener('click', clearTable);
+
+
+function exportPatternAsSVG() {
+  const w = canvas.width, h = canvas.height;
+  const cx = centerX, cy = centerY;
+  const outer = outerRadius, inner = innerRadius;
+
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none">\n`;
+
+  // black background
+  svg += `<circle cx="${cx}" cy="${cy}" r="${outer}" fill="black"/>`;
+
+  const addArc = (r1, r2, startDeg, endDeg) => {
+    const largeArc = (endDeg - startDeg) > 180 ? 1 : 0;
+    const s = startDeg * Math.PI/180, e = endDeg * Math.PI/180;
+    const x1o = cx + Math.cos(s) * r2, y1o = cy + Math.sin(s) * r2;
+    const x2o = cx + Math.cos(e) * r2, y2o = cy + Math.sin(e) * r2;
+    const x1i = cx + Math.cos(e) * r1, y1i = cy + Math.sin(e) * r1;
+    const x2i = cx + Math.cos(s) * r1, y2i = cy + Math.sin(s) * r1;
+    return `<path d="M${x1o},${y1o} A${r2},${r2} 0 ${largeArc} 1 ${x2o},${y2o} L${x1i},${y1i} A${r1},${r1} 0 ${largeArc} 0 ${x2i},${y2i} Z" fill="white"/>`;
+  };
+
+  if(state.encoderType === 'single'){
+    const steps = state.steps;
+    const stepAng = 360 / steps;
+    const slit = stepAng * state.slitWidth;
+    const midR = (outer + inner)/2;
+    const t = (outer - inner)/2;
+    for(let i=0;i<steps;i+=2){
+      const s = i * stepAng + angle - slit/2;
+      const e = i * stepAng + angle + slit/2;
+      svg += addArc(midR - t/2, midR + t/2, s, e);
+    }
+  } else if(state.encoderType === 'quadrature'){
+    const trackWidth = (outer - inner)/5;
+    const rA = outer - trackWidth;
+    const rB = inner + trackWidth*2;
+    const stepAng = 360 / state.steps;
+    const slit = stepAng * state.slitWidth;
+    const phase = stepAng/4;
+    for(let i=0;i<state.steps;i+=2){
+      const sA = i * stepAng + angle - slit/2;
+      const eA = i * stepAng + angle + slit/2;
+      svg += addArc(rA - trackWidth/2, rA + trackWidth/2, sA, eA);
+      const sB = i * stepAng + phase + angle - slit/2;
+      const eB = i * stepAng + phase + angle + slit/2;
+      svg += addArc(rB - trackWidth/2, rB + trackWidth/2, sB, eB);
+    }
+  } else if(state.encoderType === 'gray'){
+    const bits = Math.ceil(Math.log2(state.steps));
+    const totalSteps = Math.pow(2,bits);
+    const stepAng = 360 / totalSteps;
+    const trackWidth = (outer - inner)/(bits+1);
+    for(let bit=0;bit<bits;bit++){
+      const radius = outer - (bit+0.5)*trackWidth;
+      for(let i=0;i<totalSteps;i++){
+        const gray = decimalToGray(i);
+        const val = (gray >> (bits-1-bit)) & 1;
+        if(val){
+          const s = i*stepAng + angle;
+          const e = (i+1)*stepAng + angle;
+          svg += addArc(radius - trackWidth/3, radius + trackWidth/3, s, e);
+        }
+      }
+    }
+  }
+
+  svg += `<circle cx="${cx}" cy="${cy}" r="${inner}" fill="#666"/>`;
+  svg += `\n</svg>`;
+
+  // trigger download
+  const blob = new Blob([svg], {type:"image/svg+xml"});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `encoder_${state.encoderType}.svg`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+document.getElementById('downloadSVG').addEventListener('click', exportPatternAsSVG);
+
+// init
+initializeSensors();
+updateUI();
+</script>
+</body>
+</html>

@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Informatics Design Cycle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+            position: relative;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            overflow: visible;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 48px;
+            font-weight: 700;
+            color: #111;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 24px;
+            color: #666;
+            margin-bottom: 40px;
+        }
+
+        .design-cycle {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            height: 900px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cycle-container {
+            position: relative;
+            width: 700px;
+            height: 700px;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center center;
+        }
+
+        .stage {
+            position: absolute;
+            width: 280px;
+            height: 120px;
+            background: linear-gradient(135deg, #f9fafb 0%, #fff 100%);
+            border: 2px solid #444;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            transform-origin: center center;
+            z-index: 10;
+        }
+
+        .stage:hover {
+            transform: scale(1.05);
+            background: linear-gradient(135deg, #fff 0%, #f0f8ff 100%);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+            border-color: #00b7aa;
+            z-index: 20;
+        }
+
+        .stage.active {
+            background: linear-gradient(135deg, #00b7aa 0%, #008a7c 100%);
+            color: white;
+            border-color: #00b7aa;
+            transform: scale(1.1);
+            z-index: 30;
+        }
+
+        .stage.top {
+            z-index: 40;
+        }
+
+        .stage-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .stage-subtitle {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+
+        .stage.active .stage-subtitle {
+            color: rgba(255,255,255,0.9);
+        }
+
+        /* Position stages in a circle */
+        .stage:nth-child(1) { /* Collect Information - Top */
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .stage:nth-child(2) { /* Ask Questions - Top Right */
+            top: 25%;
+            right: 0;
+            transform: translateX(50%);
+        }
+
+        .stage:nth-child(3) { /* Define Problem - Bottom Right */
+            bottom: 25%;
+            right: 0;
+            transform: translateX(50%);
+        }
+
+        .stage:nth-child(4) { /* Imagine - Bottom */
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .stage:nth-child(5) { /* Develop & Test - Bottom Left */
+            bottom: 25%;
+            left: 0;
+            transform: translateX(-50%);
+        }
+
+        .stage:nth-child(6) { /* Improve - Top Left */
+            top: 25%;
+            left: 0;
+            transform: translateX(-50%);
+        }
+
+        /* Connecting arrows */
+        .arrow-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .connecting-arrow {
+            position: absolute;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, #00b7aa 0%, #008a7c 100%);
+            border-radius: 2px;
+            transform-origin: left center;
+        }
+
+        .connecting-arrow::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: -4px;
+            width: 0;
+            height: 0;
+            border-left: 12px solid #008a7c;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+        }
+
+        /* Arrow positions - connecting each stage to the next */
+        .arrow1 { /* Collect to Ask */
+            top: 22%;
+            right: 18%;
+            transform: rotate(45deg);
+        }
+
+        .arrow2 { /* Ask to Define */
+            right: 8%;
+            bottom: 42%;
+            transform: rotate(90deg);
+        }
+
+        .arrow3 { /* Define to Imagine */
+            bottom: 22%;
+            right: 18%;
+            transform: rotate(135deg);
+        }
+
+        .arrow4 { /* Imagine to Develop */
+            bottom: 42%;
+            left: 8%;
+            transform: rotate(-90deg);
+        }
+
+        .arrow5 { /* Develop to Improve */
+            top: 22%;
+            left: 18%;
+            transform: rotate(-135deg);
+        }
+
+        .arrow6 { /* Improve to Collect */
+            left: 8%;
+            top: 42%;
+            transform: rotate(-90deg);
+        }
+
+        .details-panel {
+            position: absolute;
+            background: rgba(255,255,255,0.98);
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            max-width: 420px;
+            min-width: 350px;
+        }
+
+        .details-panel.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .details-panel h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 18px;
+            color: #333;
+            border-bottom: 2px solid #00b7aa;
+            padding-bottom: 8px;
+        }
+
+        .details-panel ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .details-panel li {
+            font-size: 13px;
+            margin-bottom: 12px;
+            padding-left: 24px;
+            position: relative;
+            line-height: 1.5;
+            transition: transform 0.2s ease;
+        }
+
+        .details-panel li:hover {
+            transform: translateX(4px);
+        }
+
+        .details-panel li:before {
+            content: "●";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        /* Domain colors */
+        .domain-cs { color: #1f77b4; }
+        .domain-cs:before { color: #1f77b4; }
+        
+        .domain-eng { color: #ff7f0e; }
+        .domain-eng:before { color: #ff7f0e; }
+        
+        .domain-social { color: #2ca02c; }
+        .domain-social:before { color: #2ca02c; }
+        
+        .domain-humanities { color: #9467bd; }
+        .domain-humanities:before { color: #9467bd; }
+        
+        .domain-design { color: #d62728; }
+        .domain-design:before { color: #d62728; }
+
+        .legend {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.95);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .legend h4 {
+            font-size: 16px;
+            margin-bottom: 18px;
+            color: #333;
+            font-weight: 700;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .legend-color {
+            width: 18px;
+            height: 18px;
+            margin-right: 12px;
+            border-radius: 3px;
+        }
+
+        .instruction {
+            text-align: center;
+            font-size: 16px;
+            color: #666;
+            margin-top: 20px;
+            font-style: italic;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .design-cycle {
+                height: 700px;
+            }
+            
+            .cycle-container {
+                width: 600px;
+                height: 600px;
+            }
+            
+            .stage {
+                width: 240px;
+                height: 100px;
+            }
+            
+            .title {
+                font-size: 36px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .design-cycle {
+                height: 500px;
+            }
+            
+            .cycle-container {
+                width: 450px;
+                height: 450px;
+            }
+            
+            .stage {
+                width: 200px;
+                height: 80px;
+            }
+            
+            .stage-title {
+                font-size: 16px;
+            }
+            
+            .stage-subtitle {
+                font-size: 12px;
+            }
+            
+            .title {
+                font-size: 28px;
+            }
+            
+            .legend {
+                position: relative;
+                margin-bottom: 20px;
+            }
+            
+            .details-panel {
+                max-width: 300px;
+                min-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Informatics Design Cycle</h1>
+        <p class="subtitle">Click any stage to rotate it to the top</p>
+        
+        <div class="legend">
+            <h4>Domains</h4>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #1f77b4;"></div>
+                <span>Computer Science & Data</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff7f0e;"></div>
+                <span>Engineering (ISE, systems)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #2ca02c;"></div>
+                <span>Social Sciences</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #9467bd;"></div>
+                <span>Humanities / Policy / Ethics</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #d62728;"></div>
+                <span>Design / Information / UX</span>
+            </div>
+        </div>
+
+        <div class="design-cycle">
+            <div class="cycle-container" id="cycleContainer">
+                <div class="arrow-container">
+                    <div class="connecting-arrow arrow1"></div>
+                    <div class="connecting-arrow arrow2"></div>
+                    <div class="connecting-arrow arrow3"></div>
+                    <div class="connecting-arrow arrow4"></div>
+                    <div class="connecting-arrow arrow5"></div>
+                    <div class="connecting-arrow arrow6"></div>
+                </div>
+                
+                <div class="stage" data-stage="collect" data-position="0">
+                    <div class="stage-title">Collect Information</div>
+                </div>
+                
+                <div class="stage" data-stage="ask" data-position="1">
+                    <div class="stage-title">Ask Questions</div>
+                    <div class="stage-subtitle">(Problem-framing)</div>
+                </div>
+                
+                <div class="stage" data-stage="define" data-position="2">
+                    <div class="stage-title">Define Problem</div>
+                    <div class="stage-subtitle">(Scope & Requirements)</div>
+                </div>
+                
+                <div class="stage" data-stage="imagine" data-position="3">
+                    <div class="stage-title">Imagine</div>
+                    <div class="stage-subtitle">(Brainstorm Ideas)</div>
+                </div>
+                
+                <div class="stage" data-stage="develop" data-position="4">
+                    <div class="stage-title">Develop & Test</div>
+                    <div class="stage-subtitle">(Solutions)</div>
+                </div>
+                
+                <div class="stage" data-stage="improve" data-position="5">
+                    <div class="stage-title">Improve</div>
+                    <div class="stage-subtitle">(How did this work? How can we make it better?)</div>
+                </div>
+            </div>
+            
+            <div id="collect-details" class="details-panel" style="top: -80px; left: 50%; transform: translateX(-50%);">
+                <h3>Collect Information Activities</h3>
+                <ul>
+                    <li class="domain-social">User & field research (ethnography, interviews, surveys)</li>
+                    <li class="domain-humanities">Literature & domain review (digital humanities)</li>
+                    <li class="domain-cs">Data acquisition & wrangling (data engineering, web scraping, APIs)</li>
+                    <li class="domain-design">Knowledge organization (ontologies, knowledge graphs)</li>
+                    <li class="domain-humanities">Ethics, law & policy review (IRB, privacy, accessibility)</li>
+                </ul>
+            </div>
+            
+            <div id="ask-details" class="details-panel" style="top: 50px; right: -450px;">
+                <h3>Ask Questions Activities</h3>
+                <ul>
+                    <li class="domain-design">Problem framing & research questions (HCI, design research)</li>
+                    <li class="domain-social">Theories & constructs (psychology, sociology, economics)</li>
+                    <li class="domain-cs">Hypotheses & measures (statistics, causal inference)</li>
+                    <li class="domain-humanities">Stakeholder & power mapping (policy, STS)</li>
+                </ul>
+            </div>
+            
+            <div id="define-details" class="details-panel" style="bottom: 50px; right: -450px;">
+                <h3>Define Problem Activities</h3>
+                <ul>
+                    <li class="domain-eng">Requirements engineering & use cases</li>
+                    <li class="domain-cs">Risk & threat modeling (security, privacy)</li>
+                    <li class="domain-humanities">Value-sensitive & responsible design (ethics, equity)</li>
+                    <li class="domain-eng">Feasibility & systems architecture</li>
+                    <li class="domain-design">Accessibility & inclusion (UDL, disability studies)</li>
+                </ul>
+            </div>
+            
+            <div id="imagine-details" class="details-panel" style="bottom: -80px; left: 50%; transform: translateX(-50%);">
+                <h3>Imagine Activities</h3>
+                <ul>
+                    <li class="domain-design">Ideation & participatory design (co-creation, storyboarding)</li>
+                    <li class="domain-cs">Algorithmic approaches (AI/ML, optimization, IR)</li>
+                    <li class="domain-cs">Data modeling (databases, visualization, knowledge representation)</li>
+                    <li class="domain-eng">Prototyping (hardware/embedded, robotics)</li>
+                    <li class="domain-humanities">Speculative/critical design, futures thinking</li>
+                </ul>
+            </div>
+            
+            <div id="develop-details" class="details-panel" style="bottom: 50px; left: -450px;">
+                <h3>Develop & Test Activities</h3>
+                <ul>
+                    <li class="domain-cs">Software engineering (frontend/backend, mobile, cloud)</li>
+                    <li class="domain-eng">DevOps/MLOps & reproducibility</li>
+                    <li class="domain-eng">Embedded/IoT systems & robotics</li>
+                    <li class="domain-design">Usability testing, heuristic evals, A/B tests</li>
+                    <li class="domain-cs">Security, privacy & compliance testing</li>
+                </ul>
+            </div>
+            
+            <div id="improve-details" class="details-panel" style="top: 50px; left: -450px;">
+                <h3>Improve Activities</h3>
+                <ul>
+                    <li class="domain-social">Evaluation & impact assessment (stats, field trials, SNA)</li>
+                    <li class="domain-humanities">Fairness, accountability, transparency, interpretability</li>
+                    <li class="domain-eng">Monitoring & reliability (SRE, telemetry)</li>
+                    <li class="domain-social">Post-deployment research (ethnography, diary studies)</li>
+                    <li class="domain-design">Iteration, backlog & roadmap (product/change mgmt)</li>
+                </ul>
+            </div>
+        </div>
+        
+        <p class="instruction">Hover over stages to see details • Click to rotate to top</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const cycleContainer = document.getElementById('cycleContainer');
+            const stages = document.querySelectorAll('.stage');
+            const detailsPanels = document.querySelectorAll('.details-panel');
+            
+            let currentRotation = 0;
+            let activeStage = null;
+            let hoverTimeout = null;
+            
+            // Calculate rotation needed to bring each stage to top
+            const rotationAngles = {
+                0: 0,    // Collect (already at top)
+                1: -60,  // Ask Questions
+                2: -120, // Define Problem  
+                3: -180, // Imagine
+                4: -240, // Develop & Test
+                5: -300  // Improve
+            };
+            
+            stages.forEach(stage => {
+                const stageType = stage.dataset.stage;
+                const detailsPanel = document.getElementById(stageType + '-details');
+                const position = parseInt(stage.dataset.position);
+                
+                stage.addEventListener('mouseenter', function() {
+                    clearTimeout(hoverTimeout);
+                    
+                    // Hide all panels first
+                    detailsPanels.forEach(panel => {
+                        panel.classList.remove('show');
+                    });
+                    
+                    // Show current panel after a short delay
+                    hoverTimeout = setTimeout(() => {
+                        if (detailsPanel) {
+                            detailsPanel.classList.add('show');
+                        }
+                    }, 150);
+                });
+                
+                stage.addEventListener('mouseleave', function() {
+                    clearTimeout(hoverTimeout);
+                    
+                    hoverTimeout = setTimeout(() => {
+                        if (detailsPanel && !detailsPanel.matches(':hover') && activeStage !== stage) {
+                            detailsPanel.classList.remove('show');
+                        }
+                    }, 200);
+                });
+                
+                stage.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active and top classes from all stages
+                    stages.forEach(s => {
+                        s.classList.remove('active', 'top');
+                    });
+                    
+                    // Hide all panels
+                    detailsPanels.forEach(panel => {
+                        panel.classList.remove('show');
+                    });
+                    
+                    // Calculate rotation to bring this stage to top
+                    const targetRotation = rotationAngles[position];
+                    currentRotation = targetRotation;
+                    
+                    // Apply rotation
+                    cycleContainer.style.transform = `rotate(${currentRotation}deg)`;
+                    
+                    // Mark this stage as active and at top
+                    stage.classList.add('active', 'top');
+                    activeStage = stage;
+                    
+                    // Show details panel
+                    setTimeout(() => {
+                        if (detailsPanel) {
+                            detailsPanel.classList.add('show');
+                        }
+                    }, 400);
+                });
+            });
+            
+            // Handle detail panels hover
+            detailsPanels.forEach(panel => {
+                panel.addEventListener('mouseenter', function() {
+                    clearTimeout(hoverTimeout);
+                });
+                
+                panel.addEventListener('mouseleave', function() {
+                    const relatedStage = document.querySelector(`[data-stage="${panel.id.replace('-details', '')}"]`);
+                    
+                    hoverTimeout = setTimeout(() => {
+                        if (activeStage !== relatedStage) {
+                            panel.classList.remove('show');
+                        }
+                    }, 200);
+                });
+            });
+            
+            // Initial animation
+            stages.forEach((stage, index) => {
+                stage.style.opacity = '0';
+                stage.style.transform += ' scale(0.8)';
+                
+                setTimeout(() => {
+                    stage.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                    stage.style.opacity = '1';
+                    stage.style.transform = stage.style.transform.replace('scale(0.8)', 'scale(1)');
+                }, index * 100);
+            });
+            
+            // Animate arrows
+            document.querySelectorAll('.connecting-arrow').forEach((arrow, index) => {
+                arrow.style.opacity = '0';
+                arrow.style.transform += ' scale(0)';
+                
+                setTimeout(() => {
+                    arrow.style.transition = 'all 0.4s ease';
+                    arrow.style.opacity = '1';
+                    arrow.style.transform = arrow.style.transform.replace('scale(0)', 'scale(1)');
+                }, 600 + (index * 80));
+            });
+        });
+    </script>
+</body>
+</html>

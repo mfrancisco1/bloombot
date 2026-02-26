@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Python cache (from app.py local dev server)
+__pycache__/
+*.pyc
+*.pyo
+
+# Original Google Sites export (contains embedded API keys)
+bloombot.html
+bloombot_files/*.js
+bloombot_files/*.css
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo

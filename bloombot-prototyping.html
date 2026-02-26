@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prototyping — bloombot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--ink:#1a1612;--cream:#f5f0e8;--warm:#e8dcc8;--rust:#c4541a;--amber:#d97706;--forest:#2d5a27;--slate:#64748b;--border:#d1c4aa;--shadow:rgba(26,22,18,0.10);--c341:#b45309;--c549:#6d28d9;}
+    body{font-family:'Space Grotesk',sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;}
+    nav{position:sticky;top:0;z-index:100;background:var(--ink);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:56px;border-bottom:3px solid var(--rust);}
+    .nav-brand{font-family:'Space Mono',monospace;font-size:1.2rem;font-weight:700;color:var(--amber);text-decoration:none;letter-spacing:-0.03em;}
+    .nav-links{display:flex;list-style:none;overflow-x:auto;scrollbar-width:none;}
+    .nav-links li{position:relative;}
+    .nav-links li>a{display:flex;align-items:center;gap:0.3rem;height:56px;padding:0 0.9rem;color:rgba(255,255,255,0.65);text-decoration:none;font-size:0.78rem;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;transition:color 0.2s;}
+    .nav-links li>a:hover{color:#fff;background:rgba(255,255,255,0.07);}
+    .nav-links li>a.active{color:var(--amber);}
+    .caret{font-size:0.55rem;opacity:0.5;}
+    .dropdown{display:none;position:absolute;top:56px;left:0;background:#111;border:1px solid rgba(255,255,255,0.1);border-top:2px solid var(--rust);border-radius:0 0 8px 8px;min-width:180px;list-style:none;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+    .nav-links li:hover .dropdown{display:block;}
+    .dropdown li a{display:block;padding:0.6rem 1rem;font-size:0.78rem;color:rgba(255,255,255,0.65);border-bottom:1px solid rgba(255,255,255,0.06);white-space:nowrap;text-decoration:none;}
+    .dropdown li:last-child a{border-bottom:none;}
+    .dropdown li a:hover{color:#fff;background:rgba(255,255,255,0.07);}
+
+    .page-hero{background:var(--c341);color:#fff;padding:3.5rem 2rem 3rem;position:relative;overflow:hidden;}
+    .page-hero::before{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,0.04) 39px,rgba(255,255,255,0.04) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,0.04) 39px,rgba(255,255,255,0.04) 40px);}
+    .page-hero-inner{max-width:1100px;margin:0 auto;position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:2rem;flex-wrap:wrap;}
+    .breadcrumb{font-family:'Space Mono',monospace;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:0.75rem;}
+    .breadcrumb a{color:rgba(255,255,255,0.4);text-decoration:none;}
+    .breadcrumb a:hover{color:rgba(255,255,255,0.8);}
+    .page-title{font-size:clamp(2rem,5vw,3.5rem);font-weight:700;letter-spacing:-0.04em;line-height:1.05;margin-bottom:0.75rem;}
+    .page-desc{font-size:1rem;color:rgba(255,255,255,0.7);max-width:560px;line-height:1.75;}
+    .hero-courses{font-family:'Space Mono',monospace;font-size:0.68rem;color:rgba(255,255,255,0.45);text-align:right;line-height:2.2;letter-spacing:0.03em;flex-shrink:0;}
+    .hero-courses span{display:block;color:rgba(255,255,255,0.75);font-size:0.8rem;}
+
+    .section{max-width:1100px;margin:0 auto;padding:3rem 2rem;}
+    .section-label{font-family:'Space Mono',monospace;font-size:0.68rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--slate);margin-bottom:1.5rem;display:flex;align-items:center;gap:0.5rem;}
+    .section-label::after{content:'';flex:1;height:1px;background:var(--border);max-width:60px;}
+
+    .tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem;}
+    .tool-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;text-decoration:none;color:var(--ink);display:flex;flex-direction:column;transition:transform 0.18s,box-shadow 0.18s,border-color 0.18s;}
+    .tool-card:hover{transform:translateY(-4px);box-shadow:0 10px 24px var(--shadow);border-color:var(--c341);}
+    .tool-card-accent{height:4px;background:var(--c341);}
+    .tool-card-body{padding:1.4rem 1.4rem 1rem;display:flex;flex-direction:column;gap:0.4rem;flex:1;}
+    .tool-icon{font-size:2rem;line-height:1;margin-bottom:0.3rem;}
+    .tool-title{font-size:1.05rem;font-weight:700;letter-spacing:-0.02em;}
+    .tool-desc{font-size:0.83rem;color:var(--slate);line-height:1.55;margin-top:auto;padding-top:0.5rem;}
+    .tool-foot{display:flex;align-items:center;justify-content:space-between;padding:0.6rem 1.4rem;border-top:1px solid var(--border);background:var(--cream);}
+    .tool-tag{font-family:'Space Mono',monospace;font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--slate);}
+    .tool-tag.c549{color:var(--c549);}
+    .tool-arrow{font-size:0.75rem;color:var(--c341);opacity:0.7;}
+
+    .viewer-section{background:var(--ink);margin:0;padding:3rem 2rem;}
+    .viewer-inner{max-width:1100px;margin:0 auto;}
+    .viewer-label{font-family:'Space Mono',monospace;font-size:0.68rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:1.25rem;display:flex;align-items:center;gap:0.5rem;}
+    .viewer-label::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.1);max-width:60px;}
+    .viewer-title{font-size:1.5rem;font-weight:700;color:#fff;letter-spacing:-0.03em;margin-bottom:0.5rem;}
+    .viewer-desc{font-size:0.88rem;color:rgba(255,255,255,0.5);max-width:500px;line-height:1.65;margin-bottom:1.5rem;}
+    .viewer-frame{border-radius:12px;overflow:hidden;border:1.5px solid rgba(255,255,255,0.08);}
+    .viewer-frame iframe{width:100%;border:none;display:block;height:680px;}
+
+    .context-note{background:rgba(180,83,9,0.12);border:1.5px solid rgba(180,83,9,0.25);border-radius:8px;padding:1.1rem 1.4rem;font-size:0.85rem;color:var(--ink);line-height:1.7;max-width:700px;margin-top:2rem;}
+    .context-note strong{color:var(--c341);}
+
+    footer{background:var(--ink);color:rgba(255,255,255,0.4);text-align:center;padding:2.5rem 2rem;font-family:'Space Mono',monospace;font-size:0.72rem;letter-spacing:0.06em;line-height:2;}
+    footer a{color:var(--amber);text-decoration:none;}
+    @media(max-width:680px){.nav-links{display:none;}.hero-courses{display:none;}.tool-grid{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="bloombot-modern.html">bloombot</a>
+  <ul class="nav-links">
+    <li><a href="bloombot-i101.html">I 101 <span class="caret">▼</span></a><ul class="dropdown"><li><a href="bloombot-i101.html#networks">Networks</a></li><li><a href="bloombot-i101.html#ethics">Ethics</a></li><li><a href="bloombot-i101.html#security">Security</a></li><li><a href="bloombot-i101.html#diversity">Diversity</a></li></ul></li>
+    <li><a href="bloombot-stories.html">Stories <span class="caret">▼</span></a><ul class="dropdown"><li><a href="bloombot - Lightning.html">Lightning</a></li><li><a href="bloombot - Coffee.html">Coffee</a></li></ul></li>
+    <li>
+      <a href="bloombot-prototyping.html" class="active">Prototyping <span class="caret">▼</span></a>
+      <ul class="dropdown">
+        <li><a href="bloombot - 3D Graph Paper.html">3D Graph Paper</a></li>
+        <li><a href="bloombot - Lattice.html">Lattice</a></li>
+        <li><a href="bloombot - Encoder Wheel.html">Encoder Wheel</a></li>
+        <li><a href="webpage-main/stlM2.html">3D Model Viewer</a></li>
+      </ul>
+    </li>
+    <li><a href="bloombot-scaffolds.html">Scaffolds</a></li>
+  </ul>
+</nav>
+
+<header class="page-hero">
+  <div class="page-hero-inner">
+    <div>
+      <p class="breadcrumb"><a href="bloombot-modern.html">bloombot</a> / Prototyping</p>
+      <h1 class="page-title">Prototyping</h1>
+      <p class="page-desc">Tools built for hands-on courses in interactive electronics and advanced prototyping. Graph paper, lattice structures, encoder wheels, and a 3D model viewer — useful objects for students learning to make things.</p>
+    </div>
+    <div class="hero-courses">
+      I 341 · I 549
+      <span>Physical Computing</span>
+    </div>
+  </div>
+</header>
+
+<div class="section">
+  <p class="section-label">Student Tools</p>
+  <div class="tool-grid">
+
+    <a class="tool-card" href="bloombot - 3D Graph Paper.html">
+      <div class="tool-card-accent"></div>
+      <div class="tool-card-body">
+        <div class="tool-icon">📐</div>
+        <div class="tool-title">3D Graph Paper</div>
+        <div class="tool-desc">Isometric grid generator for sketching three-dimensional forms by hand. Configurable line spacing, color, and page size — print it and draw on it.</div>
+      </div>
+      <div class="tool-foot"><span class="tool-tag">I 341 · Generator</span><span class="tool-arrow">→</span></div>
+    </a>
+
+    <a class="tool-card" href="bloombot - Lattice.html">
+      <div class="tool-card-accent"></div>
+      <div class="tool-card-body">
+        <div class="tool-icon">🔷</div>
+        <div class="tool-title">Lattice</div>
+        <div class="tool-desc">Parametric lattice structure generator. Adjust node count, spacing, and connection patterns to produce printable diagrams useful for physical structure work.</div>
+      </div>
+      <div class="tool-foot"><span class="tool-tag">I 341 · Generator</span><span class="tool-arrow">→</span></div>
+    </a>
+
+    <a class="tool-card" href="webpage-main/encoder_wheel_A.html">
+      <div class="tool-card-accent"></div>
+      <div class="tool-card-body">
+        <div class="tool-icon">⚙️</div>
+        <div class="tool-title">Encoder Wheel</div>
+        <div class="tool-desc">Rotary encoder wheel designer. Configure slot count and geometry — outputs a printable wheel for use in physical computing projects with optical or Hall effect sensors.</div>
+      </div>
+      <div class="tool-foot"><span class="tool-tag">I 341 · Physical Computing</span><span class="tool-arrow">→</span></div>
+    </a>
+
+    <a class="tool-card" href="webpage-main/encoder_design3.html">
+      <div class="tool-card-accent" style="background:var(--c549);"></div>
+      <div class="tool-card-body">
+        <div class="tool-icon">🔧</div>
+        <div class="tool-title">Encoder Design</div>
+        <div class="tool-desc">Extended encoder design tool with additional parameter controls. Part of the encoder design sequence used in advanced physical computing coursework.</div>
+      </div>
+      <div class="tool-foot"><span class="tool-tag c549">I 549 · Advanced</span><span class="tool-arrow" style="color:var(--c549);">→</span></div>
+    </a>
+
+  </div>
+
+  <p class="context-note"><strong>On tinkering:</strong> These tools are self-contained HTML files — download them, run them locally, and feel free to use them as seeds for your own modifications. Pass them to an LLM and ask it to add parameters, change the output, or fork a new direction.</p>
+</div>
+
+<div class="viewer-section">
+  <div class="viewer-inner">
+    <p class="viewer-label">3D Model Viewer</p>
+    <h2 class="viewer-title">STL Viewer</h2>
+    <p class="viewer-desc">Load and inspect .stl files in the browser. Useful for reviewing student designs before printing — drag and orbit to examine geometry.</p>
+    <div class="viewer-frame">
+      <iframe src="webpage-main/stlM2.html" title="STL 3D Model Viewer" loading="lazy"></iframe>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div>bloombot &nbsp;·&nbsp; Matthew Francisco &nbsp;·&nbsp; Luddy School of Informatics, Computing &amp; Engineering</div>
+  <div>Indiana University &nbsp;·&nbsp; <a href="bloombot-modern.html">Home</a></div>
+</footer>
+</body>
+</html>

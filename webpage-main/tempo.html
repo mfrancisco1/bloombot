@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempo Reference Table</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #fff;
+            color: #000;
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .calculator {
+            background: #f5f5f5;
+            border: 2px solid #000;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 4px;
+        }
+
+        .calculator h2 {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .calc-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .calc-input label {
+            font-weight: 500;
+        }
+
+        .calc-input input {
+            padding: 8px 12px;
+            border: 2px solid #000;
+            border-radius: 4px;
+            font-size: 1em;
+            width: 100px;
+        }
+
+        .calc-results {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ccc;
+            display: none;
+        }
+
+        .calc-results.show {
+            display: block;
+        }
+
+        .result-item {
+            margin: 5px 0;
+            font-size: 0.95em;
+        }
+
+        .result-item strong {
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border: 2px solid #000;
+        }
+
+        thead {
+            background: #000;
+            color: #fff;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+        th:hover {
+            background: #333;
+        }
+
+        th.sortable::after {
+            content: ' ⇅';
+            color: #999;
+            font-size: 0.8em;
+        }
+
+        th.sorted-asc::after {
+            content: ' ▲';
+            color: #fff;
+        }
+
+        th.sorted-desc::after {
+            content: ' ▼';
+            color: #fff;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tbody tr:hover {
+            background: #f5f5f5;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tempo-marking {
+            font-style: italic;
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            table {
+                font-size: 0.85em;
+            }
+
+            th, td {
+                padding: 8px 6px;
+            }
+
+            .calc-input {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Musical Tempo Reference</h1>
+    <p class="subtitle">BPM, milliseconds per beat, and tempo markings</p>
+
+    <div class="calculator">
+        <h2>BPM Calculator</h2>
+        <div class="calc-input">
+            <label for="bpmInput">Enter BPM:</label>
+            <input type="number" id="bpmInput" min="1" max="500" placeholder="e.g., 120">
+        </div>
+        <div class="calc-results" id="calcResults">
+            <div class="result-item"><strong>Milliseconds per beat:</strong> <span id="msResult"></span> ms</div>
+            <div class="result-item"><strong>Beats per second:</strong> <span id="bpsResult"></span></div>
+        </div>
+    </div>
+
+    <table id="tempoTable">
+        <thead>
+            <tr>
+                <th class="sortable" data-column="0">BPM</th>
+                <th class="sortable" data-column="1">ms per Beat</th>
+                <th class="sortable" data-column="2">Beats per Second</th>
+                <th class="sortable" data-column="3">Tempo Marking</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>40</td>
+                <td>1500.0</td>
+                <td>0.67</td>
+                <td class="tempo-marking">Largo (very slow)</td>
+            </tr>
+            <tr>
+                <td>50</td>
+                <td>1200.0</td>
+                <td>0.83</td>
+                <td class="tempo-marking">Lento</td>
+            </tr>
+            <tr>
+                <td>60</td>
+                <td>1000.0</td>
+                <td>1.00</td>
+                <td class="tempo-marking">Adagio</td>
+            </tr>
+            <tr>
+                <td>66</td>
+                <td>909.1</td>
+                <td>1.10</td>
+                <td class="tempo-marking">Adagio/Andante</td>
+            </tr>
+            <tr>
+                <td>72</td>
+                <td>833.3</td>
+                <td>1.20</td>
+                <td class="tempo-marking">Andante (walking pace)</td>
+            </tr>
+            <tr>
+                <td>80</td>
+                <td>750.0</td>
+                <td>1.33</td>
+                <td class="tempo-marking">Andantino</td>
+            </tr>
+            <tr>
+                <td>90</td>
+                <td>666.7</td>
+                <td>1.50</td>
+                <td class="tempo-marking">Moderato (moderate)</td>
+            </tr>
+            <tr>
+                <td>100</td>
+                <td>600.0</td>
+                <td>1.67</td>
+                <td class="tempo-marking">Allegretto</td>
+            </tr>
+            <tr>
+                <td>108</td>
+                <td>555.6</td>
+                <td>1.80</td>
+                <td class="tempo-marking">Allegro moderato</td>
+            </tr>
+            <tr>
+                <td>120</td>
+                <td>500.0</td>
+                <td>2.00</td>
+                <td class="tempo-marking">Allegro (fast)</td>
+            </tr>
+            <tr>
+                <td>132</td>
+                <td>454.5</td>
+                <td>2.20</td>
+                <td class="tempo-marking">Vivace</td>
+            </tr>
+            <tr>
+                <td>144</td>
+                <td>416.7</td>
+                <td>2.40</td>
+                <td class="tempo-marking">Vivace</td>
+            </tr>
+            <tr>
+                <td>152</td>
+                <td>394.7</td>
+                <td>2.53</td>
+                <td class="tempo-marking">Allegro vivace</td>
+            </tr>
+            <tr>
+                <td>160</td>
+                <td>375.0</td>
+                <td>2.67</td>
+                <td class="tempo-marking">Presto</td>
+            </tr>
+            <tr>
+                <td>168</td>
+                <td>357.1</td>
+                <td>2.80</td>
+                <td class="tempo-marking">Presto</td>
+            </tr>
+            <tr>
+                <td>176</td>
+                <td>340.9</td>
+                <td>2.93</td>
+                <td class="tempo-marking">Prestissimo</td>
+            </tr>
+            <tr>
+                <td>184</td>
+                <td>326.1</td>
+                <td>3.07</td>
+                <td class="tempo-marking">Prestissimo</td>
+            </tr>
+            <tr>
+                <td>200</td>
+                <td>300.0</td>
+                <td>3.33</td>
+                <td class="tempo-marking">Very fast (extreme)</td>
+            </tr>
+            <tr>
+                <td>240</td>
+                <td>250.0</td>
+                <td>4.00</td>
+                <td class="tempo-marking">Extremely fast</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        // BPM Calculator
+        const bpmInput = document.getElementById('bpmInput');
+        const calcResults = document.getElementById('calcResults');
+        const msResult = document.getElementById('msResult');
+        const bpsResult = document.getElementById('bpsResult');
+
+        bpmInput.addEventListener('input', function() {
+            const bpm = parseFloat(this.value);
+            
+            if (bpm > 0) {
+                const ms = (60000 / bpm).toFixed(1);
+                const bps = (bpm / 60).toFixed(2);
+                
+                msResult.textContent = ms;
+                bpsResult.textContent = bps;
+                calcResults.classList.add('show');
+            } else {
+                calcResults.classList.remove('show');
+            }
+        });
+
+        // Table Sorting
+        const table = document.getElementById('tempoTable');
+        const headers = table.querySelectorAll('th.sortable');
+        let currentSort = { column: -1, ascending: true };
+
+        headers.forEach(header => {
+            header.addEventListener('click', function() {
+                const column = parseInt(this.dataset.column);
+                const isNumeric = column < 3;
+                
+                // Update sort direction
+                if (currentSort.column === column) {
+                    currentSort.ascending = !currentSort.ascending;
+                } else {
+                    currentSort.ascending = true;
+                    currentSort.column = column;
+                }
+
+                // Update header styles
+                headers.forEach(h => {
+                    h.classList.remove('sorted-asc', 'sorted-desc');
+                });
+                this.classList.add(currentSort.ascending ? 'sorted-asc' : 'sorted-desc');
+
+                // Sort the table
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                rows.sort((a, b) => {
+                    let aVal = a.cells[column].textContent.trim();
+                    let bVal = b.cells[column].textContent.trim();
+
+                    if (isNumeric) {
+                        aVal = parseFloat(aVal);
+                        bVal = parseFloat(bVal);
+                    }
+
+                    if (aVal < bVal) return currentSort.ascending ? -1 : 1;
+                    if (aVal > bVal) return currentSort.ascending ? 1 : -1;
+                    return 0;
+                });
+
+                // Rebuild table
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+    </script>
+</body>
+</html>

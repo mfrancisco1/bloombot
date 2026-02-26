@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Crash Test Combinatorial Matrix</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#0ea5a4;--muted:#94a3b8;--panel:#071023}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{background:linear-gradient(180deg,#061021 0%, #071226 100%);color:#e6eef6;padding:24px}
+    .app{max-width:1200px;margin:0 auto}
+    header{display:flex;align-items:center;gap:16px}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:6px 0 18px;color:var(--muted)}
+
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+    .panel{background:rgba(255,255,255,0.03);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.03)}
+    .param-title{font-weight:700;margin-bottom:8px}
+    .values{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{background:rgba(255,255,255,0.03);padding:8px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;font-size:13px}
+    .chip.selected{background:linear-gradient(90deg,#063e3b,#075e54);border-color:rgba(14,165,164,0.9);}
+    .controls{display:flex;gap:8px;align-items:center;margin-top:12px}
+    button{background:var(--accent);color:#021;border:0;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:700}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);font-weight:600}
+
+    .summary{margin-top:12px;color:var(--muted)}
+    .table-wrap{margin-top:16px;overflow:auto;background:rgba(255,255,255,0.02);padding:8px;border-radius:10px}
+    table{width:100%;border-collapse:collapse;color:#dbeafe}
+    th,td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.02);text-align:left;font-size:13px}
+    th{background:rgba(255,255,255,0.02);position:sticky;top:0}
+
+    .actions-col{width:140px}
+    .small{font-size:12px;color:var(--muted)}
+    .footer{margin-top:10px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+
+    .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,0.6);}
+    .card{background:#071426;padding:18px;border-radius:10px;max-width:560px;width:100%;}
+    .progress{height:10px;background:rgba(255,255,255,0.04);border-radius:999px;overflow:hidden}
+    .progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#06b6d4,#0ea5a4)}
+
+    @media (max-width:900px){.grid{grid-template-columns:1fr}.actions-col{width:120px}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>Crash Test Combinatorial Matrix — Interactive</h1>
+        <p class="lead">Select parameter values below, generate the full combinational test matrix, preview rows, download CSV, or simulate runs.</p>
+      </div>
+    </header>
+
+    <div class="grid" id="params-grid">
+      <!-- Parameter panels will be injected by JS -->
+    </div>
+
+    <div class="controls">
+      <button id="generateBtn">Generate Matrix</button>
+      <button class="ghost" id="downloadBtn">Download CSV</button>
+      <button class="ghost" id="clearBtn">Clear Selections</button>
+      <div style="margin-left:auto;color:var(--muted)"><span id="countPreview">0</span> combinations</div>
+    </div>
+
+    <div class="table-wrap" id="tableWrap" style="display:none">
+      <table id="matrixTable">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="footer">
+        <div class="small">Showing <span id="shownCount">0</span> rows. If matrix is large, show first 500 by default.</div>
+        <div>
+          <button class="ghost" id="sampleBtn">Show random sample (100)</button>
+          <button class="ghost" id="expandBtn">Show all (up to 5000)</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modalRoot" style="display:none"></div>
+  </div>
+
+  <script>
+    // Default parameter definitions
+    const PARAMS = {
+      "Impact Speed": ["30 km/h","50 km/h","70 km/h","90 km/h"],
+      "Crash Angle": ["0° (frontal)","30°","45°","90° (side)"],
+      "Barrier Type": ["Rigid Wall","Deformable Barrier","Pole"],
+      "Environment": ["Dry Road","Wet Road","Icy Road"],
+      "Occupancy": ["Driver Only","2 Passengers","Full Load"],
+      "Occupant Size/Shape": ["Small Female","Average Male","Large Male","Child"],
+      "Occupant Position": ["Upright","Slouched","Out of Position (leaning)"]
+    };
+
+    // store selected options
+    const state = {};
+    const grid = document.getElementById('params-grid');
+
+    function createParamPanel(name, values){
+      const panel = document.createElement('div');panel.className='panel';
+      const title = document.createElement('div');title.className='param-title';title.innerText=name;
+      panel.appendChild(title);
+
+      const valuesWrap = document.createElement('div');valuesWrap.className='values';
+      values.forEach(v=>{
+        const chip = document.createElement('div');chip.className='chip';chip.innerText=v;
+        chip.onclick = ()=>{chip.classList.toggle('selected');updateState(name,v,chip.classList.contains('selected'));}
+        valuesWrap.appendChild(chip);
+      });
+      // select all / none controls
+      const ctrl = document.createElement('div');ctrl.style.marginTop='8px';
+      const sa = document.createElement('button');sa.className='ghost';sa.innerText='Select all';sa.onclick=(e)=>{e.preventDefault();selectAll(valuesWrap,true);values.forEach(v=>state[name].add(v));updateCount();}
+      const sn = document.createElement('button');sn.className='ghost';sn.style.marginLeft='6px';sn.innerText='None';sn.onclick=(e)=>{e.preventDefault();selectAll(valuesWrap,false);state[name].clear();updateCount();}
+      ctrl.appendChild(sa);ctrl.appendChild(sn);
+
+      panel.appendChild(valuesWrap);
+      panel.appendChild(ctrl);
+      return panel;
+    }
+
+    function selectAll(container, on=true){
+      container.querySelectorAll('.chip').forEach(ch=>{if(on) ch.classList.add('selected'); else ch.classList.remove('selected');});
+    }
+
+    function updateState(param, value, selected){
+      if(!state[param]) state[param]=new Set();
+      if(selected) state[param].add(value); else state[param].delete(value);
+      updateCount();
+    }
+
+    function updateCount(){
+      const counts = Object.keys(PARAMS).map(p=> (state[p]?state[p].size:0) );
+      const total = counts.reduce((a,b)=>a*(b||1),1); // if any param has zero selection treat as 1 for preview but we'll block generate
+      const realTotal = Object.keys(PARAMS).every(p=>state[p] && state[p].size>0) ? Object.keys(PARAMS).reduce((a,p)=>a*state[p].size,1) : 0;
+      document.getElementById('countPreview').innerText = realTotal;
+    }
+
+    // init UI
+    Object.entries(PARAMS).forEach(([k,v])=>{
+      state[k]=new Set();
+      const panel = createParamPanel(k,v);
+      grid.appendChild(panel);
+    });
+
+    // Cartesian product
+    function cartesianProduct(arrays){
+      if(arrays.length===0) return [];
+      return arrays.reduce((a,b)=> a.flatMap(x=> b.map(y=> x.concat([y]))), [[]]);
+    }
+
+    function getSelectedArrays(){
+      const keys = Object.keys(PARAMS);
+      const arrays = keys.map(k=> Array.from(state[k]));
+      return {keys,arrays};
+    }
+
+    function generateMatrix(){
+      const {keys,arrays} = getSelectedArrays();
+      if(keys.some((k,i)=>arrays[i].length===0)){
+        alert('Please select at least one value for every parameter.');
+        return [];
+      }
+      const combos = cartesianProduct(arrays);
+      return combos.map(c=>{
+        const obj = {};
+        keys.forEach((k,i)=> obj[k]=c[i]);
+        return obj;
+      });
+    }
+
+    function renderTable(combos,limit){
+      const head = document.getElementById('tableHead');
+      const body = document.getElementById('tableBody');
+      head.innerHTML='';body.innerHTML='';
+      if(!combos || combos.length===0) {document.getElementById('tableWrap').style.display='none';return}
+      document.getElementById('tableWrap').style.display='block';
+      const keys = Object.keys(PARAMS);
+      const tr = document.createElement('tr');
+      keys.forEach(k=>{const th=document.createElement('th');th.innerText=k;tr.appendChild(th)});
+      const ath = document.createElement('th');ath.innerText='Actions';ath.className='actions-col';tr.appendChild(ath);
+      head.appendChild(tr);
+
+      const n = limit?Math.min(limit,combos.length):combos.length;
+      for(let i=0;i<n;i++){
+        const row = combos[i];
+        const tr = document.createElement('tr');
+        keys.forEach(k=>{const td=document.createElement('td');td.innerText=row[k];tr.appendChild(td)});
+        const tdact = document.createElement('td');
+        const run = document.createElement('button');run.innerText='Run Simulation';run.onclick=()=>openSimulationModal(row);
+        const copy = document.createElement('button');copy.className='ghost';copy.style.marginLeft='6px';copy.innerText='Copy';copy.onclick=()=>navigator.clipboard.writeText(JSON.stringify(row,null,2));
+        tdact.appendChild(run);tdact.appendChild(copy);tr.appendChild(tdact);
+        body.appendChild(tr);
+      }
+      document.getElementById('shownCount').innerText = n;
+    }
+
+    // Download CSV
+    function downloadCSV(combos){
+      if(!combos || combos.length===0){alert('No combinations to download.');return}
+      const keys = Object.keys(PARAMS);
+      const header = keys.join(',')+"\n";
+      const rows = combos.map(r=> keys.map(k=> '"'+String(r[k]).replace(/"/g,'""')+'"').join(',')).join('\n');
+      const blob = new Blob([header+rows],{type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');a.href=url;a.download='crash_test_matrix.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+    }
+
+    // Modal and simulation stub
+    function openSimulationModal(params){
+      const root = document.getElementById('modalRoot');root.style.display='block';root.innerHTML='';
+      const modal = document.createElement('div');modal.className='modal';
+      const card = document.createElement('div');card.className='card';
+      card.innerHTML = `<h3>Simulating</h3><pre id='simParams' style='background:rgba(255,255,255,0.02);padding:8px;border-radius:6px;font-size:13px;max-height:180px;overflow:auto'>${JSON.stringify(params,null,2)}</pre><div style='margin-top:10px' class='progress'><i id='prog'></i></div><div style='display:flex;justify-content:flex-end;margin-top:10px'><button id='closeSim'>Close</button></div>`;
+      modal.appendChild(card);root.appendChild(modal);
+      const prog = document.getElementById('prog');
+      // fake progress animation
+      let p=0; const iv = setInterval(()=>{p+=Math.random()*12; prog.style.width = Math.min(100,p)+'%'; if(p>=100){clearInterval(iv);document.getElementById('closeSim').innerText='Done (Close)'} },200);
+      document.getElementById('closeSim').onclick=()=>{root.style.display='none';root.innerHTML=''};
+    }
+
+    // utility to sample randomly
+    function sampleArray(arr,k){
+      const out=[];const used=new Set();
+      while(out.length<k && out.length<arr.length){
+        const i = Math.floor(Math.random()*arr.length); if(used.has(i)) continue; used.add(i); out.push(arr[i]);
+      }
+      return out;
+    }
+
+    // wire buttons
+    document.getElementById('generateBtn').onclick = ()=>{
+      const combos = generateMatrix();
+      if(combos.length>5000){
+        if(!confirm(`This will produce ${combos.length} combinations. Showing all may be slow. Do you want to show a 100-sample instead?`)) return; 
+      }
+      renderTable(combos, Math.min(500, combos.length));
+      // store to window for download
+      window.__COMBOS = combos;
+    }
+
+    document.getElementById('downloadBtn').onclick = ()=>{ if(window.__COMBOS) downloadCSV(window.__COMBOS); else alert('Generate the matrix first.'); }
+    document.getElementById('clearBtn').onclick = ()=>{ Object.keys(state).forEach(k=>state[k].clear()); document.querySelectorAll('.chip').forEach(ch=>ch.classList.remove('selected')); updateCount(); document.getElementById('tableWrap').style.display='none'; window.__COMBOS=null; }
+    document.getElementById('sampleBtn').onclick = ()=>{ if(!window.__COMBOS){alert('Generate first');return} const s = sampleArray(window.__COMBOS,100); renderTable(s, s.length); }
+    document.getElementById('expandBtn').onclick = ()=>{ if(!window.__COMBOS){alert('Generate first');return} renderTable(window.__COMBOS, Math.min(5000, window.__COMBOS.length)); }
+
+    // initialize small default selection: choose 2 values per param so user sees something quickly
+    (function initDefaults(){
+      Object.keys(PARAMS).forEach((k)=>{
+        const chips = grid.querySelectorAll('.panel .param-title');
+        // select first two values for each param
+        const panel = Array.from(grid.children).find(p=>p.querySelector('.param-title').innerText===k);
+        if(!panel) return;
+        const chipsEls = panel.querySelectorAll('.chip');
+        for(let i=0;i<Math.min(2,chipsEls.length);i++){
+          chipsEls[i].classList.add('selected'); state[k].add(chipsEls[i].innerText);
+        }
+      });
+      updateCount();
+    })();
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,1998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Underrepresented Innovators Database</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            animation: fadeIn 0.6s ease-in;
+        }
+
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+
+        /* Loading indicator */
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            padding: 40px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Data Upload Section */
+        .upload-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: slideUp 0.5s ease-out;
+            display: none;
+        }
+
+        .upload-section.active {
+            display: block;
+        }
+
+        .upload-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .upload-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .upload-option {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .upload-option:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .file-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .paste-area {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            margin-top: 10px;
+        }
+
+        .paste-area:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .load-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .load-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .load-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Main Content (hidden until data is loaded) */
+        .main-content {
+            display: none;
+        }
+
+        .main-content.active {
+            display: block;
+        }
+
+        .stats {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 15px;
+            margin: 20px 0;
+            color: white;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .controls {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: slideUp 0.5s ease-out;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px 50px 15px 20px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .filter-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .filter-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filter-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+            animation: fadeInUp 0.5s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+
+        .card.selected {
+            border: 3px solid #667eea;
+            background: linear-gradient(to bottom right, #f8f9ff, #fff);
+        }
+
+        .card h3 {
+            color: #333;
+            font-size: 1.4em;
+            margin-bottom: 10px;
+        }
+
+        .card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .tag-identity {
+            background: #ffe4e1;
+            color: #d63384;
+        }
+
+        .tag-field {
+            background: #e8f4fd;
+            color: #0066cc;
+        }
+
+        .tag-country {
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
+        .tag-year {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .contribution {
+            color: #666;
+            line-height: 1.6;
+            margin-top: 10px;
+        }
+
+        .select-btn {
+            margin-top: 15px;
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .select-btn:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
+        .select-btn.selected {
+            background: #4ade80;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px;
+            background: white;
+            border-radius: 15px;
+            color: #666;
+        }
+
+        .selected-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 400px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .selected-panel.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .selected-list {
+            margin: 15px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .selected-item {
+            padding: 8px;
+            background: #f8f9ff;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .remove-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .export-btn {
+            width: 100%;
+            padding: 10px;
+            background: #4ade80;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+            
+            .upload-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .cards-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌟 Underrepresented Innovators Database</h1>
+            <p>Discover inspiring innovators who changed the world</p>
+        
+        <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px; max-width: 800px; margin-left: auto; margin-right: auto;">
+                <p style="font-size: 0.95em; line-height: 1.6; opacity: 0.95;">
+                    <strong>🤖 About This Database:</strong> This collection of underrepresented innovators was curated through collaborative research between Claude Opus 4.1 and ChatGPT, uncovering overlooked contributions from diverse backgrounds throughout history. The database spans multiple fields and centuries, highlighting how innovation has always come from all corners of humanity. This tool is meant to help identify people for educational projects and is not exhaustive—it represents just a fraction of the untold stories of human ingenuity.
+                </p>
+            </div>
+        </header>
+        <!-- Loading indicator -->
+        <div id="loadingIndicator" class="loading">
+            <div class="loading-spinner"></div>
+            <p>Attempting to load data automatically...</p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="upload-section" id="uploadSection">
+            <h2>📊 Load Your CSV Data</h2>
+            <div id="messageArea"></div>
+            
+            <div class="upload-options">
+                <div class="upload-option">
+                    <h3>📁 Upload CSV File</h3>
+                    <p style="margin: 15px 0; color: #666;">Select your CSV file from your computer</p>
+                    <input type="file" id="fileInput" class="file-input" accept=".csv">
+                    <label for="fileInput" class="file-label">Choose File</label>
+                </div>
+                
+                <div class="upload-option">
+                    <h3>📋 Paste CSV Data</h3>
+                    <p style="margin: 15px 0; color: #666;">Or paste your CSV content below</p>
+                    <textarea id="pasteArea" class="paste-area" placeholder="Paste your CSV data here...&#10;Name,Identity Categories,Field,Key Contributions,Country,Birth Year / Lifespan&#10;..."></textarea>
+                    <button class="load-btn" onclick="loadPastedData()">Load Data</button>
+                </div>
+            </div>
+            
+            <div style="background: #f0f8ff; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                <p style="color: #0066cc; font-size: 14px;">
+                    <strong>ℹ️ CSV Format:</strong> Your CSV should have these columns: 
+                    Name, Identity Categories, Field, Key Contributions, Country, Birth Year / Lifespan
+                </p>
+                <p style="color: #0066cc; font-size: 14px; margin-top: 10px;">
+                    <strong>💡 Tip:</strong> For automatic loading, place your CSV file named "underrep_innovators.csv" 
+                    in the same folder as this HTML file and serve it through a local web server.
+                </p>
+            </div>
+        </div>
+
+        <!-- Main Content (hidden until data is loaded) -->
+        <div class="main-content" id="mainContent">
+            <div class="stats" id="stats">
+                <span id="totalCount">0</span> innovators • 
+                <span id="filteredCount">0</span> shown •
+                <span id="selectedCount">0</span> selected
+            </div>
+
+            <div class="controls">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search by name, contribution, or any keyword...">
+                    <span class="search-icon">🔍</span>
+                </div>
+                
+                <div class="filters">
+                    <div class="filter-group">
+                        <label for="fieldFilter">Field of Innovation</label>
+                        <select id="fieldFilter">
+                            <option value="">All Fields</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="countryFilter">Country</label>
+                        <select id="countryFilter">
+                            <option value="">All Countries</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="identityFilter">Identity Category</label>
+                        <select id="identityFilter">
+                            <option value="">All Categories</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="clearFilters()">Clear Filters</button>
+                    <button class="btn btn-primary" onclick="randomSelection()">🎲 Random Selection</button>
+                    <button class="btn btn-secondary" onclick="resetData()">📁 Load New Data</button>
+                </div>
+            </div>
+
+            <div class="cards-container" id="cardsContainer">
+                <!-- Cards will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <div class="selected-panel" id="selectedPanel">
+        <h3>📌 Selected for Projects (<span id="selectedNumber">0</span>)</h3>
+        <div class="selected-list" id="selectedList"></div>
+        <button class="export-btn" onclick="exportSelections()">📥 Export Selections</button>
+        <button class="btn btn-secondary" onclick="clearAllSelections()" style="margin-top: 10px; width: 100%;">Clear All</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script>
+        let innovatorsData = [];
+        let filteredData = [];
+        let selectedInnovators = new Set();
+
+        // ============================================
+        // EMBEDDED DATA OPTION
+        // ============================================
+        // To embed your data directly, replace null with your data array:
+        // Example: const EMBEDDED_DATA = [
+        //   {"Name": "Katherine Johnson", "Identity Categories": "Black woman", ...},
+        //   {"Name": "Patricia E. Bath", "Identity Categories": "Black woman", ...},
+        //   ...
+        // ];
+        // const EMBEDDED_DATA = null; // Replace with your data array to auto-load
+        // ============================================
+// EMBEDDED DATA OPTION
+// ============================================
+// To embed your data directly, replace null with your data array:
+// Example: const EMBEDDED_DATA = [
+//   {"Name": "Katherine Johnson", "Identity Categories": "Black woman", ...},
+//   {"Name": "Patricia E. Bath", "Identity Categories": "Black woman", ...},
+//   ...
+// ];
+const EMBEDDED_DATA = [
+  {
+    "Name": "Hadiyah-Nicole Green",
+    "Identity Categories": "Black woman",
+    "Field": "Medical physics / nanotechnology",
+    "Key Contributions": "Developed laser-activated nanoparticle cancer therapy",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1982
+  },
+  {
+    "Name": "Patricia E. Bath",
+    "Identity Categories": "Black woman",
+    "Field": "Ophthalmology / medical innovation",
+    "Key Contributions": "Invented Laserphaco probe for cataract surgery",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1942-2019"
+  },
+  {
+    "Name": "Katherine Johnson",
+    "Identity Categories": "Black woman",
+    "Field": "Mathematics / aerospace",
+    "Key Contributions": "NASA orbital mechanics calculations",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1918-2020"
+  },
+  {
+    "Name": "Dr. Rebecca Lee Crumpler",
+    "Identity Categories": "Black woman",
+    "Field": "Medicine",
+    "Key Contributions": "First African American woman physician",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1831-1895"
+  },
+  {
+    "Name": "Percy Julian",
+    "Identity Categories": "Black man",
+    "Field": "Chemistry",
+    "Key Contributions": "Synthesized cortisone and physostigmine",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1899-1975"
+  },
+  {
+    "Name": "George Washington Carver",
+    "Identity Categories": "Black man",
+    "Field": "Agriculture / botany",
+    "Key Contributions": "Agricultural innovations with peanuts and crop rotation",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1864-1943"
+  },
+  {
+    "Name": "Lewis Latimer",
+    "Identity Categories": "Black man",
+    "Field": "Invention / electrical engineering",
+    "Key Contributions": "Improved incandescent light bulb filament",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1848-1928"
+  },
+  {
+    "Name": "Mae Jemison",
+    "Identity Categories": "Black woman",
+    "Field": "Medicine / aerospace",
+    "Key Contributions": "First African American woman astronaut",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1956
+  },
+  {
+    "Name": "Rosalind Franklin",
+    "Identity Categories": "Jewish woman",
+    "Field": "Chemistry / X-ray crystallography",
+    "Key Contributions": "DNA structure research (Photo 51)",
+    "Country": "UK",
+    "Birth Year / Lifespan": "1920-1958"
+  },
+  {
+    "Name": "Chien-Shiung Wu",
+    "Identity Categories": "Chinese woman",
+    "Field": "Physics",
+    "Key Contributions": "Wu experiment disproving parity conservation",
+    "Country": "China/USA",
+    "Birth Year / Lifespan": "1912-1997"
+  },
+  {
+    "Name": "Lise Meitner",
+    "Identity Categories": "Jewish woman",
+    "Field": "Physics",
+    "Key Contributions": "Nuclear fission discovery",
+    "Country": "Austria/Sweden",
+    "Birth Year / Lifespan": "1878-1968"
+  },
+  {
+    "Name": "Dorothy Hodgkin",
+    "Identity Categories": "Woman",
+    "Field": "Chemistry",
+    "Key Contributions": "X-ray crystallography of vitamin B12 and penicillin",
+    "Country": "UK",
+    "Birth Year / Lifespan": "1910-1994"
+  },
+  {
+    "Name": "Barbara McClintock",
+    "Identity Categories": "Woman",
+    "Field": "Genetics",
+    "Key Contributions": "Discovered genetic transposition (jumping genes)",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1902-1992"
+  },
+  {
+    "Name": "Hedy Lamarr",
+    "Identity Categories": "Jewish woman / immigrant",
+    "Field": "Invention / telecommunications",
+    "Key Contributions": "Frequency hopping technology (WiFi/Bluetooth precursor)",
+    "Country": "Austria/USA",
+    "Birth Year / Lifespan": "1914-2000"
+  },
+  {
+    "Name": "Maria Telkes",
+    "Identity Categories": "Hungarian woman / immigrant",
+    "Field": "Solar energy / engineering",
+    "Key Contributions": "Solar heating system and thermoelectric power generator",
+    "Country": "Hungary/USA",
+    "Birth Year / Lifespan": "1900-1995"
+  },
+  {
+    "Name": "Stephanie Kwolek",
+    "Identity Categories": "Woman",
+    "Field": "Chemistry",
+    "Key Contributions": "Invented Kevlar",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1923-2014"
+  },
+  {
+    "Name": "Radia Perlman",
+    "Identity Categories": "Woman",
+    "Field": "Computer science / networking",
+    "Key Contributions": "Spanning Tree Protocol (Mother of the Internet)",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1951
+  },
+  {
+    "Name": "Ada Lovelace",
+    "Identity Categories": "Woman",
+    "Field": "Mathematics / computer science",
+    "Key Contributions": "First computer algorithm",
+    "Country": "UK",
+    "Birth Year / Lifespan": "1815-1852"
+  },
+  {
+    "Name": "Grace Hopper",
+    "Identity Categories": "Woman",
+    "Field": "Computer science",
+    "Key Contributions": "First compiler and COBOL programming language",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1906-1992"
+  },
+  {
+    "Name": "Mary Jackson",
+    "Identity Categories": "Black woman",
+    "Field": "Aerospace engineering",
+    "Key Contributions": "First Black female engineer at NASA",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1921-2005"
+  },
+  {
+    "Name": "Dorothy Vaughan",
+    "Identity Categories": "Black woman",
+    "Field": "Mathematics / computer programming",
+    "Key Contributions": "FORTRAN programming and NASA computer programming",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1910-2008"
+  },
+  {
+    "Name": "Annie Easley",
+    "Identity Categories": "Black woman",
+    "Field": "Computer science / mathematics",
+    "Key Contributions": "Centaur rocket technology and battery technology",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1933-2011"
+  },
+  {
+    "Name": "Gladys West",
+    "Identity Categories": "Black woman",
+    "Field": "Mathematics / programming",
+    "Key Contributions": "GPS satellite technology programming",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1930
+  },
+  {
+    "Name": "Kalpana Chawla",
+    "Identity Categories": "Indian woman / immigrant",
+    "Field": "Aerospace engineering",
+    "Key Contributions": "First Indian woman astronaut",
+    "Country": "India/USA",
+    "Birth Year / Lifespan": "1962-2003"
+  },
+  {
+    "Name": "Ellen Ochoa",
+    "Identity Categories": "Latina woman",
+    "Field": "Engineering / aerospace",
+    "Key Contributions": "First Latina astronaut and space station director",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1958
+  },
+  {
+    "Name": "Mario Molina",
+    "Identity Categories": "Mexican man / immigrant",
+    "Field": "Chemistry",
+    "Key Contributions": "Ozone depletion research",
+    "Country": "Mexico/USA",
+    "Birth Year / Lifespan": "1943-2020"
+  },
+  {
+    "Name": "Carlos Castillo-Chavez",
+    "Identity Categories": "Mexican-American man",
+    "Field": "Mathematics / epidemiology",
+    "Key Contributions": "Mathematical modeling of disease spread",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1952
+  },
+  {
+    "Name": "France Córdova",
+    "Identity Categories": "Mexican-American woman",
+    "Field": "Astrophysics",
+    "Key Contributions": "X-ray and gamma ray astronomy research",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1947
+  },
+  {
+    "Name": "Luis Walter Alvarez",
+    "Identity Categories": "Latino man",
+    "Field": "Physics",
+    "Key Contributions": "Hydrogen bubble chamber and asteroid impact theory",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1911-1988"
+  },
+  {
+    "Name": "Lydia Villa-Komaroff",
+    "Identity Categories": "Latina woman",
+    "Field": "Molecular biology",
+    "Key Contributions": "Bacterial synthesis of insulin",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1947
+  },
+  {
+    "Name": "César Milstein",
+    "Identity Categories": "Argentine man / immigrant",
+    "Field": "Biochemistry / immunology",
+    "Key Contributions": "Monoclonal antibody technology",
+    "Country": "Argentina/UK",
+    "Birth Year / Lifespan": "1927-2002"
+  },
+  {
+    "Name": "Antonia Novello",
+    "Identity Categories": "Puerto Rican woman",
+    "Field": "Medicine / public health",
+    "Key Contributions": "First Latina U.S. Surgeon General",
+    "Country": "Puerto Rico/USA",
+    "Birth Year / Lifespan": 1944
+  },
+  {
+    "Name": "Richard Tapia",
+    "Identity Categories": "Mexican-American man",
+    "Field": "Mathematics / computational science",
+    "Key Contributions": "Optimization algorithms and diversity in STEM",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1939
+  },
+  {
+    "Name": "Daniel Hale Williams",
+    "Identity Categories": "Black man",
+    "Field": "Surgery / medicine",
+    "Key Contributions": "First successful open heart surgery",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1856-1931"
+  },
+  {
+    "Name": "Charles Drew",
+    "Identity Categories": "Black man",
+    "Field": "Medicine / surgery",
+    "Key Contributions": "Blood plasma preservation and blood banks",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1904-1950"
+  },
+  {
+    "Name": "Vivien Thomas",
+    "Identity Categories": "Black man",
+    "Field": "Surgery / medical technology",
+    "Key Contributions": "Blue baby syndrome surgical technique",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1910-1985"
+  },
+  {
+    "Name": "Alexa Canady",
+    "Identity Categories": "Black woman",
+    "Field": "Neurosurgery",
+    "Key Contributions": "First Black female neurosurgeon",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1950
+  },
+  {
+    "Name": "Ben Carson",
+    "Identity Categories": "Black man",
+    "Field": "Neurosurgery",
+    "Key Contributions": "Pioneering pediatric neurosurgery techniques",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1951
+  },
+  {
+    "Name": "Jane Cooke Wright",
+    "Identity Categories": "Black woman",
+    "Field": "Oncology / medicine",
+    "Key Contributions": "Cancer chemotherapy research",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1919-2013"
+  },
+  {
+    "Name": "Louis T. Wright",
+    "Identity Categories": "Black man",
+    "Field": "Surgery / medicine",
+    "Key Contributions": "Smallpox vaccine research and fracture treatment",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1891-1952"
+  },
+  {
+    "Name": "Otis Boykin",
+    "Identity Categories": "Black man",
+    "Field": "Electronics / invention",
+    "Key Contributions": "Improved electrical resistor and pacemaker control",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1920-1982"
+  },
+  {
+    "Name": "Garrett Morgan",
+    "Identity Categories": "Black man",
+    "Field": "Invention / safety",
+    "Key Contributions": "Gas mask and traffic signal improvements",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1877-1963"
+  },
+  {
+    "Name": "Granville T. Woods",
+    "Identity Categories": "Black man",
+    "Field": "Electrical engineering / invention",
+    "Key Contributions": "Railway telegraph and electrical improvements",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1856-1910"
+  },
+  {
+    "Name": "Jan Matzeliger",
+    "Identity Categories": "Black man / immigrant",
+    "Field": "Invention / manufacturing",
+    "Key Contributions": "Shoe lasting machine",
+    "Country": "Suriname/USA",
+    "Birth Year / Lifespan": "1852-1889"
+  },
+  {
+    "Name": "Elijah McCoy",
+    "Identity Categories": "Black man",
+    "Field": "Mechanical engineering / invention",
+    "Key Contributions": "Automatic oil cup for steam engines",
+    "Country": "Canada/USA",
+    "Birth Year / Lifespan": "1844-1929"
+  },
+  {
+    "Name": "Madam C.J. Walker",
+    "Identity Categories": "Black woman",
+    "Field": "Entrepreneurship / cosmetics",
+    "Key Contributions": "Hair care products and first female self-made millionaire",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1867-1919"
+  },
+  {
+    "Name": "Mary Kenner",
+    "Identity Categories": "Black woman",
+    "Field": "Invention",
+    "Key Contributions": "Sanitary belt and multiple household inventions",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1912-2006"
+  },
+  {
+    "Name": "Bessie Blount Griffin",
+    "Identity Categories": "Black woman",
+    "Key Contributions": "Assistive feeding device for amputees",
+    "Field": "Physical therapy / invention",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1914-2009"
+  },
+  {
+    "Name": "Sarah Breedlove",
+    "Identity Categories": "Black woman",
+    "Field": "Entrepreneurship / cosmetics",
+    "Key Contributions": "Hair care innovation and business empire",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1867-1919"
+  },
+  {
+    "Name": "Guion Bluford",
+    "Identity Categories": "Black man",
+    "Field": "Aerospace engineering",
+    "Key Contributions": "First African American astronaut",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1942
+  },
+  {
+    "Name": "Ronald McNair",
+    "Identity Categories": "Black man",
+    "Field": "Physics / aerospace",
+    "Key Contributions": "Laser physics research and space missions",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1950-1986"
+  },
+  {
+    "Name": "George Carruthers",
+    "Identity Categories": "Black man",
+    "Field": "Astrophysics / engineering",
+    "Key Contributions": "Far-ultraviolet camera/spectrograph for Apollo 16",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1939-2020"
+  },
+  {
+    "Name": "Shirley Ann Jackson",
+    "Identity Categories": "Black woman",
+    "Field": "Physics",
+    "Key Contributions": "Theoretical physics research and telecommunications",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1946
+  },
+  {
+    "Name": "Ursula Burns",
+    "Identity Categories": "Black woman",
+    "Field": "Engineering / business",
+    "Key Contributions": "First Black female Fortune 500 CEO (Xerox)",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1958
+  },
+  {
+    "Name": "Mark Dean",
+    "Identity Categories": "Black man",
+    "Field": "Computer engineering",
+    "Key Contributions": "IBM PC development and computer architecture",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1957
+  },
+  {
+    "Name": "Philip Emeagwali",
+    "Identity Categories": "Nigerian man / immigrant",
+    "Field": "Computer science",
+    "Key Contributions": "Supercomputing and petroleum reservoir modeling",
+    "Country": "Nigeria/USA",
+    "Birth Year / Lifespan": 1954
+  },
+  {
+    "Name": "Jesse Russell",
+    "Identity Categories": "Black man",
+    "Field": "Electrical engineering / telecommunications",
+    "Key Contributions": "Digital cellular technology development",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1948
+  },
+  {
+    "Name": "Lonnie Johnson",
+    "Identity Categories": "Black man",
+    "Field": "Engineering / invention",
+    "Key Contributions": "Super Soaker water gun and thermodynamic systems",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1949
+  },
+  {
+    "Name": "Marian Croak",
+    "Identity Categories": "Black woman",
+    "Field": "Engineering / telecommunications",
+    "Key Contributions": "Voice over Internet Protocol (VoIP) technology",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1955
+  },
+  {
+    "Name": "Kimberly Bryant",
+    "Identity Categories": "Black woman",
+    "Field": "Engineering / education",
+    "Key Contributions": "Black Girls CODE founder",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1967
+  },
+  {
+    "Name": "Charles Bolden",
+    "Identity Categories": "Black man",
+    "Field": "Aerospace / military",
+    "Key Contributions": "NASA Administrator and astronaut",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1946
+  },
+  {
+    "Name": "Valerie Thomas",
+    "Identity Categories": "Black woman",
+    "Field": "Physics / engineering",
+    "Key Contributions": "Illusion transmitter and NASA satellite technology",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1943
+  },
+  {
+    "Name": "Christine Darden",
+    "Identity Categories": "Black woman",
+    "Field": "Aeronautical engineering / mathematics",
+    "Key Contributions": "Supersonic flight research and sonic boom reduction",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1942
+  },
+  {
+    "Name": "Marie Daly",
+    "Identity Categories": "Black woman",
+    "Field": "Biochemistry",
+    "Key Contributions": "First African American woman with chemistry PhD",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1921-2003"
+  },
+  {
+    "Name": "Reatha Clark King",
+    "Identity Categories": "Black woman",
+    "Field": "Chemistry",
+    "Key Contributions": "Thermochemistry research and STEM education",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1938-2024"
+  },
+  {
+    "Name": "Tu Youyou",
+    "Identity Categories": "Chinese woman",
+    "Field": "Medicine / pharmacology",
+    "Key Contributions": "Artemisinin antimalarial drug discovery",
+    "Country": "China",
+    "Birth Year / Lifespan": 1930
+  },
+  {
+    "Name": "Katalin Karikó",
+    "Identity Categories": "Hungarian woman / immigrant",
+    "Field": "Biochemistry",
+    "Key Contributions": "mRNA vaccine technology",
+    "Country": "Hungary/USA",
+    "Birth Year / Lifespan": 1955
+  },
+  {
+    "Name": "Jennifer Doudna",
+    "Identity Categories": "Woman",
+    "Field": "Biochemistry",
+    "Key Contributions": "CRISPR gene editing technology",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1964
+  },
+  {
+    "Name": "Emmanuelle Charpentier",
+    "Identity Categories": "French woman",
+    "Field": "Microbiology / genetics",
+    "Key Contributions": "CRISPR-Cas9 gene editing system",
+    "Country": "France",
+    "Birth Year / Lifespan": 1968
+  },
+  {
+    "Name": "Flossie Wong-Staal",
+    "Identity Categories": "Chinese-American woman",
+    "Field": "Virology / molecular biology",
+    "Key Contributions": "HIV research and first cloning of HIV",
+    "Country": "China/USA",
+    "Birth Year / Lifespan": "1946-2020"
+  },
+  {
+    "Name": "Ruby Hirose",
+    "Identity Categories": "Japanese-American woman",
+    "Field": "Bacteriology",
+    "Key Contributions": "Snake venom research and serum development",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1904-1960"
+  },
+  {
+    "Name": "Ynes Mexia",
+    "Identity Categories": "Mexican-American woman",
+    "Field": "Botany",
+    "Key Contributions": "Plant collection and new species discovery",
+    "Country": "USA/Mexico",
+    "Birth Year / Lifespan": "1870-1938"
+  },
+  {
+    "Name": "Susan La Flesche Picotte",
+    "Identity Categories": "Native American woman (Omaha)",
+    "Field": "Medicine",
+    "Key Contributions": "First Native American physician",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1865-1915"
+  },
+  {
+    "Name": "Connie Redbird",
+    "Identity Categories": "Native American woman (Cherokee)",
+    "Field": "Engineering",
+    "Key Contributions": "Aerospace engineering and tribal STEM education",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1943
+  },
+  {
+    "Name": "Mary Ross",
+    "Identity Categories": "Native American woman (Cherokee)",
+    "Field": "Aerospace engineering",
+    "Key Contributions": "Lockheed missile and spacecraft systems",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1908-2008"
+  },
+  {
+    "Name": "Darren Walker",
+    "Identity Categories": "Black man",
+    "Field": "Social innovation / philanthropy",
+    "Key Contributions": "Ford Foundation leadership and social justice",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1959
+  },
+  {
+    "Name": "Jedidah Isler",
+    "Identity Categories": "Black woman",
+    "Field": "Astrophysics",
+    "Key Contributions": "Supermassive black hole research",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1981
+  },
+  {
+    "Name": "Neil deGrasse Tyson",
+    "Identity Categories": "Black man",
+    "Field": "Astrophysics / science communication",
+    "Key Contributions": "Planetarium leadership and science popularization",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1958
+  },
+  {
+    "Name": "Sylvia Earle",
+    "Identity Categories": "Woman",
+    "Field": "Marine biology / oceanography",
+    "Key Contributions": "Ocean exploration and conservation",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1935
+  },
+  {
+    "Name": "Jane Goodall",
+    "Identity Categories": "Woman",
+    "Field": "Primatology / anthropology",
+    "Key Contributions": "Chimpanzee behavior research",
+    "Country": "UK",
+    "Birth Year / Lifespan": 1934
+  },
+  {
+    "Name": "Dian Fossey",
+    "Identity Categories": "Woman",
+    "Field": "Primatology / conservation",
+    "Key Contributions": "Mountain gorilla research and conservation",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1932-1985"
+  },
+  {
+    "Name": "Wangari Maathai",
+    "Identity Categories": "Kenyan woman",
+    "Field": "Environmental science / activism",
+    "Key Contributions": "Green Belt Movement and environmental conservation",
+    "Country": "Kenya",
+    "Birth Year / Lifespan": "1940-2011"
+  },
+  {
+    "Name": "Rachel Carson",
+    "Identity Categories": "Woman",
+    "Field": "Marine biology / environmental science",
+    "Key Contributions": "Silent Spring and environmental movement",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1907-1964"
+  },
+  {
+    "Name": "Vandana Shiva",
+    "Identity Categories": "Indian woman",
+    "Field": "Environmental science / activism",
+    "Key Contributions": "Seed sovereignty and biodiversity conservation",
+    "Country": "India",
+    "Birth Year / Lifespan": 1952
+  },
+  {
+    "Name": "Temple Grandin",
+    "Identity Categories": "Woman / autistic",
+    "Field": "Animal science / engineering",
+    "Key Contributions": "Humane livestock handling systems",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1947
+  },
+  {
+    "Name": "Subrahmanyan Chandrasekhar",
+    "Identity Categories": "Indian man / immigrant",
+    "Field": "Astrophysics",
+    "Key Contributions": "Chandrasekhar limit and stellar evolution",
+    "Country": "India/USA",
+    "Birth Year / Lifespan": "1910-1995"
+  },
+  {
+    "Name": "Srinivasa Ramanujan",
+    "Identity Categories": "Indian man",
+    "Field": "Mathematics",
+    "Key Contributions": "Number theory and mathematical analysis",
+    "Country": "India",
+    "Birth Year / Lifespan": "1887-1920"
+  },
+  {
+    "Name": "C.V. Raman",
+    "Identity Categories": "Indian man",
+    "Field": "Physics",
+    "Key Contributions": "Raman effect (light scattering)",
+    "Country": "India",
+    "Birth Year / Lifespan": "1888-1970"
+  },
+  {
+    "Name": "Har Gobind Khorana",
+    "Identity Categories": "Indian man / immigrant",
+    "Field": "Biochemistry",
+    "Key Contributions": "Genetic code research and DNA synthesis",
+    "Country": "India/USA",
+    "Birth Year / Lifespan": "1922-2011"
+  },
+  {
+    "Name": "Venkatraman Ramakrishnan",
+    "Identity Categories": "Indian man / immigrant",
+    "Field": "Structural biology",
+    "Key Contributions": "Ribosome structure research",
+    "Country": "India/USA/UK",
+    "Birth Year / Lifespan": 1952
+  },
+  {
+    "Name": "Abdul Kalam",
+    "Identity Categories": "Indian man / Muslim",
+    "Field": "Aerospace engineering",
+    "Key Contributions": "India's missile and space program",
+    "Country": "India",
+    "Birth Year / Lifespan": "1931-2015"
+  },
+  {
+    "Name": "Linus Pauling",
+    "Identity Categories": "Man",
+    "Field": "Chemistry / peace activism",
+    "Key Contributions": "Chemical bonding theory and vitamin C research",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1901-1994"
+  },
+  {
+    "Name": "Albert Einstein",
+    "Identity Categories": "Jewish man / immigrant",
+    "Field": "Physics",
+    "Key Contributions": "Theory of relativity",
+    "Country": "Germany/USA",
+    "Birth Year / Lifespan": "1879-1955"
+  },
+  {
+    "Name": "Niels Bohr",
+    "Identity Categories": "Danish man",
+    "Field": "Physics",
+    "Key Contributions": "Atomic structure and quantum theory",
+    "Country": "Denmark",
+    "Birth Year / Lifespan": "1885-1962"
+  },
+  {
+    "Name": "Max Planck",
+    "Identity Categories": "German man",
+    "Field": "Physics",
+    "Key Contributions": "Quantum theory foundation",
+    "Country": "Germany",
+    "Birth Year / Lifespan": "1858-1947"
+  },
+  {
+    "Name": "Werner Heisenberg",
+    "Identity Categories": "German man",
+    "Field": "Physics",
+    "Key Contributions": "Uncertainty principle and quantum mechanics",
+    "Country": "Germany",
+    "Birth Year / Lifespan": "1901-1976"
+  },
+  {
+    "Name": "Marie Curie",
+    "Identity Categories": "Polish woman / immigrant",
+    "Field": "Physics / chemistry",
+    "Key Contributions": "Radioactivity research and radium discovery",
+    "Country": "Poland/France",
+    "Birth Year / Lifespan": "1867-1934"
+  },
+  {
+    "Name": "Irène Joliot-Curie",
+    "Identity Categories": "French woman",
+    "Field": "Chemistry / physics",
+    "Key Contributions": "Artificial radioactivity discovery",
+    "Country": "France",
+    "Birth Year / Lifespan": "1897-1956"
+  },
+  {
+    "Name": "Emmy Noether",
+    "Identity Categories": "German Jewish woman",
+    "Field": "Mathematics",
+    "Key Contributions": "Abstract algebra and Noether's theorem",
+    "Country": "Germany",
+    "Birth Year / Lifespan": "1882-1935"
+  },
+  {
+    "Name": "Hypatia",
+    "Identity Categories": "Woman / ancient scholar",
+    "Field": "Mathematics / astronomy",
+    "Key Contributions": "Ancient mathematics and astronomical instruments",
+    "Country": "Egypt (ancient)",
+    "Birth Year / Lifespan": "c. 350-415 CE"
+  },
+  {
+    "Name": "Sofia Kovalevskaya",
+    "Identity Categories": "Russian woman",
+    "Field": "Mathematics",
+    "Key Contributions": "Partial differential equations and mechanics",
+    "Country": "Russia",
+    "Birth Year / Lifespan": "1850-1891"
+  },
+  {
+    "Name": "Rita Levi-Montalcini",
+    "Identity Categories": "Italian Jewish woman",
+    "Field": "Neurobiology",
+    "Key Contributions": "Nerve growth factor discovery",
+    "Country": "Italy/USA",
+    "Birth Year / Lifespan": "1909-2012"
+  },
+  {
+    "Name": "Gerty Cori",
+    "Identity Categories": "Czech-American woman",
+    "Field": "Biochemistry",
+    "Key Contributions": "Glucose metabolism research",
+    "Country": "Czech Republic/USA",
+    "Birth Year / Lifespan": "1896-1957"
+  },
+  {
+    "Name": "Rosalyn Yalow",
+    "Identity Categories": "Jewish-American woman",
+    "Field": "Medical physics",
+    "Key Contributions": "Radioimmunoassay development",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1921-2011"
+  },
+  {
+    "Name": "Gertrude Elion",
+    "Identity Categories": "Jewish-American woman",
+    "Field": "Biochemistry / pharmacology",
+    "Key Contributions": "Drug development including acyclovir",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1918-1999"
+  },
+  {
+    "Name": "Donna Strickland",
+    "Identity Categories": "Canadian woman",
+    "Field": "Physics",
+    "Key Contributions": "Chirped pulse amplification in lasers",
+    "Country": "Canada",
+    "Birth Year / Lifespan": 1959
+  },
+  {
+    "Name": "Andrea Ghez",
+    "Identity Categories": "Woman",
+    "Field": "Astrophysics",
+    "Key Contributions": "Supermassive black hole at galactic center",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1965
+  },
+  {
+    "Name": "Frances Arnold",
+    "Identity Categories": "Woman",
+    "Field": "Chemical engineering",
+    "Key Contributions": "Directed evolution of enzymes",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1956
+  },
+  {
+    "Name": "May-Britt Moser",
+    "Identity Categories": "Norwegian woman",
+    "Field": "Neuroscience",
+    "Key Contributions": "Grid cells in spatial navigation",
+    "Country": "Norway",
+    "Birth Year / Lifespan": 1963
+  },
+  {
+    "Name": "Elizabeth Blackburn",
+    "Identity Categories": "Australian-American woman",
+    "Field": "Molecular biology",
+    "Key Contributions": "Telomerase discovery",
+    "Country": "Australia/USA",
+    "Birth Year / Lifespan": 1948
+  },
+  {
+    "Name": "Carol Greider",
+    "Identity Categories": "Woman",
+    "Field": "Molecular biology",
+    "Key Contributions": "Telomerase enzyme discovery",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1961
+  },
+  {
+    "Name": "Linda Buck",
+    "Identity Categories": "Woman",
+    "Field": "Neurobiology",
+    "Key Contributions": "Olfactory system research",
+    "Country": "USA",
+    "Birth Year / Lifespan": 1947
+  },
+  {
+    "Name": "Christiane Nüsslein-Volhard",
+    "Identity Categories": "German woman",
+    "Field": "Developmental biology",
+    "Key Contributions": "Genetic control of embryonic development",
+    "Country": "Germany",
+    "Birth Year / Lifespan": 1942
+  },
+  {
+    "Name": "Françoise Barré-Sinoussi",
+    "Identity Categories": "French woman",
+    "Field": "Virology",
+    "Key Contributions": "HIV discovery",
+    "Country": "France",
+    "Birth Year / Lifespan": 1947
+  },
+  {
+    "Name": "Ada Yonath",
+    "Identity Categories": "Israeli woman",
+    "Field": "Crystallography",
+    "Key Contributions": "Ribosome structure determination",
+    "Country": "Israel",
+    "Birth Year / Lifespan": 1939
+  },
+  {
+    "Name": "Youyou Tu",
+    "Identity Categories": "Chinese woman",
+    "Field": "Traditional medicine / pharmacology",
+    "Key Contributions": "Artemisinin antimalarial compound",
+    "Country": "China",
+    "Birth Year / Lifespan": 1930
+  },
+  {
+    "Name": "Esther Lederberg",
+    "Identity Categories": "Jewish-American woman",
+    "Field": "Microbiology / genetics",
+    "Key Contributions": "Lambda phage and replica plating technique",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1922-2006"
+  },
+  {
+    "Name": "Martha Chase",
+    "Identity Categories": "Woman",
+    "Field": "Genetics",
+    "Key Contributions": "Hershey-Chase experiment proving DNA as genetic material",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1927-2003"
+  },
+  {
+    "Name": "Nettie Stevens",
+    "Identity Categories": "Woman",
+    "Field": "Genetics",
+    "Key Contributions": "XY sex-determination system discovery",
+    "Country": "USA",
+    "Birth Year / Lifespan": "1861-1912"
+  },
+  {
+    "Name": "Sandford Fleming",
+    "Identity Categories": "Scottish-Canadian man / immigrant",
+    "Field": "Engineering / timekeeping",
+    "Key Contributions": "Standard time zones; Canadian Pacific Railway",
+    "Country": "Scotland/Canada",
+    "Birth Year / Lifespan": "1827-1915"
+  }
+];
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        window.addEventListener('DOMContentLoaded', async function() {
+            // First, check if there's embedded data
+            if (EMBEDDED_DATA && Array.isArray(EMBEDDED_DATA) && EMBEDDED_DATA.length > 0) {
+                console.log('Loading embedded data...');
+                innovatorsData = EMBEDDED_DATA;
+                filteredData = [...innovatorsData];
+                initializeApp();
+                document.getElementById('loadingIndicator').style.display = 'none';
+                return;
+            }
+
+            // Try to fetch the CSV file from the same directory
+            try {
+                console.log('Attempting to fetch underrep_innovators.csv...');
+                const response = await fetch('underrep_innovators.csv');
+                
+                if (response.ok) {
+                    const csvText = await response.text();
+                    console.log('CSV file loaded successfully');
+                    processCSVData(csvText);
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                } else {
+                    throw new Error('CSV file not found');
+                }
+            } catch (error) {
+                console.log('Auto-load failed:', error.message);
+                // Show manual upload interface
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('uploadSection').classList.add('active');
+                showMessage('Automatic loading failed. Please upload your CSV file manually or see instructions below.', 'info');
+            }
+        });
+
+        // File upload handler
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    processCSVData(event.target.result);
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // Load pasted data
+        function loadPastedData() {
+            const pastedText = document.getElementById('pasteArea').value.trim();
+            if (pastedText) {
+                processCSVData(pastedText);
+            } else {
+                showMessage('Please paste CSV data before clicking Load Data', 'error');
+            }
+        }
+
+        // Process CSV data
+        function processCSVData(csvText) {
+            try {
+                const parsed = Papa.parse(csvText, {
+                    header: true,
+                    dynamicTyping: true,
+                    skipEmptyLines: true,
+                    delimitersToGuess: [',', '\t', '|', ';']
+                });
+                
+                if (parsed.errors.length > 0) {
+                    console.warn('CSV parsing warnings:', parsed.errors);
+                }
+                
+                // Clean headers
+                innovatorsData = parsed.data.map(row => {
+                    const cleanRow = {};
+                    for (let key in row) {
+                        cleanRow[key.trim()] = row[key];
+                    }
+                    return cleanRow;
+                }).filter(row => row.Name); // Filter out empty rows
+                
+                if (innovatorsData.length === 0) {
+                    showMessage('No valid data found in CSV', 'error');
+                    return;
+                }
+                
+                filteredData = [...innovatorsData];
+                initializeApp();
+                showMessage(`Successfully loaded ${innovatorsData.length} innovators!`, 'success');
+                
+            } catch (error) {
+                console.error('Error processing CSV:', error);
+                showMessage('Error processing CSV data. Please check the format.', 'error');
+            }
+        }
+
+        function initializeApp() {
+            // Hide upload section and show main content
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('mainContent').classList.add('active');
+            
+            populateFilters();
+            renderCards();
+            updateStats();
+        }
+
+        function populateFilters() {
+            // Clear existing options
+            ['fieldFilter', 'countryFilter', 'identityFilter'].forEach(id => {
+                const select = document.getElementById(id);
+                select.innerHTML = select.querySelector('option').outerHTML; // Keep first option
+            });
+            
+            // Populate field filter
+            const fields = [...new Set(innovatorsData.map(d => d.Field))].filter(Boolean).sort();
+            const fieldSelect = document.getElementById('fieldFilter');
+            fields.forEach(field => {
+                const option = document.createElement('option');
+                option.value = field;
+                option.textContent = field;
+                fieldSelect.appendChild(option);
+            });
+            
+            // Populate country filter
+            const countries = [...new Set(innovatorsData.map(d => d.Country))].filter(Boolean).sort();
+            const countrySelect = document.getElementById('countryFilter');
+            countries.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country;
+                option.textContent = country;
+                countrySelect.appendChild(option);
+            });
+            
+            // Populate identity filter
+            const identities = [...new Set(innovatorsData.flatMap(d => 
+                d['Identity Categories'] ? d['Identity Categories'].split(',').map(s => s.trim()) : []
+            ))].filter(Boolean).sort();
+            const identitySelect = document.getElementById('identityFilter');
+            identities.forEach(identity => {
+                const option = document.createElement('option');
+                option.value = identity;
+                option.textContent = identity;
+                identitySelect.appendChild(option);
+            });
+        }
+
+        function renderCards() {
+            const container = document.getElementById('cardsContainer');
+            
+            if (filteredData.length === 0) {
+                container.innerHTML = '<div class="no-results">No innovators found matching your criteria. Try adjusting your filters.</div>';
+                return;
+            }
+            
+            container.innerHTML = filteredData.map((innovator, index) => {
+                const isSelected = selectedInnovators.has(innovator.Name);
+                const safeString = str => (str || '').replace(/'/g, "\\'");
+                
+                return `
+                    <div class="card ${isSelected ? 'selected' : ''}" onclick="toggleSelection('${safeString(innovator.Name)}')">
+                        <h3>${innovator.Name || 'Unknown'}</h3>
+                        <div class="card-meta">
+                            ${innovator['Identity Categories'] ? 
+                                innovator['Identity Categories'].split(',').map(cat => 
+                                    `<span class="tag tag-identity">${cat.trim()}</span>`
+                                ).join('') : ''}
+                            ${innovator.Field ? `<span class="tag tag-field">${innovator.Field}</span>` : ''}
+                            ${innovator.Country ? `<span class="tag tag-country">${innovator.Country}</span>` : ''}
+                            ${innovator['Birth Year / Lifespan'] ? `<span class="tag tag-year">${innovator['Birth Year / Lifespan']}</span>` : ''}
+                        </div>
+                        <div class="contribution">
+                            <strong>Key Contribution:</strong> ${innovator['Key Contributions'] || 'Not specified'}
+                        </div>
+                        <button class="select-btn ${isSelected ? 'selected' : ''}" onclick="event.stopPropagation(); toggleSelection('${safeString(innovator.Name)}')">
+                            ${isSelected ? '✓ Selected' : 'Select for Project'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterData() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const fieldFilter = document.getElementById('fieldFilter').value;
+            const countryFilter = document.getElementById('countryFilter').value;
+            const identityFilter = document.getElementById('identityFilter').value;
+            
+            filteredData = innovatorsData.filter(innovator => {
+                // Search filter
+                if (searchTerm) {
+                    const searchableText = Object.values(innovator).join(' ').toLowerCase();
+                    if (!searchableText.includes(searchTerm)) return false;
+                }
+                
+                // Field filter
+                if (fieldFilter && innovator.Field !== fieldFilter) return false;
+                
+                // Country filter
+                if (countryFilter && innovator.Country !== countryFilter) return false;
+                
+                // Identity filter
+                if (identityFilter && innovator['Identity Categories']) {
+                    const categories = innovator['Identity Categories'].split(',').map(s => s.trim());
+                    if (!categories.includes(identityFilter)) return false;
+                } else if (identityFilter) {
+                    return false;
+                }
+                
+                return true;
+            });
+            
+            renderCards();
+            updateStats();
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('fieldFilter').value = '';
+            document.getElementById('countryFilter').value = '';
+            document.getElementById('identityFilter').value = '';
+            filterData();
+        }
+
+        function randomSelection() {
+            if (filteredData.length > 0) {
+                const unselected = filteredData.filter(i => !selectedInnovators.has(i.Name));
+                if (unselected.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * unselected.length);
+                    const randomInnovator = unselected[randomIndex];
+                    toggleSelection(randomInnovator.Name);
+                    
+                    // Scroll to the selected card
+                    setTimeout(() => {
+                        const cards = document.querySelectorAll('.card');
+                        cards.forEach(card => {
+                            if (card.querySelector('h3').textContent === randomInnovator.Name) {
+                                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        });
+                    }, 100);
+                }
+            }
+        }
+
+        function toggleSelection(name) {
+            if (selectedInnovators.has(name)) {
+                selectedInnovators.delete(name);
+            } else {
+                selectedInnovators.add(name);
+            }
+            
+            updateSelectedPanel();
+            renderCards();
+            updateStats();
+        }
+
+        function updateSelectedPanel() {
+            const panel = document.getElementById('selectedPanel');
+            const list = document.getElementById('selectedList');
+            const count = document.getElementById('selectedNumber');
+            
+            if (selectedInnovators.size > 0) {
+                panel.classList.add('show');
+                count.textContent = selectedInnovators.size;
+                
+                list.innerHTML = Array.from(selectedInnovators).map(name => `
+                    <div class="selected-item">
+                        <span>${name}</span>
+                        <button class="remove-btn" onclick="toggleSelection('${name.replace(/'/g, "\\'")}')">Remove</button>
+                    </div>
+                `).join('');
+            } else {
+                panel.classList.remove('show');
+            }
+        }
+
+        function clearAllSelections() {
+            selectedInnovators.clear();
+            updateSelectedPanel();
+            renderCards();
+            updateStats();
+        }
+
+        function exportSelections() {
+            const selected = innovatorsData.filter(i => selectedInnovators.has(i.Name));
+            const csv = Papa.unparse(selected);
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'selected_innovators.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function updateStats() {
+            document.getElementById('totalCount').textContent = innovatorsData.length;
+            document.getElementById('filteredCount').textContent = filteredData.length;
+            document.getElementById('selectedCount').textContent = selectedInnovators.size;
+        }
+
+        function resetData() {
+            // Reset everything and show upload section again
+            innovatorsData = [];
+            filteredData = [];
+            selectedInnovators.clear();
+            
+            document.getElementById('uploadSection').classList.add('active');
+            document.getElementById('mainContent').classList.remove('active');
+            document.getElementById('fileInput').value = '';
+            document.getElementById('pasteArea').value = '';
+            
+            // Hide message
+            document.getElementById('messageArea').innerHTML = '';
+        }
+
+        function showMessage(text, type) {
+            const messageArea = document.getElementById('messageArea');
+            messageArea.innerHTML = `<div class="message ${type}">${text}</div>`;
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    messageArea.innerHTML = '';
+                }, 3000);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('searchInput').addEventListener('input', filterData);
+        document.getElementById('fieldFilter').addEventListener('change', filterData);
+        document.getElementById('countryFilter').addEventListener('change', filterData);
+        document.getElementById('identityFilter').addEventListener('change', filterData);
+
+        // Instructions for auto-loading
+        console.log(`
+        ========================================
+        AUTO-LOADING INSTRUCTIONS
+        ========================================
+        
+        Option 1: EMBED DATA DIRECTLY
+        1. Open this HTML file in a text editor
+        2. Find the line: const EMBEDDED_DATA = null;
+        3. Replace null with your data array
+        4. Save the file
+        
+        Option 2: SERVE WITH WEB SERVER
+        1. Place 'underrep_innovators.csv' in the same folder as this HTML file
+        2. Start a local web server:
+           - Python 3: python -m http.server 8000
+           - Python 2: python -m SimpleHTTPServer 8000
+           - Node.js: npx http-server
+        3. Open http://localhost:8000 in your browser
+        
+        Option 3: USE MANUAL UPLOAD
+        Simply use the upload interface that appears
+        
+        ========================================
+        `);
+    </script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pulse Oximeter Simulation</title>
+  <style>
+    body { font-family: sans-serif; background: #f4f4f4; margin: 20px; }
+    h1 { text-align: center; }
+    #signalCanvas { background: white; display: block; margin: 0 auto; border: 1px solid #ccc; }
+    .controls { text-align: center; margin-top: 10px; }
+    .diagram { margin: 20px auto; width: 600px; height: 200px; position: relative; border: 1px solid #ccc; background: #fff; }
+    .layer { position: absolute; left: 0; right: 0; height: 25%; line-height: 50px; text-align: center; font-size: 14px; opacity: 0.9; }
+    .skin { top: 0; background: #ffe0bd; }
+    .blood { top: 25%; background: linear-gradient(90deg,#ff7b7b,#ff3b3b); }
+    .bone { top: 50%; background: #e0cda9; }
+    .detector { top: 75%; background: #d0d0d0; }
+    .light-ray { position: absolute; width: 2px; background: red; height: 150px; }
+    .light-ray.blue { background: blue; }
+    .stats {text-align:center;margin-top:8px}
+    .stats b{display:inline-block;width:140px}
+  </style>
+</head>
+<body>
+  <h1>Pulse Oximeter Simulation (with skin-tone bias)</h1>
+
+  <canvas id="signalCanvas" width="800" height="220"></canvas>
+  <div class="controls">
+    Heart Rate: <input type="range" id="heartRate" min="40" max="180" value="75"> <span id="hrLabel">75</span> bpm &nbsp;&nbsp;
+    SpO₂ (true): <input type="range" id="spo2" min="70" max="100" value="98"> <span id="spo2Label">98</span>% &nbsp;&nbsp;
+    Skin Tone: 
+    <select id="skinTone">
+      <option value="0">Light</option>
+      <option value="0.15">Medium-Light</option>
+      <option value="0.32">Medium</option>
+      <option value="0.55">Dark</option>
+    </select>
+  </div>
+
+  <div class="diagram" aria-hidden="true">
+    <div class="layer skin" id="skinLayer">Skin layer</div>
+    <div class="layer blood">Blood vessels (arteries + veins)</div>
+    <div class="layer bone">Bone</div>
+    <div class="layer detector">Photodetector</div>
+    <div class="light-ray" style="top:6px; left:120px;"></div>
+    <div class="light-ray blue" style="top:6px; left:140px;"></div>
+  </div>
+
+  <div class="stats">
+    <div><b>Measured R:</b> <span id="Rval">-</span> &nbsp; <b>Estimated SpO₂:</b> <span id="estSpO2">-</span>%</div>
+    <div style="margin-top:6px"><b>Photodiode DC (R/IR):</b> <span id="dcVals">- / -</span> &nbsp; <b>AC (R/IR):</b> <span id="acVals">- / -</span></div>
+  </div>
+
+  <script>
+    // DOM
+    const canvas = document.getElementById('signalCanvas');
+    const ctx = canvas.getContext('2d');
+    const hrS = document.getElementById('heartRate');
+    const spo2S = document.getElementById('spo2');
+    const hrLabel = document.getElementById('hrLabel');
+    const spo2Label = document.getElementById('spo2Label');
+    const skinTone = document.getElementById('skinTone');
+    const skinLayer = document.getElementById('skinLayer');
+    const Rval = document.getElementById('Rval');
+    const estSpO2 = document.getElementById('estSpO2');
+    const dcVals = document.getElementById('dcVals');
+    const acVals = document.getElementById('acVals');
+
+    // signal buffers - set length based on initial canvas width
+    const bufferLen = canvas.width;
+    let bufRed = new Array(bufferLen).fill(0.8);
+    let bufIR = new Array(bufferLen).fill(0.8);
+
+    // simple calibration: map R -> SpO2 linearly (toy)
+    function RtoSpO2(R){ return 110 - 25*R }
+
+    // update skin color display
+    function updateSkinColor(){
+      // visual skin colors roughly mapped to melanin value
+      const colorMap = { '0': '#ffe0bd', '0.15':'#e0ac69', '0.32':'#c68642', '0.55':'#8d5524' };
+      skinLayer.style.background = colorMap[skinTone.value] || '#ffe0bd';
+    }
+    skinTone.addEventListener('change', updateSkinColor);
+    updateSkinColor();
+
+    // estimate measured photodiode DC and AC given true SpO2 and melanin
+    // This is a simplified physical model for demonstration purposes only
+    function measureSignals(trueSpO2_frac, melanin){
+      const oxy = trueSpO2_frac; const deoxy = 1-oxy;
+      const coeffs = {
+        red: {oxy:0.15, deoxy:0.45},
+        ir:  {oxy:0.35, deoxy:0.25}
+      };
+      const effRed = coeffs.red.oxy*oxy + coeffs.red.deoxy*deoxy + melanin*0.9;
+      const effIR  = coeffs.ir.oxy*oxy + coeffs.ir.deoxy*deoxy + melanin*0.6;
+      const DC_red = Math.exp(-effRed*1.0);
+      const DC_ir  = Math.exp(-effIR*1.0);
+      const perfBase = 0.12;
+      const AC_red = DC_red * perfBase * (1 - melanin*0.6);
+      const AC_ir  = DC_ir  * perfBase * (1 - melanin*0.55);
+      return {DC_red, DC_ir, AC_red, AC_ir};
+    }
+
+    function computeEstimate(DC_red,DC_ir,AC_red,AC_ir,melanin){
+      const ratioR = (AC_red/DC_red) || 1e-6;
+      const ratioIR = (AC_ir/DC_ir) || 1e-6;
+      const R = ratioR/ratioIR;
+      let est = RtoSpO2(R);
+      // empirical bias model
+      const bias = melanin * 5.5;
+      est += bias;
+      return {R,est,ratioR,ratioIR};
+    }
+
+    // animation loop
+    let t = 0;
+    function step(){
+      const hr = parseInt(hrS.value); const trueSp = parseInt(spo2S.value);
+      hrLabel.textContent = hr; spo2Label.textContent = trueSp;
+      const melanin = parseFloat(skinTone.value) || 0;
+
+      const f = hr/60; const pulse = Math.max(0, Math.sin(2*Math.PI*f*(t/60)));
+      const meas = measureSignals(trueSp/100, melanin);
+      const instRed = meas.DC_red - meas.AC_red * pulse + (Math.random()*0.01 - 0.005);
+      const instIR  = meas.DC_ir  - meas.AC_ir  * pulse + (Math.random()*0.01 - 0.005);
+
+      bufRed.push(instRed); if(bufRed.length>bufferLen) bufRed.shift();
+      bufIR.push(instIR); if(bufIR.length>bufferLen) bufIR.shift();
+
+      function estimate(buffer){
+        const mean = buffer.reduce((s,v)=>s+v,0)/buffer.length;
+        let max=-1e9,min=1e9; for(let v of buffer){ if(v>max) max=v; if(v<min) min=v; }
+        const ac = (max-min)/2; return {dc:mean,ac};
+      }
+
+      const estR = estimate(bufRed); const estIR = estimate(bufIR);
+      const calc = computeEstimate(estR.dc, estIR.dc, estR.ac, estIR.ac, melanin);
+
+      draw(bufRed, bufIR);
+
+      Rval.textContent = calc.R.toFixed(3);
+      estSpO2.textContent = calc.est.toFixed(1);
+      dcVals.textContent = estR.dc.toFixed(3) + ' / ' + estIR.dc.toFixed(3);
+      acVals.textContent = estR.ac.toFixed(4) + ' / ' + estIR.ac.toFixed(4);
+
+      t++;
+      requestAnimationFrame(step);
+    }
+
+    function draw(redBuf, irBuf){
+      // Use current canvas size instead of reassigning any outer-const
+      const W = canvas.width;
+      const H = canvas.height;
+
+      ctx.clearRect(0,0,W,H);
+      ctx.font = '12px sans-serif';
+
+      // background grid
+      ctx.strokeStyle='#eee'; ctx.lineWidth=1;
+      for(let x=0;x<W;x+=80){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+      for(let y=0;y<H;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+      // compute visible scaling
+      const all = redBuf.concat(irBuf);
+      const minV = Math.min(...all);
+      const maxV = Math.max(...all);
+      const scale = (maxV - minV) || 1;
+
+      // draw IR (blue)
+      ctx.beginPath(); ctx.lineWidth=1.5; ctx.strokeStyle='#3949ab';
+      for(let i=0;i<redBuf.length;i++){
+        const x = i;
+        const y = H*0.65 - ((irBuf[i]-minV)/scale)*(H*0.25);
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+
+      // draw Red
+      ctx.beginPath(); ctx.lineWidth=1.5; ctx.strokeStyle='#e53935';
+      for(let i=0;i<redBuf.length;i++){
+        const x = i;
+        const y = H*0.35 - ((redBuf[i]-minV)/scale)*(H*0.25);
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+
+      // axis labels
+      ctx.fillStyle='#333'; ctx.fillText('IR (blue)', 10, Math.max(12, H*0.65-60));
+      ctx.fillText('Red (red)', 10, Math.max(12, H*0.35-60));
+    }
+
+    // initialize
+    for(let i=0;i<bufferLen;i++){ bufRed[i]=0.8; bufIR[i]=0.8; }
+    step();
+
+  </script>
+
+  <p style="max-width:800px;margin:12px auto;font-size:13px;color:#333">This demo includes a simple, demonstrative model of how increased melanin absorption can change measured DC and AC amplitudes and introduce a positive bias in the estimated SpO₂ — similar to effects reported in recent studies. The model is simplified for visualization and educational purposes and not intended for clinical use.</p>
+</body>
+</html>

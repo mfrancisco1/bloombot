@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Skeleton Force Layout with Bone Lengths</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+        }
+        .description {
+            margin-bottom: 20px;
+            color: #555;
+            line-height: 1.5;
+        }
+        .hand-skeleton-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        svg {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .instructions {
+            background-color: #f8f9fa;
+            border-left: 4px solid #4CAF50;
+            padding: 10px 15px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        .instructions ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .reset-btn {
+            background-color: #4CAF50;
+        }
+        .unpin-btn {
+            background-color: #FF5722;
+        }
+        .controls {
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+        }
+        .slider-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .slider-label span {
+            font-size: 13px;
+            color: #555;
+        }
+        .slider {
+            width: 100%;
+            margin: 5px 0;
+        }
+        .controls-title {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Hand Skeleton Force Layout</h1>
+        
+        <div class="description">
+            This visualization shows the 29 bones in a human hand as an interactive force-directed graph.
+            The bones can be dragged, moved, and pinned in place to explore different arrangements.
+            Use the sliders below to adjust forces and visualization parameters.
+        </div>
+        
+        <div class="controls">
+            <h3 class="controls-title">Visualization Controls</h3>
+            
+            <div class="button-controls">
+                <button id="resetBtn" class="reset-btn">Reset Position</button>
+                <button id="unpinBtn" class="unpin-btn">Release All Pins</button>
+                <button id="springBtn" class="spring-btn">Toggle Spring Layout</button>
+            </div>
+            
+            <div class="slider-container">
+                <!-- Force Strengths -->
+                <div class="slider-group">
+                    <h4>Force Strengths</h4>
+                    <div class="slider-label">
+                        <label for="chargeStrength">Charge Force: </label>
+                        <span id="chargeValue">-200</span>
+                    </div>
+                    <input type="range" id="chargeStrength" class="slider" 
+                           min="-500" max="0" step="10" value="-200">
+                    
+                    <div class="slider-label">
+                        <label for="linkStrength">Link Strength: </label>
+                        <span id="linkStrengthValue">1.0</span>
+                    </div>
+                    <input type="range" id="linkStrength" class="slider" 
+                           min="0" max="2" step="0.1" value="1.0">
+                </div>
+                
+                <!-- Center Force Controls -->
+                <div class="slider-group">
+                    <h4>Center Forces</h4>
+                    <div class="slider-label">
+                        <label for="centerXStrength">X-Center Force: </label>
+                        <span id="centerXValue">0.05</span>
+                    </div>
+                    <input type="range" id="centerXStrength" class="slider" 
+                           min="0" max="0.2" step="0.01" value="0.05">
+                    
+                    <div class="slider-label">
+                        <label for="centerYStrength">Y-Center Force: </label>
+                        <span id="centerYValue">0.05</span>
+                    </div>
+                    <input type="range" id="centerYStrength" class="slider" 
+                           min="0" max="0.2" step="0.01" value="0.05">
+                </div>
+                
+                <!-- Collision & Simulation Controls -->
+                <div class="slider-group">
+                    <h4>Collision & Simulation</h4>
+                    <div class="slider-label">
+                        <label for="collisionRadius">Collision Radius: </label>
+                        <span id="collisionValue">40</span>
+                    </div>
+                    <input type="range" id="collisionRadius" class="slider" 
+                           min="10" max="80" step="5" value="40">
+                    
+                    <div class="slider-label">
+                        <label for="alphaDecay">Alpha Decay: </label>
+                        <span id="alphaDecayValue">0.02</span>
+                    </div>
+                    <input type="range" id="alphaDecay" class="slider" 
+                           min="0.001" max="0.1" step="0.001" value="0.02">
+                </div>
+                
+                <!-- Bone & Joint Visuals -->
+                <div class="slider-group">
+                    <h4>Visual Settings</h4>
+                    <div class="slider-label">
+                        <label for="boneSizeScale">Bone Size Scale: </label>
+                        <span id="boneSizeValue">1.0</span>
+                    </div>
+                    <input type="range" id="boneSizeScale" class="slider" 
+                           min="0.5" max="2" step="0.1" value="1.0">
+                    
+                    <div class="slider-label">
+                        <label for="jointSize">Joint Size: </label>
+                        <span id="jointSizeValue">3</span>
+                    </div>
+                    <input type="range" id="jointSize" class="slider" 
+                           min="0" max="8" step="0.5" value="3">
+                </div>
+            </div>
+        </div>
+        
+        <div class="hand-skeleton-container">
+            <svg id="skeleton-svg" width="800" height="650"></svg>
+        </div>
+        
+        <div class="footer">
+            <p>Hand Skeleton Visualization - 27 bones in hand (8 carpal, 5 metacarpal, 14 phalanges) + radius and ulna</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const svgRef = document.getElementById('skeleton-svg');
+            
+            // Define the bones data structure
+            const nodes = [
+                // Forearm
+                { id: "radius", name: "Radius", group: 1, fixed: false, pinned: false },
+                { id: "ulna", name: "Ulna", group: 1, fixed: false, pinned: false },
+                
+                // Proximal row of carpals
+                { id: "scaphoid", name: "Scaphoid", group: 2, fixed: false, pinned: false },
+                { id: "lunate", name: "Lunate", group: 2, fixed: false, pinned: false },
+                { id: "triquetrum", name: "Triquetrum", group: 2, fixed: false, pinned: false },
+                { id: "pisiform", name: "Pisiform", group: 2, fixed: false, pinned: false },
+                
+                // Distal row of carpals
+                { id: "trapezium", name: "Trapezium", group: 2, fixed: false, pinned: false },
+                { id: "trapezoid", name: "Trapezoid", group: 2, fixed: false, pinned: false },
+                { id: "capitate", name: "Capitate", group: 2, fixed: false, pinned: false },
+                { id: "hamate", name: "Hamate", group: 2, fixed: false, pinned: false },
+                
+                // Metacarpals
+                { id: "metacarpal1", name: "1st Metacarpal", group: 3, fixed: false, pinned: false },
+                { id: "metacarpal2", name: "2nd Metacarpal", group: 3, fixed: false, pinned: false },
+                { id: "metacarpal3", name: "3rd Metacarpal", group: 3, fixed: false, pinned: false },
+                { id: "metacarpal4", name: "4th Metacarpal", group: 3, fixed: false, pinned: false },
+                { id: "metacarpal5", name: "5th Metacarpal", group: 3, fixed: false, pinned: false },
+                
+                // Thumb phalanges
+                { id: "thumb_proximal", name: "Thumb Proximal", group: 4, fixed: false, pinned: false },
+                { id: "thumb_distal", name: "Thumb Distal", group: 4, fixed: false, pinned: false },
+                
+                // Index finger phalanges
+                { id: "index_proximal", name: "Index Proximal", group: 4, fixed: false, pinned: false },
+                { id: "index_middle", name: "Index Middle", group: 4, fixed: false, pinned: false },
+                { id: "index_distal", name: "Index Distal", group: 4, fixed: false, pinned: false },
+                
+                // Middle finger phalanges
+                { id: "middle_proximal", name: "Middle Proximal", group: 4, fixed: false, pinned: false },
+                { id: "middle_middle", name: "Middle Middle", group: 4, fixed: false, pinned: false },
+                { id: "middle_distal", name: "Middle Distal", group: 4, fixed: false, pinned: false },
+                
+                // Ring finger phalanges
+                { id: "ring_proximal", name: "Ring Proximal", group: 4, fixed: false, pinned: false },
+                { id: "ring_middle", name: "Ring Middle", group: 4, fixed: false, pinned: false },
+                { id: "ring_distal", name: "Ring Distal", group: 4, fixed: false, pinned: false },
+                
+                // Pinky finger phalanges
+                { id: "pinky_proximal", name: "Pinky Proximal", group: 4, fixed: false, pinned: false },
+                { id: "pinky_middle", name: "Pinky Middle", group: 4, fixed: false, pinned: false },
+                { id: "pinky_distal", name: "Pinky Distal", group: 4, fixed: false, pinned: false }
+            ];
+
+            // Define the connections between bones with lengths
+            const links = [
+                // Radius/Ulna to carpals
+                { source: "radius", target: "scaphoid", value: 1, length: 70 },
+                { source: "radius", target: "lunate", value: 1, length: 60 },
+                { source: "ulna", target: "lunate", value: 1, length: 65 },
+                { source: "ulna", target: "triquetrum", value: 1, length: 75 },
+                
+                // Connections between proximal row carpals
+                { source: "scaphoid", target: "lunate", value: 1, length: 30 },
+                { source: "lunate", target: "triquetrum", value: 1, length: 35 },
+                { source: "triquetrum", target: "pisiform", value: 1, length: 25 },
+                
+                // Proximal to distal row carpals
+                { source: "scaphoid", target: "trapezium", value: 1, length: 40 },
+                { source: "scaphoid", target: "trapezoid", value: 1, length: 45 },
+                { source: "lunate", target: "capitate", value: 1, length: 50 },
+                { source: "triquetrum", target: "hamate", value: 1, length: 48 },
+                
+                // Connections between distal row carpals
+                { source: "trapezium", target: "trapezoid", value: 1, length: 28 },
+                { source: "trapezoid", target: "capitate", value: 1, length: 32 },
+                { source: "capitate", target: "hamate", value: 1, length: 38 },
+                
+                // Carpals to metacarpals
+                { source: "trapezium", target: "metacarpal1", value: 1, length: 55 },
+                { source: "trapezoid", target: "metacarpal2", value: 1, length: 60 },
+                { source: "capitate", target: "metacarpal3", value: 1, length: 65 },
+                { source: "hamate", target: "metacarpal4", value: 1, length: 63 },
+                { source: "hamate", target: "metacarpal5", value: 1, length: 60 },
+                
+                // Metacarpal to proximal phalanges
+                { source: "metacarpal1", target: "thumb_proximal", value: 1, length: 40 },
+                { source: "metacarpal2", target: "index_proximal", value: 1, length: 50 },
+                { source: "metacarpal3", target: "middle_proximal", value: 1, length: 55 },
+                { source: "metacarpal4", target: "ring_proximal", value: 1, length: 53 },
+                { source: "metacarpal5", target: "pinky_proximal", value: 1, length: 50 },
+                
+                // Thumb phalanges
+                { source: "thumb_proximal", target: "thumb_distal", value: 1, length: 35 },
+                
+                // Index finger phalanges
+                { source: "index_proximal", target: "index_middle", value: 1, length: 40 },
+                { source: "index_middle", target: "index_distal", value: 1, length: 30 },
+                
+                // Middle finger phalanges
+                { source: "middle_proximal", target: "middle_middle", value: 1, length: 45 },
+                { source: "middle_middle", target: "middle_distal", value: 1, length: 35 },
+                
+                // Ring finger phalanges
+                { source: "ring_proximal", target: "ring_middle", value: 1, length: 43 },
+                { source: "ring_middle", target: "ring_distal", value: 1, length: 33 },
+                
+                // Pinky finger phalanges
+                { source: "pinky_proximal", target: "pinky_middle", value: 1, length: 40 },
+                { source: "pinky_middle", target: "pinky_distal", value: 1, length: 30 }
+            ];
+
+            // Create SVG
+            const width = 800;
+            const height = 650;
+            const svg = d3.select(svgRef)
+                .attr('width', width)
+                .attr('height', height);
+
+            // Add background with border
+            svg.append('rect')
+                .attr('width', width)
+                .attr('height', height)
+                .attr('fill', '#f9f9f9')
+                .attr('stroke', '#ccc')
+                .attr('stroke-width', 1);
+
+            // Define colors for bone groups
+            const colorScale = d3.scaleOrdinal()
+                .domain([1, 2, 3, 4])
+                .range(['#b0b0b0', '#e0e0e0', '#d0d0d0', '#c0c0c0']);
+
+            // Create a container for the force layout
+            const container = svg.append('g')
+                .attr('transform', 'translate(0, 0)');
+
+            // Add zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([0.5, 5])
+                .on('zoom', (event) => {
+                    container.attr('transform', event.transform);
+                });
+
+            svg.call(zoom)
+                .on("dblclick.zoom", null); // Disable zoom on double-click
+
+            // Process links data to use node objects
+            const linkObjects = links.map(link => {
+                return {
+                    source: nodes.find(node => node.id === link.source),
+                    target: nodes.find(node => node.id === link.target),
+                    value: link.value,
+                    length: link.length
+                };
+            });
+
+            // Initialize simulation with default values
+            // These will be updated by sliders
+            let chargeStrength = -200;
+            let linkStrength = 1.0;
+            let centerXStrength = 0.05;
+            let centerYStrength = 0.05;
+            let collisionRadius = 40;
+            let alphaDecay = 0.02;
+            let boneSizeScale = 1.0;
+            let jointSize = 3;
+            
+            // Initialize force simulation
+            const simulation = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(linkObjects).id(d => d.id).distance(d => d.length * linkStrength))
+                .force('charge', d3.forceManyBody().strength(chargeStrength))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('x', d3.forceX(width / 2).strength(centerXStrength))
+                .force('y', d3.forceY(height / 2).strength(centerYStrength))
+                .force('collision', d3.forceCollide().radius(collisionRadius))
+                .alphaDecay(alphaDecay);
+
+            // Function to handle pinning/unpinning nodes
+            const togglePin = (d) => {
+                d.pinned = !d.pinned;
+                if (d.pinned) {
+                    d.fx = d.x;
+                    d.fy = d.y;
+                } else {
+                    d.fx = null;
+                    d.fy = null;
+                }
+                updateUI();
+            };
+
+            // Create links
+            const link = container.append('g')
+                .attr('class', 'links')
+                .selectAll('line')
+                .data(linkObjects)
+                .enter()
+                .append('line')
+                .attr('stroke', '#666')
+                .attr('stroke-width', 1.5)
+                .attr('stroke-dasharray', d => {
+                    // Use dashed lines for certain connections
+                    const isCarpalsConnection = 
+                        (d.source.id.includes('scaphoid') || d.source.id.includes('lunate') || 
+                         d.source.id.includes('triquetrum') || d.source.id.includes('pisiform') ||
+                         d.source.id.includes('trapezium') || d.source.id.includes('trapezoid') ||
+                         d.source.id.includes('capitate') || d.source.id.includes('hamate'));
+                    return isCarpalsConnection ? '3,3' : 'none';
+                });
+
+            // Create node groups
+            const nodeGroups = container.append('g')
+                .attr('class', 'nodes')
+                .selectAll('g')
+                .data(nodes)
+                .enter()
+                .append('g')
+                .attr('class', 'node')
+                .call(d3.drag()
+                    .on('start', (event, d) => {
+                        if (!event.active) simulation.alphaTarget(0.3).restart();
+                        d.fx = d.x;
+                        d.fy = d.y;
+                    })
+                    .on('drag', (event, d) => {
+                        d.fx = event.x;
+                        d.fy = event.y;
+                    })
+                    .on('end', (event, d) => {
+                        if (!event.active) simulation.alphaTarget(0);
+                        if (!d.pinned) {
+                            d.fx = null;
+                            d.fy = null;
+                        }
+                    })
+                );
+
+            // Function to get bone size
+            const getBoneSize = (d) => {
+                // Different sizes based on bone group, scaled by user control
+                if (d.group === 1) return 25 * boneSizeScale; // Forearm
+                if (d.group === 2) return 15 * boneSizeScale; // Carpals
+                if (d.group === 3) return 20 * boneSizeScale; // Metacarpals
+                return 18 * boneSizeScale; // Phalanges
+            };
+
+            // Add node circles
+            const nodeCircles = nodeGroups.append('circle')
+                .attr('r', d => getBoneSize(d))
+                .attr('fill', d => colorScale(d.group))
+                .attr('stroke', '#333')
+                .attr('stroke-width', 1.5)
+                .on('dblclick', (event, d) => togglePin(d));
+
+            // Add node labels
+            const nodeLabels = nodeGroups.append('text')
+                .attr('dy', d => getBoneSize(d) + 10)
+                .attr('text-anchor', 'middle')
+                .attr('font-family', 'Arial')
+                .attr('font-size', d => {
+                    if (d.group === 2) return 8 * boneSizeScale; // Smaller text for carpals
+                    return 10 * boneSizeScale;
+                })
+                .attr('fill', '#333')
+                .text(d => d.name);
+
+            // Add joint markers at the connections
+            const joints = container.append('g')
+                .attr('class', 'joints')
+                .selectAll('circle')
+                .data(linkObjects)
+                .enter()
+                .append('circle')
+                .attr('r', jointSize)
+                .attr('fill', '#ff6666')
+                .attr('stroke', '#993333')
+                .attr('stroke-width', 1);
+
+            // Function to update the UI based on data changes
+            const updateUI = () => {
+                // Update node visuals
+                nodeGroups.selectAll('circle')
+                    .attr('r', d => getBoneSize(d))
+                    .attr('stroke', d => d.pinned ? '#ff4500' : '#333')
+                    .attr('stroke-width', d => d.pinned ? 3 : 1.5);
+
+                // Update node labels
+                nodeGroups.selectAll('text')
+                    .attr('dy', d => getBoneSize(d) + 10)
+                    .attr('font-size', d => {
+                        if (d.group === 2) return 8 * boneSizeScale; // Smaller text for carpals
+                        return 10 * boneSizeScale;
+                    });
+
+                // Update joint size
+                joints.attr('r', jointSize);
+            };
+
+            // Set up simulation tick function
+            simulation.on('tick', () => {
+                // Update links
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+
+                // Update nodes
+                nodeGroups.attr('transform', d => `translate(${d.x},${d.y})`);
+
+                // Update joints - position them at the midpoint of each link
+                joints
+                    .attr('cx', d => (d.source.x + d.target.x) / 2)
+                    .attr('cy', d => (d.source.y + d.target.y) / 2);
+            });
+
+            // Function to update simulation forces based on slider inputs
+            const updateForces = () => {
+                // Update charge force (repulsion/attraction)
+                simulation.force('charge').strength(chargeStrength);
+                
+                // Update link force distance
+                simulation.force('link').distance(d => d.length * linkStrength);
+                
+                // Update center forces
+                simulation.force('x').strength(centerXStrength);
+                simulation.force('y').strength(centerYStrength);
+                
+                // Update collision force
+                simulation.force('collision').radius(collisionRadius);
+                
+                // Update alpha decay (cooling rate)
+                simulation.alphaDecay(alphaDecay);
+                
+                // Restart simulation with a heat boost
+                simulation.alpha(0.3).restart();
+                
+                // Update visual elements
+                updateUI();
+            };
+
+            // Add slider event listeners for all controls
+            // Charge Strength
+            document.getElementById('chargeStrength').addEventListener('input', function() {
+                chargeStrength = parseFloat(this.value);
+                document.getElementById('chargeValue').textContent = chargeStrength;
+                updateForces();
+            });
+            
+            // Link Strength
+            document.getElementById('linkStrength').addEventListener('input', function() {
+                linkStrength = parseFloat(this.value);
+                document.getElementById('linkStrengthValue').textContent = linkStrength.toFixed(1);
+                updateForces();
+            });
+            
+            // Center X Strength
+            document.getElementById('centerXStrength').addEventListener('input', function() {
+                centerXStrength = parseFloat(this.value);
+                document.getElementById('centerXValue').textContent = centerXStrength.toFixed(2);
+                updateForces();
+            });
+            
+            // Center Y Strength
+            document.getElementById('centerYStrength').addEventListener('input', function() {
+                centerYStrength = parseFloat(this.value);
+                document.getElementById('centerYValue').textContent = centerYStrength.toFixed(2);
+                updateForces();
+            });
+            
+            // Collision Radius
+            document.getElementById('collisionRadius').addEventListener('input', function() {
+                collisionRadius = parseFloat(this.value);
+                document.getElementById('collisionValue').textContent = collisionRadius;
+                updateForces();
+            });
+            
+            // Alpha Decay
+            document.getElementById('alphaDecay').addEventListener('input', function() {
+                alphaDecay = parseFloat(this.value);
+                document.getElementById('alphaDecayValue').textContent = alphaDecay.toFixed(3);
+                updateForces();
+            });
+            
+            // Bone Size Scale
+            document.getElementById('boneSizeScale').addEventListener('input', function() {
+                boneSizeScale = parseFloat(this.value);
+                document.getElementById('boneSizeValue').textContent = boneSizeScale.toFixed(1);
+                updateUI();
+            });
+            
+            // Joint Size
+            document.getElementById('jointSize').addEventListener('input', function() {
+                jointSize = parseFloat(this.value);
+                document.getElementById('jointSizeValue').textContent = jointSize;
+                updateUI();
+            });
+
+            // Add button event handlers
+            document.getElementById('resetBtn').addEventListener('click', () => {
+                // Reset all pins
+                nodes.forEach(node => {
+                    node.pinned = false;
+                    node.fx = null;
+                    node.fy = null;
+                });
+                
+                // Restart simulation
+                simulation.alpha(1).restart();
+                updateUI();
+                
+                // Set initial positions
+                setTimeout(setInitialPositions, 100);
+            });
+            
+            document.getElementById('unpinBtn').addEventListener('click', () => {
+                // Release all pins
+                nodes.forEach(node => {
+                    node.pinned = false;
+                    node.fx = null;
+                    node.fy = null;
+                });
+                updateUI();
+            });
+            
+            let springLayoutActive = true;
+            document.getElementById('springBtn').addEventListener('click', () => {
+                springLayoutActive = !springLayoutActive;
+                
+                if (springLayoutActive) {
+                    // Enable spring layout
+                    simulation.force('link', d3.forceLink(linkObjects).id(d => d.id).distance(d => d.length * linkStrength));
+                    document.getElementById('springBtn').textContent = "Disable Spring Layout";
+                } else {
+                    // Disable spring layout
+                    simulation.force('link', null);
+                    document.getElementById('springBtn').textContent = "Enable Spring Layout";
+                }
+                
+                // Restart simulation
+                simulation.alpha(0.3).restart();
+            });
+
+            // Add initial position preset for a more recognizable hand shape
+            const setInitialPositions = () => {
+                // Set radius and ulna at bottom
+                const radius = nodes.find(n => n.id === "radius");
+                const ulna = nodes.find(n => n.id === "ulna");
+                if (radius) { radius.x = width/2 - 40; radius.y = height - 100; }
+                if (ulna) { ulna.x = width/2 + 40; ulna.y = height - 100; }
+                
+                // Set pinky tip at far right
+                const pinkyDistal = nodes.find(n => n.id === "pinky_distal");
+                if (pinkyDistal) { pinkyDistal.x = width/2 + 150; pinkyDistal.y = height/2 - 150; }
+                
+                // Set thumb tip at far left
+                const thumbDistal = nodes.find(n => n.id === "thumb_distal");
+                if (thumbDistal) { thumbDistal.x = width/2 - 150; thumbDistal.y = height/2 - 100; }
+                
+                // Set middle finger tip at top
+                const middleDistal = nodes.find(n => n.id === "middle_distal");
+                if (middleDistal) { middleDistal.x = width/2; middleDistal.y = height/2 - 200; }
+                
+                // Reset slider controls to defaults
+                document.getElementById('chargeStrength').value = -200;
+                document.getElementById('chargeValue').textContent = -200;
+                
+                document.getElementById('linkStrength').value = 1.0;
+                document.getElementById('linkStrengthValue').textContent = "1.0";
+                
+                document.getElementById('centerXStrength').value = 0.05;
+                document.getElementById('centerXValue').textContent = "0.05";
+                
+                document.getElementById('centerYStrength').value = 0.05;
+                document.getElementById('centerYValue').textContent = "0.05";
+                
+                document.getElementById('collisionRadius').value = 40;
+                document.getElementById('collisionValue').textContent = 40;
+                
+                document.getElementById('alphaDecay').value = 0.02;
+                document.getElementById('alphaDecayValue').textContent = "0.02";
+                
+                document.getElementById('boneSizeScale').value = 1.0;
+                document.getElementById('boneSizeValue').textContent = "1.0";
+                
+                document.getElementById('jointSize').value = 3;
+                document.getElementById('jointSizeValue').textContent = 3;
+                
+                // Reset force parameters
+                chargeStrength = -200;
+                linkStrength = 1.0;
+                centerXStrength = 0.05;
+                centerYStrength = 0.05;
+                collisionRadius = 40;
+                alphaDecay = 0.02;
+                boneSizeScale = 1.0;
+                jointSize = 3;
+                
+                // Update forces with reset values
+                updateForces();
+                
+                // Pin these bones initially to maintain shape
+                [radius, ulna, thumbDistal, pinkyDistal, middleDistal].forEach(node => {
+                    if (node) {
+                        node.pinned = true;
+                        node.fx = node.x;
+                        node.fy = node.y;
+                    }
+                });
+                
+                updateUI();
+                simulation.alpha(1).restart();
+            };
+            
+            // Set initial positions after a short delay to let the simulation initialize
+            setTimeout(setInitialPositions, 100);
+        });
+    </script>
+</body>
+</html>

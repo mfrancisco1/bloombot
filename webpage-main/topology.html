@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Network Topology Visualizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #ecf0f1;
+            border-radius: 8px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-group label {
+            font-weight: bold;
+            color: #34495e;
+            font-size: 14px;
+        }
+        
+        .node-count-control, .edge-length-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        input[type="number"] {
+            width: 80px;
+            padding: 8px;
+            border: 2px solid #bdc3c7;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        input[type="range"] {
+            width: 120px;
+        }
+        
+        .topology-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        button.active {
+            background-color: #e74c3c;
+        }
+        
+        .export-btn {
+            background-color: #27ae60;
+        }
+        
+        .export-btn:hover {
+            background-color: #229954;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 5px;
+        }
+        
+        input[type="checkbox"] {
+            transform: scale(1.2);
+        }
+        
+        .svg-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        svg {
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            background-color: #ffffff;
+        }
+        
+        .node {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .node.central {
+            fill: #e74c3c;
+            stroke: #c0392b;
+        }
+        
+        .node.regular {
+            fill: #3498db;
+            stroke: #2980b9;
+        }
+        
+        .node.pinned {
+            stroke: #f39c12;
+            stroke-width: 3;
+        }
+        
+        .node:hover {
+            stroke-width: 3;
+            r: 8;
+        }
+        
+        .link {
+            stroke: #7f8c8d;
+            stroke-width: 2;
+            opacity: 0.7;
+            fill: none;
+        }
+        
+        .link.directed {
+            marker-end: url(#arrowhead);
+        }
+        
+        .small-nodes .node-label {
+            font-size: 8px;
+        }
+        
+        .topology-info {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f4fd;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .topology-info h3 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+        
+        .topology-info p {
+            margin: 5px 0;
+            color: #34495e;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .stat {
+            font-weight: bold;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-circle {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid;
+        }
+        
+        .legend-central {
+            background-color: #e74c3c;
+            border-color: #c0392b;
+        }
+        
+        .legend-regular {
+            background-color: #3498db;
+            border-color: #2980b9;
+        }
+        
+        .legend-pinned {
+            background-color: #3498db;
+            border-color: #f39c12;
+        }
+        
+        .arrow-legend {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .arrow-line {
+            width: 20px;
+            height: 2px;
+            background-color: #7f8c8d;
+            position: relative;
+        }
+        
+        .arrow-line::after {
+            content: '▶';
+            position: absolute;
+            right: -8px;
+            top: -8px;
+            font-size: 10px;
+            color: #7f8c8d;
+        }
+        
+        .instructions {
+            text-align: center;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #fff3cd;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Network Topology Visualizer</h1>
+        <p class="subtitle">Explore different network structures and communication patterns</p>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Number of Nodes</label>
+                <div class="node-count-control">
+                    <div class="input-row">
+                        <input type="number" id="nodeCountInput" min="3" max="150" value="8">
+                        <button onclick="updateNodeCount()" style="padding: 8px 12px; font-size: 12px;">Update</button>
+                    </div>
+                    <div class="input-row">
+                        <input type="range" id="nodeCountSlider" min="3" max="100" value="8" step="1">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label>Edge Length</label>
+                <div class="edge-length-control">
+                    <div class="input-row">
+                        <input type="number" id="edgeLengthInput" min="10" max="150" value="50">
+                        <span style="font-size: 12px;">px</span>
+                    </div>
+                    <div class="input-row">
+                        <input type="range" id="edgeLengthSlider" min="10" max="150" value="50" step="5">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label>Network Topology</label>
+                <div class="topology-buttons">
+                    <button onclick="generateTopology('star')" class="active" id="star-btn">Star</button>
+                    <button onclick="generateTopology('mesh')" id="mesh-btn">Mesh</button>
+                    <button onclick="generateTopology('tree')" id="tree-btn">Tree</button>
+                    <button onclick="generateTopology('ring')" id="ring-btn">Ring</button>
+                    <button onclick="generateTopology('bus')" id="bus-btn">Bus</button>
+                    <button onclick="generateTopology('random')" id="random-btn">Random</button>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label>Options</label>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="showDirection" onchange="toggleDirection()">
+                    <label for="showDirection">Show Direction</label>
+                </div>
+                <button onclick="exportSVG()" class="export-btn" style="margin-top: 10px;">Export SVG</button>
+            </div>
+        </div>
+        
+        <div class="svg-container">
+            <svg id="network-svg" width="800" height="500"></svg>
+        </div>
+        
+        <div class="instructions">
+            <strong>Tip:</strong> Double-click any node to pin/unpin it in place • Drag nodes to reposition them
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-circle legend-central"></div>
+                <span>Central/Hub Node</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-circle legend-regular"></div>
+                <span>Regular Node</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-circle legend-pinned"></div>
+                <span>Pinned Node</span>
+            </div>
+            <div class="legend-item arrow-legend" id="arrow-legend" style="display: none;">
+                <div class="arrow-line"></div>
+                <span>Information Flow</span>
+            </div>
+        </div>
+        
+        <div class="topology-info" id="topology-info">
+            <h3 id="topology-title">Star Topology</h3>
+            <p id="topology-description">Centralized communication pattern where all nodes connect to a single hub. Efficient for broadcasting but creates a single point of failure.</p>
+            <div class="stats">
+                <span class="stat">Nodes: <span id="node-count-stat">8</span></span>
+                <span class="stat">Links: <span id="link-count-stat">7</span></span>
+                <span class="stat">Diameter: <span id="diameter-stat">2</span></span>
+                <span class="stat">Edge Length: <span id="edge-length-stat">50px</span></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const svg = d3.select("#network-svg");
+        const width = 800;
+        const height = 500;
+        
+        let nodes = [];
+        let links = [];
+        let currentTopology = 'star';
+        let showDirection = false;
+        let simulation;
+        let currentEdgeLength = 50;
+        
+        // Add arrow marker definition
+        svg.append("defs").append("marker")
+            .attr("id", "arrowhead")
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 15)
+            .attr("refY", 0)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-5L10,0L0,5")
+            .attr("fill", "#7f8c8d");
+        
+        const topologyInfo = {
+            star: {
+                title: "Star Topology",
+                description: "Centralized communication pattern where all nodes connect to a single hub. Communication flows from hub to nodes or vice versa.",
+                examples: "Examples: Client-Server, WiFi Network, Traditional Phone System"
+            },
+            mesh: {
+                title: "Mesh Topology", 
+                description: "Every node connects to every other node. Bidirectional communication between all pairs.",
+                examples: "Examples: Peer-to-Peer Networks, Blockchain, Internet Backbone"
+            },
+            tree: {
+                title: "Tree/Hierarchical Topology",
+                description: "Organized in levels with parent-child relationships. Communication flows up and down the hierarchy.",
+                examples: "Examples: DNS System, Corporate Networks, File Systems"
+            },
+            ring: {
+                title: "Ring Topology",
+                description: "Nodes connected in a circular chain. Data flows in one direction around the ring.",
+                examples: "Examples: Token Ring, SONET, Some Industrial Networks"
+            },
+            bus: {
+                title: "Bus Topology", 
+                description: "All nodes share a common communication backbone. Bidirectional communication along the bus.",
+                examples: "Examples: Early Ethernet, System Buses, Some Sensor Networks"
+            },
+            random: {
+                title: "Random/Organic Topology",
+                description: "Nodes connected based on proximity or random relationships. Communication flows organically.",
+                examples: "Examples: Social Networks, Internet Growth, Wireless Sensor Networks"
+            }
+        };
+        
+        // Initialize event listeners
+        document.getElementById("nodeCountSlider").addEventListener("input", function(e) {
+            document.getElementById("nodeCountInput").value = e.target.value;
+            generateTopology(currentTopology);
+        });
+        
+        document.getElementById("nodeCountInput").addEventListener("change", function(e) {
+            const value = Math.max(3, Math.min(150, parseInt(e.target.value) || 8));
+            e.target.value = value;
+            document.getElementById("nodeCountSlider").value = value;
+            generateTopology(currentTopology);
+        });
+        
+        // Edge length controls
+        document.getElementById("edgeLengthSlider").addEventListener("input", function(e) {
+            const value = parseInt(e.target.value);
+            document.getElementById("edgeLengthInput").value = value;
+            currentEdgeLength = value;
+            updateForceSimulation();
+            updateEdgeLengthStat();
+        });
+        
+        document.getElementById("edgeLengthInput").addEventListener("change", function(e) {
+            const value = Math.max(10, Math.min(150, parseInt(e.target.value) || 50));
+            e.target.value = value;
+            document.getElementById("edgeLengthSlider").value = value;
+            currentEdgeLength = value;
+            updateForceSimulation();
+            updateEdgeLengthStat();
+        });
+        
+        function updateNodeCount() {
+            const input = document.getElementById("nodeCountInput");
+            const value = Math.max(3, Math.min(150, parseInt(input.value) || 8));
+            input.value = value;
+            document.getElementById("nodeCountSlider").value = value;
+            generateTopology(currentTopology);
+        }
+        
+        function updateForceSimulation() {
+            if (simulation) {
+                simulation.force("link").distance(currentEdgeLength);
+                simulation.alpha(0.3).restart();
+            }
+        }
+        
+        function updateEdgeLengthStat() {
+            document.getElementById("edge-length-stat").textContent = currentEdgeLength + "px";
+        }
+        
+        function toggleDirection() {
+            showDirection = document.getElementById("showDirection").checked;
+            document.getElementById("arrow-legend").style.display = showDirection ? "flex" : "none";
+            updateVisualization();
+        }
+        
+        function exportSVG() {
+            // Clone the SVG
+            const svgClone = svg.node().cloneNode(true);
+            
+            // Add background to cloned SVG
+            const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            rect.setAttribute("width", "100%");
+            rect.setAttribute("height", "100%");
+            rect.setAttribute("fill", "white");
+            svgClone.insertBefore(rect, svgClone.firstChild);
+            
+            // Reset transform on zoom container for export
+            const zoomGroup = svgClone.querySelector('.zoom-container');
+            if (zoomGroup) {
+                zoomGroup.removeAttribute('transform');
+            }
+            
+            // Serialize the SVG
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(svgClone);
+            
+            // Create blob and download
+            const blob = new Blob([svgString], { type: "image/svg+xml" });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `network-topology-${currentTopology}-${nodes.length}-nodes.svg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Clean up
+            URL.revokeObjectURL(url);
+        }
+        
+        function getNodeSize(nodeCount, isCentral = false) {
+            const baseSize = nodeCount <= 20 ? (isCentral ? 8 : 10) : 
+                           nodeCount <= 50 ? (isCentral ? 6 : 8) : 
+                           (isCentral ? 5 : 6);
+            return baseSize;
+        }
+        
+        function updateActiveButton(topology) {
+            document.querySelectorAll('.topology-buttons button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(topology + '-btn').classList.add('active');
+        }
+        
+        function generateNodes(count) {
+            nodes = [];
+            for (let i = 0; i < count; i++) {
+                nodes.push({
+                    id: i,
+                    x: Math.random() * (width - 100) + 50,
+                    y: Math.random() * (height - 100) + 50,
+                    type: 'regular',
+                    pinned: false
+                });
+            }
+        }
+        
+        function generateStarTopology() {
+            const nodeCount = parseInt(document.getElementById("nodeCountInput").value);
+            generateNodes(nodeCount);
+            
+            // Make first node the central hub
+            nodes[0].type = 'central';
+            
+            links = [];
+            for (let i = 1; i < nodeCount; i++) {
+                // For directed: hub broadcasts to all nodes
+                links.push({
+                    source: 0, 
+                    target: i,
+                    direction: showDirection ? 'outbound' : 'none'
+                });
+            }
+        }
+        
+        function generateMeshTopology() {
+            const nodeCount = parseInt(document.getElementById("nodeCountInput").value);
+            generateNodes(nodeCount);
+            
+            links = [];
+            for (let i = 0; i < nodeCount; i++) {
+                for (let j = i + 1; j < nodeCount; j++) {
+                    links.push({
+                        source: i, 
+                        target: j,
+                        direction: 'bidirectional'
+                    });
+                }
+            }
+        }
+        
+        function generateTreeTopology() {
+            const nodeCount = parseInt(document.getElementById("nodeCountInput").value);
+            generateNodes(nodeCount);
+            
+            // Make first node root
+            nodes[0].type = 'central';
+            
+            links = [];
+            let queue = [0];
+            let childrenPerParent = Math.max(2, Math.ceil(Math.sqrt(nodeCount / 2)));
+            
+            let nodeIndex = 1;
+            while (queue.length > 0 && nodeIndex < nodeCount) {
+                const parent = queue.shift();
+                
+                for (let i = 0; i < childrenPerParent && nodeIndex < nodeCount; i++) {
+                    links.push({
+                        source: parent, 
+                        target: nodeIndex,
+                        direction: showDirection ? 'outbound' : 'none'
+                    });
+                    queue.push(nodeIndex);
+                    nodeIndex++;
+                }
+            }
+        }
+        
+        function generateRingTopology() {
+            const nodeCount = parseInt(document.getElementById("nodeCountInput").value);
+            generateNodes(nodeCount);
+            
+            links = [];
+            for (let i = 0; i < nodeCount; i++) {
+                links.push({
+                    source: i, 
+                    target: (i + 1) % nodeCount,
+                    direction: showDirection ? 'outbound' : 'none'
+                });
+            }
+        }
+        
+        function generateBusTopology() {
+            const nodeCount = parseInt(document.getElementById("nodeCountInput").value);
+            generateNodes(nodeCount);
+            
+            // Arrange nodes in a line for visual appeal
+            nodes.forEach((node, i) => {
+                node.x = (width / (nodeCount + 1)) * (i + 1);
+                node.y = height / 2;
+                node.fx = node.x; // Fix x position
+                node.fy = node.y; // Fix y position
+                node.pinned = true; // Mark as pinned for bus topology
+            });
+            
+            // Make endpoints special
+            nodes[0].type = 'central';
+            nodes[nodeCount - 1].type = 'central';
+            
+            links = [];
+            for (let i = 0; i < nodeCount - 1; i++) {
+                links.push({
+                    source: i, 
+                    target: i + 1,
+                    direction: 'bidirectional'
+                });
+            }
+        }
+        
+        function generateRandomTopology() {
+            const nodeCount = parseInt(document.getElementById("nodeCountInput").value);
+            generateNodes(nodeCount);
+            
+            links = [];
+            const connectionProbability = Math.min(0.4, 8 / nodeCount);
+            
+            // Ensure minimum connectivity
+            for (let i = 0; i < nodeCount - 1; i++) {
+                links.push({
+                    source: i, 
+                    target: i + 1,
+                    direction: Math.random() > 0.5 ? 'outbound' : 'inbound'
+                });
+            }
+            
+            // Add random connections
+            for (let i = 0; i < nodeCount; i++) {
+                for (let j = i + 2; j < nodeCount; j++) {
+                    if (Math.random() < connectionProbability) {
+                        links.push({
+                            source: i, 
+                            target: j,
+                            direction: Math.random() > 0.5 ? 'outbound' : 'inbound'
+                        });
+                    }
+                }
+            }
+        }
+        
+        function generateTopology(topology) {
+            currentTopology = topology;
+            updateActiveButton(topology);
+            
+            switch(topology) {
+                case 'star': generateStarTopology(); break;
+                case 'mesh': generateMeshTopology(); break;
+                case 'tree': generateTreeTopology(); break;
+                case 'ring': generateRingTopology(); break;
+                case 'bus': generateBusTopology(); break;
+                case 'random': generateRandomTopology(); break;
+            }
+            
+            updateVisualization();
+            updateInfo(topology);
+        }
+        
+        function updateVisualization() {
+            const nodeCount = parseInt(document.getElementById("nodeCountInput").value);
+            
+            // Clear previous visualization
+            svg.selectAll("g.visualization").remove();
+            
+            const g = svg.append("g").attr("class", "visualization");
+            
+            // Apply small nodes class for large networks
+            if (nodeCount > 30) {
+                svg.classed("small-nodes", true);
+            } else {
+                svg.classed("small-nodes", false);
+            }
+            
+            // Create force simulation
+            simulation = d3.forceSimulation(nodes)
+                .force("link", d3.forceLink(links).id(d => d.id).distance(currentEdgeLength))
+                .force("charge", d3.forceManyBody().strength(nodeCount > 30 ? -100 : -300))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("collision", d3.forceCollide().radius(nodeCount > 50 ? 8 : 15));
+            
+            // Create links
+            const link = g.append("g")
+                .selectAll("line")
+                .data(links)
+                .join("line")
+                .attr("class", d => `link ${showDirection ? 'directed' : ''}`);
+            
+            // Create nodes
+            const node = g.append("g")
+                .selectAll("circle")
+                .data(nodes)
+                .join("circle")
+                .attr("class", d => `node ${d.type} ${d.pinned ? 'pinned' : ''}`)
+                .attr("r", d => getNodeSize(nodeCount, d.type === 'central'))
+                .call(d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended))
+                .on("dblclick", function(event, d) {
+                    // Toggle pin state
+                    d.pinned = !d.pinned;
+                    if (d.pinned) {
+                        d.fx = d.x;
+                        d.fy = d.y;
+                        d3.select(this).classed("pinned", true);
+                    } else {
+                        d.fx = null;
+                        d.fy = null;
+                        d3.select(this).classed("pinned", false);
+                    }
+                    event.stopPropagation();
+                });
+            
+            // Update simulation tick function (removed node labels)
+            simulation.on("tick", () => {
+                link
+                    .attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+                
+                node
+                    .attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
+            });
+        }
+        
+        function updateInfo(topology) {
+            const info = topologyInfo[topology];
+            const nodeCount = nodes.length;
+            const linkCount = links.length;
+            const diameter = calculateDiameter();
+            
+            document.getElementById("topology-title").textContent = info.title;
+            document.getElementById("topology-description").innerHTML = info.description + "<br><em>" + info.examples + "</em>";
+            document.getElementById("node-count-stat").textContent = nodeCount;
+            document.getElementById("link-count-stat").textContent = linkCount;
+            document.getElementById("diameter-stat").textContent = diameter;
+            document.getElementById("edge-length-stat").textContent = currentEdgeLength + "px";
+        }
+        
+        function calculateDiameter() {
+            switch(currentTopology) {
+                case 'star': return 2;
+                case 'mesh': return 1;
+                case 'ring': return Math.floor(nodes.length / 2);
+                case 'bus': return nodes.length - 1;
+                case 'tree': return Math.ceil(Math.log2(nodes.length)) * 2;
+                default: return "~" + Math.ceil(nodes.length / 3);
+            }
+        }
+        
+        // Drag functions
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+        
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+        
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            // Only unpin if the node wasn't explicitly pinned by double-click
+            if (!d.pinned && currentTopology !== 'bus') {
+                d.fx = null;
+                d.fy = null;
+            }
+        }
+        
+        // Initialize with star topology
+        generateTopology('star');
+    </script>
+</body>
+</html>

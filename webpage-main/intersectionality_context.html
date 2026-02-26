@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contextual Intersectionality & Dynamic Identity Model</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 1.1em;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 968px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel h2 {
+            color: #764ba2;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel h2::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(to bottom, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        .context-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .context-btn {
+            padding: 10px 20px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+
+        .context-btn:hover {
+            background: #f8fafc;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .context-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .time-selector {
+            margin-bottom: 20px;
+        }
+
+        .time-selector label {
+            display: block;
+            margin-bottom: 10px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .time-slider {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(to right, #fbbf24, #fb923c, #7c3aed, #1e40af);
+            outline: none;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+        }
+
+        .time-slider:hover {
+            opacity: 1;
+        }
+
+        .time-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .time-display {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 1.1em;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        .identity-control {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .identity-control:hover {
+            background: #f1f5f9;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .identity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .identity-label {
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.95em;
+        }
+
+        .salience-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.85em;
+            color: #64748b;
+        }
+
+        .salience-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .slider-container {
+            margin-bottom: 10px;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75em;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        .identity-slider {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: #e2e8f0;
+            outline: none;
+            transition: background 0.3s;
+        }
+
+        .identity-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .identity-slider::-webkit-slider-thumb:hover {
+            background: #764ba2;
+            transform: scale(1.2);
+        }
+
+        .salience-slider {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 4px;
+            border-radius: 2px;
+            background: #e2e8f0;
+            outline: none;
+        }
+
+        .salience-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #fb923c;
+            cursor: pointer;
+        }
+
+        .visualization {
+            position: relative;
+            height: 400px;
+            background: radial-gradient(circle at center, #f0f9ff, #e0f2fe);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .viz-axes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .axis-line {
+            stroke: #cbd5e1;
+            stroke-width: 2;
+            stroke-dasharray: 5, 5;
+            opacity: 0.5;
+        }
+
+        .axis-label {
+            fill: #64748b;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .identity-node {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .identity-node:hover {
+            transform: scale(1.2);
+            z-index: 20;
+        }
+
+        .connection-line {
+            position: absolute;
+            background: linear-gradient(to right, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
+            height: 2px;
+            transform-origin: left center;
+            z-index: 1;
+            transition: all 0.5s ease;
+        }
+
+        .metrics-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .metric-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .info-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #92400e;
+        }
+
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 20px rgba(102, 126, 234, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(102, 126, 234, 0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Contextual Intersectionality & Dynamic Identity Model</h1>
+            <p>Version 1.0 - Interactive Educational Simulation</p>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel">
+                <h2>Context & Temporal Settings</h2>
+                
+                <div class="context-selector">
+                    <button class="context-btn active" data-context="workplace">Workplace</button>
+                    <button class="context-btn" data-context="social">Social Gatherings</button>
+                    <button class="context-btn" data-context="healthcare">Healthcare</button>
+                    <button class="context-btn" data-context="family">Family</button>
+                    <button class="context-btn" data-context="public">Public Spaces</button>
+                </div>
+
+
+
+               
+
+                <h2>Identity Dimensions</h2>
+                <div id="identity-controls"></div>
+            </div>
+
+
+
+            <div class="panel">
+                <h2>Contextual Identity Map</h2>
+                <div class="visualization" id="visualization">
+                    <svg class="viz-axes" width="100%" height="100%">
+                        <line class="axis-line" x1="50%" y1="0" x2="50%" y2="100%"></line>
+                        <line class="axis-line" x1="0" y1="50%" x2="100%" y2="50%"></line>
+                        <text class="axis-label" x="95%" y="48%" text-anchor="end">Privilege →</text>
+                        <text class="axis-label" x="5%" y="48%">← Marginalization</text>
+                        <text class="axis-label" x="52%" y="10" alignment-baseline="middle">Low Conflict</text>
+                        <text class="axis-label" x="52%" y="98%" alignment-baseline="middle">High Conflict</text>
+                    </svg>
+                </div>
+                
+
+                <h2>Intersectionality Metrics</h2>
+                <div class="metrics-display">
+                    <div class="metric-card">
+                        <div class="metric-value" id="complexity-score">0</div>
+                        <div class="metric-label">Complexity Score</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="active-intersections">0</div>
+                        <div class="metric-label">Active Intersections</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="identity-conflicts">0</div>
+                        <div class="metric-label">Identity Conflicts</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="salience-variance">0</div>
+                        <div class="metric-label">Salience Variance</div>
+                    </div>
+                </div>
+
+
+
+
+                <div class="info-box">
+                    <strong>Educational Note:</strong> This model demonstrates how identity dimensions interact differently across contexts. The positioning and metrics are theoretical representations for educational purposes only, not empirical measurements of actual experiences.
+                </div>
+                -----
+                 <div class="time-selector">
+                    <label for="time-slider">Time of Day:</label>
+                    <input type="range" id="time-slider" class="time-slider" min="0" max="24" value="12" step="1">
+                    <div class="time-display">12:00 PM</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        const identityDimensions = [
+            { id: 'race', name: 'Race/Ethnicity', labels: ['Marginalized', 'Mixed/Complex', 'Privileged'], color: '#dc2626' },
+            { id: 'gender', name: 'Gender Identity', labels: ['Non-conforming', 'Non-binary', 'Traditional'], color: '#7c3aed' },
+            { id: 'ses', name: 'Socioeconomic Status', labels: ['Low SES', 'Middle', 'High SES'], color: '#059669' },
+            { id: 'orientation', name: 'Sexual Orientation', labels: ['LGBTQ+', 'Fluid/Questioning', 'Heterosexual'], color: '#ea580c' },
+            { id: 'ability', name: 'Ability Status', labels: ['Disabled', 'Variable', 'Able-bodied'], color: '#0891b2' },
+            { id: 'age', name: 'Age', labels: ['Very Young/Old', 'Middle', 'Prime Working'], color: '#a21caf' },
+            { id: 'religion', name: 'Religion/Spirituality', labels: ['Minority', 'Secular/Mixed', 'Majority'], color: '#0369a1' },
+            { id: 'citizenship', name: 'Citizenship Status', labels: ['Undocumented', 'Resident', 'Citizen'], color: '#65a30d' }
+        ];
+
+        const contextModifiers = {
+            workplace: {
+                race: { visibility: 0.8, impact: 0.7 },
+                gender: { visibility: 0.9, impact: 0.8 },
+                ses: { visibility: 0.4, impact: 0.9 },
+                orientation: { visibility: 0.3, impact: 0.5 },
+                ability: { visibility: 0.7, impact: 0.8 },
+                age: { visibility: 0.9, impact: 0.7 },
+                religion: { visibility: 0.3, impact: 0.4 },
+                citizenship: { visibility: 0.5, impact: 0.9 }
+            },
+            social: {
+                race: { visibility: 0.7, impact: 0.6 },
+                gender: { visibility: 0.8, impact: 0.6 },
+                ses: { visibility: 0.7, impact: 0.8 },
+                orientation: { visibility: 0.6, impact: 0.5 },
+                ability: { visibility: 0.5, impact: 0.5 },
+                age: { visibility: 0.8, impact: 0.5 },
+                religion: { visibility: 0.4, impact: 0.3 },
+                citizenship: { visibility: 0.2, impact: 0.3 }
+            },
+            healthcare: {
+                race: { visibility: 0.9, impact: 0.8 },
+                gender: { visibility: 1.0, impact: 0.9 },
+                ses: { visibility: 0.6, impact: 1.0 },
+                orientation: { visibility: 0.7, impact: 0.7 },
+                ability: { visibility: 1.0, impact: 1.0 },
+                age: { visibility: 1.0, impact: 0.9 },
+                religion: { visibility: 0.5, impact: 0.4 },
+                citizenship: { visibility: 0.7, impact: 0.8 }
+            },
+            family: {
+                race: { visibility: 1.0, impact: 0.5 },
+                gender: { visibility: 1.0, impact: 0.8 },
+                ses: { visibility: 0.8, impact: 0.6 },
+                orientation: { visibility: 0.8, impact: 0.9 },
+                ability: { visibility: 0.9, impact: 0.7 },
+                age: { visibility: 1.0, impact: 0.8 },
+                religion: { visibility: 0.9, impact: 0.8 },
+                citizenship: { visibility: 0.6, impact: 0.5 }
+            },
+            public: {
+                race: { visibility: 1.0, impact: 0.7 },
+                gender: { visibility: 0.9, impact: 0.6 },
+                ses: { visibility: 0.8, impact: 0.5 },
+                orientation: { visibility: 0.4, impact: 0.4 },
+                ability: { visibility: 0.8, impact: 0.6 },
+                age: { visibility: 0.9, impact: 0.4 },
+                religion: { visibility: 0.6, impact: 0.5 },
+                citizenship: { visibility: 0.3, impact: 0.6 }
+            }
+        };
+
+        let currentContext = 'workplace';
+        let currentTime = 12;
+        let identityValues = {};
+        let connectionLines = [];
+
+        function initializeIdentityControls() {
+            const container = document.getElementById('identity-controls');
+            container.innerHTML = '';
+            
+            identityDimensions.forEach(dim => {
+                const control = document.createElement('div');
+                control.className = 'identity-control';
+                
+                identityValues[dim.id] = {
+                    value: 0.5,
+                    salience: 0.5
+                };
+                
+                control.innerHTML = `
+                    <div class="identity-header">
+                        <span class="identity-label">${dim.name}</span>
+                        <span class="salience-indicator">
+                            <span class="salience-dot" style="background: ${dim.color};" id="${dim.id}-dot"></span>
+                            <span id="${dim.id}-salience-text">Medium</span>
+                        </span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="identity-slider" id="${dim.id}-value" 
+                               min="0" max="1" step="0.01" value="0.5"
+                               style="background: linear-gradient(to right, ${dim.color}33, ${dim.color});">
+                        <div class="slider-labels">
+                            <span>${dim.labels[0]}</span>
+                            <span>${dim.labels[1]}</span>
+                            <span>${dim.labels[2]}</span>
+                        </div>
+                    </div>
+                    <div class="slider-container">
+                        <label style="font-size: 0.85em; color: #94a3b8;">Personal Salience:</label>
+                        <input type="range" class="salience-slider" id="${dim.id}-salience" 
+                               min="0" max="1" step="0.01" value="0.5">
+                    </div>
+                `;
+                
+                container.appendChild(control);
+                
+                document.getElementById(`${dim.id}-value`).addEventListener('input', updateVisualization);
+                document.getElementById(`${dim.id}-salience`).addEventListener('input', (e) => {
+                    identityValues[dim.id].salience = parseFloat(e.target.value);
+                    updateSalienceDisplay(dim.id);
+                    updateVisualization();
+                });
+            });
+        }
+
+        function updateSalienceDisplay(dimId) {
+            const salience = identityValues[dimId].salience;
+            const dot = document.getElementById(`${dimId}-dot`);
+            const text = document.getElementById(`${dimId}-salience-text`);
+            const dim = identityDimensions.find(d => d.id === dimId);
+            
+            dot.style.opacity = 0.3 + (salience * 0.7);
+            dot.style.transform = `scale(${0.8 + salience * 0.6})`;
+            
+            if (salience < 0.33) text.textContent = 'Low';
+            else if (salience < 0.67) text.textContent = 'Medium';
+            else text.textContent = 'High';
+        }
+
+        function formatTime(hour) {
+            const h = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+            const ampm = hour < 12 ? 'AM' : 'PM';
+            return `${h}:00 ${ampm}`;
+        }
+
+        function getTimeModifier(hour) {
+            if (hour >= 9 && hour <= 17) return 1.0;
+            if (hour >= 6 && hour <= 9) return 0.8;
+            if (hour >= 17 && hour <= 22) return 0.9;
+            return 0.6;
+        }
+
+        function calculateComplexity() {
+            let complexity = 0;
+            let activeIntersections = 0;
+            let conflicts = 0;
+            let salienceVariance = 0;
+            
+            const timeModifier = getTimeModifier(currentTime);
+            const contextMods = contextModifiers[currentContext];
+            
+            const activeDimensions = [];
+            const salienceValues = [];
+            
+            identityDimensions.forEach(dim => {
+                const value = identityValues[dim.id].value;
+                const salience = identityValues[dim.id].salience;
+                const visibility = contextMods[dim.id].visibility;
+                const impact = contextMods[dim.id].impact;
+                
+                const effectiveSalience = salience * visibility * timeModifier;
+                salienceValues.push(effectiveSalience);
+                
+                if (effectiveSalience > 0.3) {
+                    activeDimensions.push({
+                        id: dim.id,
+                        value: value,
+                        effectiveSalience: effectiveSalience,
+                        impact: impact
+                    });
+                }
+                
+                complexity += effectiveSalience * impact * Math.abs(value - 0.5) * 2;
+            });
+            
+            activeIntersections = activeDimensions.length;
+            
+            for (let i = 0; i < activeDimensions.length; i++) {
+                for (let j = i + 1; j < activeDimensions.length; j++) {
+                    const dim1 = activeDimensions[i];
+                    const dim2 = activeDimensions[j];
+                    
+                    const valueDiff = Math.abs(dim1.value - dim2.value);
+                    if (valueDiff > 0.5) {
+                        conflicts += valueDiff * dim1.effectiveSalience * dim2.effectiveSalience;
+                    }
+                    
+                    complexity += dim1.effectiveSalience * dim2.effectiveSalience * 0.5;
+                }
+            }
+            
+            const avgSalience = salienceValues.reduce((a, b) => a + b, 0) / salienceValues.length;
+            salienceVariance = Math.sqrt(
+                salienceValues.reduce((sum, val) => sum + Math.pow(val - avgSalience, 2), 0) / salienceValues.length
+            ) * 100;
+            
+            return {
+                complexity: Math.min(100, Math.round(complexity * 20)),
+                activeIntersections: activeIntersections,
+                conflicts: Math.min(100, Math.round(conflicts * 50)),
+                salienceVariance: Math.round(salienceVariance)
+            };
+        }
+
+        function updateVisualization() {
+            const viz = document.getElementById('visualization');
+            const rect = viz.getBoundingClientRect();
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            identityDimensions.forEach(dim => {
+                identityValues[dim.id].value = parseFloat(document.getElementById(`${dim.id}-value`).value);
+            });
+            
+            connectionLines.forEach(line => line.remove());
+            connectionLines = [];
+            
+            const contextMods = contextModifiers[currentContext];
+            const timeModifier = getTimeModifier(currentTime);
+            const nodes = [];
+            
+            identityDimensions.forEach((dim, index) => {
+                const value = identityValues[dim.id].value;
+                const salience = identityValues[dim.id].salience;
+                const visibility = contextMods[dim.id].visibility;
+                const impact = contextMods[dim.id].impact;
+                
+                const effectiveSalience = salience * visibility * timeModifier;
+                
+                const privilegeAxis = (value - 0.5) * impact;
+                const conflictAxis = Math.abs(value - 0.5) * effectiveSalience;
+                
+                const x = centerX + (privilegeAxis * (rect.width * 0.4));
+                const y = centerY + (conflictAxis * (rect.height * 0.35));
+                
+                let node = document.getElementById(`node-${dim.id}`);
+                if (!node) {
+                    node = document.createElement('div');
+                    node.id = `node-${dim.id}`;
+                    node.className = 'identity-node';
+                    viz.appendChild(node);
+                }
+                
+                const size = 30 + (effectiveSalience * 30);
+                node.style.width = size + 'px';
+                node.style.height = size + 'px';
+                node.style.left = (x - size/2) + 'px';
+                node.style.top = (y - size/2) + 'px';
+                node.style.background = `radial-gradient(circle, ${dim.color}${Math.round(effectiveSalience * 255).toString(16).padStart(2, '0')}, ${dim.color}33)`;
+                node.style.border = `2px solid ${dim.color}`;
+                node.style.opacity = 0.5 + (effectiveSalience * 0.5);
+                node.innerHTML = dim.name.substring(0, 3).toUpperCase();
+                
+                if (effectiveSalience > 0.5) {
+                    node.classList.add('pulse');
+                } else {
+                    node.classList.remove('pulse');
+                }
+                
+                nodes.push({ id: dim.id, x: x, y: y, salience: effectiveSalience });
+                
+                node.addEventListener('mouseenter', (e) => {
+                    const tooltip = document.getElementById('tooltip');
+                    tooltip.innerHTML = `
+                        <strong>${dim.name}</strong><br>
+                        Value: ${Math.round(value * 100)}%<br>
+                        Salience: ${Math.round(salience * 100)}%<br>
+                        Context Impact: ${Math.round(impact * 100)}%<br>
+                        Visibility: ${Math.round(visibility * 100)}%
+                    `;
+                    tooltip.style.left = e.pageX + 10 + 'px';
+                    tooltip.style.top = e.pageY - 30 + 'px';
+                    tooltip.style.opacity = '1';
+                });
+                
+                node.addEventListener('mouseleave', () => {
+                    document.getElementById('tooltip').style.opacity = '0';
+                });
+            });
+            
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const node1 = nodes[i];
+                    const node2 = nodes[j];
+                    
+                    if (node1.salience > 0.3 && node2.salience > 0.3) {
+                        const line = document.createElement('div');
+                        line.className = 'connection-line';
+                        
+                        const dx = node2.x - node1.x;
+                        const dy = node2.y - node1.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                        
+                        line.style.width = distance + 'px';
+                        line.style.left = node1.x + 'px';
+                        line.style.top = node1.y + 'px';
+                        line.style.transform = `rotate(${angle}deg)`;
+                        line.style.opacity = Math.min(node1.salience, node2.salience) * 0.3;
+                        
+                        viz.appendChild(line);
+                        connectionLines.push(line);
+                    }
+                }
+            }
+            
+            const metrics = calculateComplexity();
+            document.getElementById('complexity-score').textContent = metrics.complexity;
+            document.getElementById('active-intersections').textContent = metrics.activeIntersections;
+            document.getElementById('identity-conflicts').textContent = metrics.conflicts;
+            document.getElementById('salience-variance').textContent = metrics.salienceVariance;
+        }
+
+        document.querySelectorAll('.context-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.context-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentContext = this.dataset.context;
+                updateVisualization();
+            });
+        });
+
+        document.getElementById('time-slider').addEventListener('input', function(e) {
+            currentTime = parseInt(e.target.value);
+            document.querySelector('.time-display').textContent = formatTime(currentTime);
+            updateVisualization();
+        });
+
+        initializeIdentityControls();
+        updateVisualization();
+    </script>
+</body>
+</html>

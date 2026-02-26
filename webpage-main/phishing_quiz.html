@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Email Detector Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #ffffff;
+            color: #000000;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            border-bottom: 3px solid #000000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+        
+        .intro {
+            background-color: #f5f5f5;
+            border: 2px solid #000000;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .score-panel {
+            background-color: #000000;
+            color: #ffffff;
+            padding: 15px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .score-item {
+            text-align: center;
+        }
+        
+        .score-number {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        
+        .score-label {
+            font-size: 0.9em;
+        }
+        
+        .email-container {
+            border: 2px solid #000000;
+            background-color: #fafafa;
+            margin-bottom: 30px;
+            display: none;
+        }
+        
+        .email-container.active {
+            display: block;
+        }
+        
+        .email-header {
+            background-color: #e8e8e8;
+            border-bottom: 2px solid #000000;
+            padding: 15px;
+        }
+        
+        .email-field {
+            margin-bottom: 10px;
+        }
+        
+        .field-label {
+            font-weight: bold;
+            display: inline-block;
+            width: 80px;
+        }
+        
+        .email-body {
+            padding: 20px;
+            background-color: #ffffff;
+            border-bottom: 2px solid #000000;
+            min-height: 200px;
+        }
+        
+        .email-subject {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .button-container {
+            padding: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        button {
+            background-color: #000000;
+            color: #ffffff;
+            border: none;
+            padding: 15px 40px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background-color: #333333;
+        }
+        
+        button.safe {
+            background-color: #ffffff;
+            color: #000000;
+            border: 2px solid #000000;
+        }
+        
+        button.safe:hover {
+            background-color: #e8e8e8;
+        }
+        
+        .feedback {
+            display: none;
+            padding: 20px;
+            margin-top: 20px;
+            border: 3px solid #000000;
+        }
+        
+        .feedback.show {
+            display: block;
+        }
+        
+        .feedback.correct {
+            background-color: #ffffff;
+            border-color: #000000;
+        }
+        
+        .feedback.incorrect {
+            background-color: #f5f5f5;
+            border-color: #000000;
+        }
+        
+        .feedback-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .feedback-verdict {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #000000;
+            color: #ffffff;
+        }
+        
+        .red-flags, .legitimate-signals {
+            margin-top: 15px;
+        }
+        
+        .flag-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .flag-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .flag-list li {
+            padding: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid #000000;
+            background-color: #f9f9f9;
+        }
+        
+        .flag-list li:before {
+            content: "⚠ ";
+            font-weight: bold;
+        }
+        
+        .legitimate-signals .flag-list li:before {
+            content: "✓ ";
+        }
+        
+        .next-button {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .results {
+            display: none;
+            border: 3px solid #000000;
+            padding: 30px;
+            text-align: center;
+            background-color: #f5f5f5;
+        }
+        
+        .results.show {
+            display: block;
+        }
+        
+        .results-title {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .results-score {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        
+        .results-message {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            line-height: 1.8;
+        }
+        
+        .results-breakdown {
+            margin: 30px 0;
+            text-align: left;
+        }
+        
+        .breakdown-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 2px solid #000000;
+            background-color: #ffffff;
+        }
+        
+        .breakdown-item.correct {
+            border-left: 6px solid #000000;
+        }
+        
+        .breakdown-item.incorrect {
+            border-left: 6px solid #666666;
+        }
+        
+        .email-link {
+            color: #0000EE;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        
+        .tip-box {
+            background-color: #e8e8e8;
+            border: 2px solid #000000;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .tip-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .progress {
+            text-align: center;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Phishing Email Detector Game</h1>
+        
+        <div class="intro">
+            <strong>Can you spot the fake?</strong><br>
+            You'll see 10 emails. Some are legitimate, some are phishing attempts. For each email, decide if it's SAFE or PHISHING. You'll get feedback explaining the red flags or legitimate signals. Try to get all 10 correct!
+        </div>
+
+        <div class="score-panel">
+            <div class="score-item">
+                <div class="score-number" id="currentQuestion">1</div>
+                <div class="score-label">Email #</div>
+            </div>
+            <div class="score-item">
+                <div class="score-number" id="correctCount">0</div>
+                <div class="score-label">Correct</div>
+            </div>
+            <div class="score-item">
+                <div class="score-number" id="incorrectCount">0</div>
+                <div class="score-label">Wrong</div>
+            </div>
+        </div>
+
+        <div class="progress" id="progress">Question 1 of 10</div>
+
+        <div id="emailsContainer"></div>
+
+        <div class="results" id="results">
+            <div class="results-title">🎮 Game Complete!</div>
+            <div class="results-score" id="finalScore"></div>
+            <div class="results-message" id="resultsMessage"></div>
+            <div class="results-breakdown" id="resultsBreakdown"></div>
+            <button onclick="restartGame()">🔄 Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const emails = [
+            {
+                id: 1,
+                from: "amazon-security@amazon.com",
+                to: "you@iu.edu",
+                subject: "Your Amazon.com order has shipped",
+                body: `Hello,
+
+Your order #123-4567890-1234567 has shipped and is on its way.
+
+Track your package: https://www.amazon.com/tracking
+
+Order Details:
+• 1x The Great Gatsby (Book)
+• Delivery estimate: October 15, 2024
+
+Thank you for shopping with Amazon.
+
+Amazon Customer Service`,
+                isPhishing: false,
+                redFlags: [],
+                legitimateSignals: [
+                    "Email from legitimate amazon.com domain",
+                    "No urgent demands or threats",
+                    "Specific order number provided",
+                    "Professional formatting and grammar",
+                    "Link goes to legitimate amazon.com domain",
+                    "No requests for personal information"
+                ],
+                explanation: "This is a LEGITIMATE email. It comes from Amazon's actual domain, contains specific order information, and doesn't request any sensitive data or create urgency."
+            },
+            {
+                id: 2,
+                from: "security-alert@amazon-verify.com",
+                to: "you@iu.edu",
+                subject: "URGENT: Your Amazon Account Will Be Suspended",
+                body: `Dear Valued Customer,
+
+We have detected unusual activity on your Amazon account. Your account will be SUSPENDED within 24 hours unless you verify your information immediately.
+
+CLICK HERE TO VERIFY NOW: http://amazon-secure-login.com/verify
+
+Failure to respond will result in permanent account closure and loss of your Prime membership.
+
+Urgent action required!
+
+Amazon Security Team`,
+                isPhishing: true,
+                redFlags: [
+                    "Suspicious domain: 'amazon-verify.com' (not amazon.com)",
+                    "Creates false urgency: 'SUSPENDED within 24 hours'",
+                    "Threat of consequence: 'permanent account closure'",
+                    "Generic greeting: 'Dear Valued Customer'",
+                    "Suspicious link domain: 'amazon-secure-login.com'",
+                    "ALL CAPS for urgency",
+                    "Fear tactics to bypass critical thinking"
+                ],
+                legitimateSignals: [],
+                explanation: "This is PHISHING. Amazon would never email from 'amazon-verify.com' or threaten immediate suspension. The link goes to a fake domain designed to steal your credentials."
+            },
+            {
+                id: 3,
+                from: "iu-it@iu.edu",
+                to: "you@iu.edu",
+                subject: "IU Login: Scheduled Maintenance",
+                body: `Dear IU Community,
+
+IU Login will undergo scheduled maintenance on Saturday, October 14, 2024, from 2:00 AM to 6:00 AM EST.
+
+During this time, you may experience intermittent access issues with:
+• Canvas
+• One.IU
+• IU Email
+
+No action is required. Service will resume automatically.
+
+For questions, contact the IT Service Desk at 812-855-6789.
+
+Thank you,
+University Information Technology Services`,
+                isPhishing: false,
+                redFlags: [],
+                legitimateSignals: [
+                    "Sent from @iu.edu domain",
+                    "Professional formatting",
+                    "Specific date and time provided",
+                    "No requests for passwords or personal info",
+                    "Includes real contact number",
+                    "No urgent action required",
+                    "Matches typical IU communication style"
+                ],
+                explanation: "This is LEGITIMATE. It comes from IU's domain, provides specific information about routine maintenance, and doesn't ask for any credentials or personal information."
+            },
+            {
+                id: 4,
+                from: "helpdesk@iu-edu-services.com",
+                to: "you@iu.edu",
+                subject: "Your IU Email Storage is Full - Verify Account",
+                body: `Dear IU Student,
+
+Your email storage quota has been exceeded. You are currently using 102% of your allocated space.
+
+To prevent email delivery failures, you must verify your account and upgrade your storage immediately.
+
+Click here to verify: http://iu-verify-email.com/login
+
+Username: _________
+Password: _________
+
+Failure to verify within 24 hours will result in account deactivation.
+
+IU IT Support`,
+                isPhishing: true,
+                redFlags: [
+                    "Fake domain: 'iu-edu-services.com' (not iu.edu)",
+                    "Requests username AND password",
+                    "Link to suspicious domain: 'iu-verify-email.com'",
+                    "Creates urgency: '24 hours' deadline",
+                    "Threat: 'account deactivation'",
+                    "IU would never ask for passwords via email",
+                    "Grammatically correct but uses scare tactics"
+                ],
+                legitimateSignals: [],
+                explanation: "This is PHISHING. IU would never email from a non-iu.edu domain or ask for your password. The link leads to a fake login page designed to steal credentials."
+            },
+            {
+                id: 5,
+                from: "billing@netflix.com",
+                to: "you@iu.edu",
+                subject: "Netflix: Update Your Payment Method",
+                body: `Hi there,
+
+We couldn't process your payment for your Netflix membership.
+
+To keep watching, please update your payment information:
+https://www.netflix.com/account/billing
+
+If we can't update your payment info, your membership will be canceled in 3 days.
+
+Questions? Visit the Help Center.
+
+– The Netflix team`,
+                isPhishing: false,
+                redFlags: [],
+                legitimateSignals: [
+                    "Sent from legitimate netflix.com domain",
+                    "Link goes to actual netflix.com domain",
+                    "Casual but professional tone typical of Netflix",
+                    "No immediate threats, just consequence of inaction",
+                    "References 'Help Center' rather than asking you to reply",
+                    "Short signature: 'The Netflix team'",
+                    "Doesn't ask for payment info in email"
+                ],
+                explanation: "This is LEGITIMATE. While it does create some urgency, the email is from Netflix's actual domain and directs you to their real website. Netflix commonly sends these when payment fails."
+            },
+            {
+                id: 6,
+                from: "apple-support@appleid-verify.com",
+                to: "you@iu.edu",
+                subject: "Your Apple ID has been locked for security reasons",
+                body: `Dear Customer,
+
+Your Apple ID was locked because of suspicious activity detected from an unknown device.
+
+Location: Moscow, Russia
+Device: Samsung Galaxy S10
+Date: October 10, 2024
+
+To unlock your account, verify your identity immediately:
+http://appleid.secure-verify.com/unlock
+
+You have 12 hours to verify or your account will be permanently deleted including all photos, contacts, and data.
+
+Apple Security`,
+                isPhishing: true,
+                redFlags: [
+                    "Fake domain: 'appleid-verify.com' (Apple uses apple.com)",
+                    "Link domain suspicious: 'appleid.secure-verify.com'",
+                    "Extreme urgency: '12 hours'",
+                    "Extreme threat: 'permanently deleted'",
+                    "Generic greeting: 'Dear Customer'",
+                    "Fear tactic: threatening loss of photos/data",
+                    "Apple would never email from non-apple.com domain"
+                ],
+                legitimateSignals: [],
+                explanation: "This is PHISHING. Apple only emails from @apple.com addresses. The extreme threats and urgency are designed to make you panic and click without thinking."
+            },
+            {
+                id: 7,
+                from: "alerts@bankofamerica.com",
+                to: "you@iu.edu",
+                subject: "Unusual Activity Alert",
+                body: `Security Alert
+
+We noticed unusual activity on your Bank of America account ending in 4567.
+
+Recent Transaction:
+$487.32 at Best Buy - Los Angeles, CA
+October 11, 2024, 2:34 PM EST
+
+If you recognize this transaction, no action needed.
+
+If you don't recognize this transaction, please:
+1. Call us immediately at 1-800-432-1000
+2. Or sign in to Online Banking to review
+
+Thank you for banking with Bank of America.`,
+                isPhishing: false,
+                redFlags: [],
+                legitimateSignals: [
+                    "Legitimate bankofamerica.com domain",
+                    "Provides specific transaction details",
+                    "Gives phone number to call (verifiable as real)",
+                    "Doesn't include clickable links",
+                    "Doesn't request sensitive information",
+                    "Professional formatting",
+                    "Says 'no action needed' if transaction is legitimate"
+                ],
+                explanation: "This is LEGITIMATE. Bank of America commonly sends these alerts. It comes from their real domain, provides specific details, and tells you to call or sign in separately rather than clicking a link."
+            },
+            {
+                id: 8,
+                from: "venmo-support@venmo-payments.net",
+                to: "you@iu.edu",
+                subject: "Confirm your Venmo payment",
+                body: `Hey!
+
+You sent $250.00 to Sarah Johnson on Venmo.
+
+If this wasn't you, click here immediately to cancel:
+http://venmo-secure.net/cancel-payment?id=78239
+
+This payment will process in 2 hours if not canceled.
+
+Venmo Team
+
+*Note: Venmo will never ask for your password in an email*`,
+                isPhishing: true,
+                redFlags: [
+                    "Wrong domain: 'venmo-payments.net' (Venmo uses venmo.com)",
+                    "Suspicious link domain: 'venmo-secure.net'",
+                    "Creates urgency: '2 hours'",
+                    "Casual 'Hey!' trying to seem legitimate",
+                    "Ironically includes disclaimer about passwords (red flag itself)",
+                    "Real Venmo wouldn't email from non-venmo.com domain",
+                    "Trying to trick you into clicking out of panic"
+                ],
+                legitimateSignals: [],
+                explanation: "This is PHISHING. Venmo only emails from @venmo.com. The casual tone and disclaimer are meant to seem trustworthy, but the domain and link are fake."
+            },
+            {
+                id: 9,
+                from: "faculty-services@iu.edu",
+                to: "you@iu.edu",
+                subject: "Library Book Overdue: The Great Gatsby",
+                body: `Dear Student,
+
+The following item is overdue and must be returned:
+
+Title: The Great Gatsby
+Due Date: October 1, 2024
+Fine: $3.00
+
+Please return the item to any IU library location or use the book drop at Wells Library.
+
+To renew online, visit: https://libraries.indiana.edu/my-account
+Or call: 812-855-9450
+
+Thank you,
+IU Libraries`,
+                isPhishing: false,
+                redFlags: [],
+                legitimateSignals: [
+                    "Sent from legitimate @iu.edu domain",
+                    "Link goes to real libraries.indiana.edu domain",
+                    "Includes verifiable phone number",
+                    "Professional formatting",
+                    "Specific book title and date",
+                    "No urgent threats or demands for immediate action",
+                    "Provides multiple ways to resolve (return, renew, call)"
+                ],
+                explanation: "This is LEGITIMATE. It comes from IU's actual domain, provides specific information, and links to IU's real library website. Standard overdue notice format."
+            },
+            {
+                id: 10,
+                from: "hr-department@indiana-university.org",
+                to: "you@iu.edu",
+                subject: "URGENT: Employee W-2 Tax Form Update Required",
+                body: `Dear IU Employee,
+
+The IRS requires all employees to verify their W-2 tax information by October 15th to avoid penalties.
+
+Please verify your information using this secure form:
+http://iu-tax-forms.org/verify-w2
+
+You will need to enter:
+- Social Security Number
+- Date of Birth
+- Bank Account Number (for direct deposit verification)
+
+Failure to complete by deadline will result in penalties and delayed tax refunds.
+
+Human Resources Department
+Indiana University`,
+                isPhishing: true,
+                redFlags: [
+                    "Wrong domain: 'indiana-university.org' (IU uses iu.edu)",
+                    "Link to suspicious domain: 'iu-tax-forms.org'",
+                    "Requests extremely sensitive info: SSN, DOB, bank account",
+                    "False IRS deadline threat",
+                    "Creates fear of penalties",
+                    "IU HR would NEVER ask for SSN or bank info via email",
+                    "Generic 'Dear IU Employee' greeting"
+                ],
+                legitimateSignals: [],
+                explanation: "This is PHISHING and particularly dangerous. IU emails from @iu.edu only. No legitimate organization would ever ask for your SSN, bank account, or DOB via email. This is identity theft."
+            }
+        ];
+
+        let currentEmailIndex = 0;
+        let correctCount = 0;
+        let incorrectCount = 0;
+        let userAnswers = [];
+
+        function initGame() {
+            renderEmails();
+            showEmail(0);
+        }
+
+        function renderEmails() {
+            const container = document.getElementById('emailsContainer');
+            container.innerHTML = emails.map((email, index) => `
+                <div class="email-container" id="email-${index}">
+                    <div class="email-header">
+                        <div class="email-field">
+                            <span class="field-label">From:</span>
+                            <span>${email.from}</span>
+                        </div>
+                        <div class="email-field">
+                            <span class="field-label">To:</span>
+                            <span>${email.to}</span>
+                        </div>
+                        <div class="email-field">
+                            <span class="field-label">Subject:</span>
+                            <span><strong>${email.subject}</strong></span>
+                        </div>
+                    </div>
+                    <div class="email-body">
+                        ${email.body.replace(/\n/g, '<br>')}
+                    </div>
+                    <div class="button-container">
+                        <button class="safe" onclick="checkAnswer(${index}, false)">✓ SAFE</button>
+                        <button class="phishing" onclick="checkAnswer(${index}, true)">⚠ PHISHING</button>
+                    </div>
+                    <div class="feedback" id="feedback-${index}">
+                        <div class="feedback-title">Feedback</div>
+                        <div class="feedback-verdict" id="verdict-${index}"></div>
+                        <div id="explanation-${index}"></div>
+                        <div class="next-button">
+                            <button onclick="nextEmail()">Next Email →</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showEmail(index) {
+            document.querySelectorAll('.email-container').forEach(el => el.classList.remove('active'));
+            document.getElementById(`email-${index}`).classList.add('active');
+            document.getElementById('currentQuestion').textContent = index + 1;
+            document.getElementById('progress').textContent = `Question ${index + 1} of ${emails.length}`;
+        }
+
+        function checkAnswer(index, userSaidPhishing) {
+            const email = emails[index];
+            const isCorrect = userSaidPhishing === email.isPhishing;
+            
+            // Record answer
+            userAnswers.push({
+                email: email,
+                userAnswer: userSaidPhishing,
+                correct: isCorrect
+            });
+
+            // Update score
+            if (isCorrect) {
+                correctCount++;
+                document.getElementById('correctCount').textContent = correctCount;
+            } else {
+                incorrectCount++;
+                document.getElementById('incorrectCount').textContent = incorrectCount;
+            }
+
+            // Show feedback
+            const feedback = document.getElementById(`feedback-${index}`);
+            const verdict = document.getElementById(`verdict-${index}`);
+            const explanation = document.getElementById(`explanation-${index}`);
+
+            feedback.classList.add('show');
+            feedback.classList.add(isCorrect ? 'correct' : 'incorrect');
+
+            if (isCorrect) {
+                verdict.textContent = '✓ CORRECT!';
+            } else {
+                verdict.textContent = '✗ INCORRECT';
+            }
+
+            let explanationHTML = `<p><strong>${email.explanation}</strong></p>`;
+
+            if (email.isPhishing && email.redFlags.length > 0) {
+                explanationHTML += `
+                    <div class="red-flags">
+                        <div class="flag-title">🚩 Red Flags to Watch For:</div>
+                        <ul class="flag-list">
+                            ${email.redFlags.map(flag => `<li>${flag}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            if (!email.isPhishing && email.legitimateSignals.length > 0) {
+                explanationHTML += `
+                    <div class="legitimate-signals">
+                        <div class="flag-title">✓ Legitimate Signals:</div>
+                        <ul class="flag-list">
+                            ${email.legitimateSignals.map(signal => `<li>${signal}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            if (index === 0 || index === 3 || index === 6) {
+                explanationHTML += getTip(index);
+            }
+
+            explanation.innerHTML = explanationHTML;
+
+            // Disable buttons
+            const buttons = document.querySelectorAll(`#email-${index} .button-container button`);
+            buttons.forEach(btn => btn.disabled = true);
+
+            // Scroll to feedback
+            feedback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function getTip(index) {
+            const tips = {
+                0: {
+                    title: "💡 Pro Tip: Check the Domain",
+                    content: "Always look at what comes AFTER the @ symbol. 'amazon.com' is legitimate. 'amazon-security.net' or 'amazon.verify.com' are NOT. Phishers buy similar-looking domains."
+                },
+                3: {
+                    title: "💡 Pro Tip: Hover Over Links",
+                    content: "Before clicking any link in an email, HOVER your mouse over it (or long-press on mobile) to see the actual URL. If the display text says 'amazon.com' but the link goes to 'amaz0n.net', it's phishing."
+                },
+                6: {
+                    title: "💡 Pro Tip: Watch for Urgency",
+                    content: "Phishing emails create URGENCY to make you panic and click without thinking. 'Account will be deleted in 12 hours!' is a huge red flag. Legitimate companies rarely use extreme deadlines."
+                }
+            };
+            
+            if (tips[index]) {
+                return `
+                    <div class="tip-box">
+                        <div class="tip-title">${tips[index].title}</div>
+                        ${tips[index].content}
+                    </div>
+                `;
+            }
+            return '';
+        }
+
+        function nextEmail() {
+            currentEmailIndex++;
+            if (currentEmailIndex < emails.length) {
+                showEmail(currentEmailIndex);
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.querySelectorAll('.email-container').forEach(el => el.style.display = 'none');
+            document.querySelector('.score-panel').style.display = 'none';
+            document.querySelector('.progress').style.display = 'none';
+
+            const results = document.getElementById('results');
+            const scoreDisplay = document.getElementById('finalScore');
+            const messageDisplay = document.getElementById('resultsMessage');
+            const breakdownDisplay = document.getElementById('resultsBreakdown');
+
+            const percentage = Math.round((correctCount / emails.length) * 100);
+            scoreDisplay.textContent = `${correctCount}/${emails.length} Correct (${percentage}%)`;
+
+            let message = '';
+            if (percentage === 100) {
+                message = '🎉 Perfect Score! You\'re a phishing detection expert! You successfully identified every legitimate email and caught every phishing attempt. Your vigilance will keep you safe online.';
+            } else if (percentage >= 80) {
+                message = '👏 Excellent Work! You caught most of the phishing attempts and correctly identified the legitimate emails. Keep practicing and you\'ll be spotting scams like a pro.';
+            } else if (percentage >= 60) {
+                message = '👍 Good Job! You\'re on the right track, but there\'s room for improvement. Review the red flags you missed and try again. Remember: when in doubt, verify through a separate channel.';
+            } else {
+                message = '📚 Keep Learning! Phishing emails are getting more sophisticated, but so can you. Review the feedback carefully, practice checking domains and links, and remember: it\'s better to be too cautious than too trusting.';
+            }
+
+            messageDisplay.textContent = message;
+
+            // Show breakdown
+            breakdownDisplay.innerHTML = '<h3 style="margin-bottom: 15px; font-size: 1.2em;">Your Answers:</h3>' + 
+                userAnswers.map((answer, index) => `
+                    <div class="breakdown-item ${answer.correct ? 'correct' : 'incorrect'}">
+                        <strong>Email ${index + 1}: ${answer.email.subject}</strong><br>
+                        <div style="margin-top: 8px;">
+                            Your answer: <strong>${answer.userAnswer ? 'PHISHING' : 'SAFE'}</strong> | 
+                            Correct answer: <strong>${answer.email.isPhishing ? 'PHISHING' : 'SAFE'}</strong> | 
+                            Result: <strong>${answer.correct ? '✓ CORRECT' : '✗ WRONG'}</strong>
+                        </div>
+                    </div>
+                `).join('');
+
+            results.classList.add('show');
+            results.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function restartGame() {
+            currentEmailIndex = 0;
+            correctCount = 0;
+            incorrectCount = 0;
+            userAnswers = [];
+            
+            document.getElementById('correctCount').textContent = '0';
+            document.getElementById('incorrectCount').textContent = '0';
+            
+            document.querySelectorAll('.feedback').forEach(el => {
+                el.classList.remove('show', 'correct', 'incorrect');
+            });
+            
+            document.querySelectorAll('.email-container button').forEach(btn => {
+                btn.disabled = false;
+            });
+            
+            document.getElementById('results').classList.remove('show');
+            document.querySelector('.score-panel').style.display = 'flex';
+            document.querySelector('.progress').style.display = 'block';
+            
+            showEmail(0);
+        }
+
+        // Initialize game on load
+        initGame();
+    </script>
+</body>
+</html>

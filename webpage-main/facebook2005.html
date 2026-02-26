@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>facebook</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: "lucida grande", tahoma, verdana, arial, sans-serif;
+            font-size: 11px;
+            background-color: #fff;
+            color: #333;
+        }
+        
+        .header {
+            background-color: #3b5998;
+            height: 82px;
+            border-bottom: 1px solid #133783;
+        }
+        
+        .header-content {
+            max-width: 760px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            height: 100%;
+            padding: 0 10px;
+        }
+        
+        .logo {
+            color: white;
+            font-size: 30px;
+            font-weight: normal;
+            margin-right: 20px;
+            font-family: georgia, serif;
+        }
+        
+        .search-container {
+            flex: 1;
+            max-width: 400px;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 3px 5px;
+            font-size: 11px;
+            border: 1px solid #1d4088;
+        }
+        
+        .header-links {
+            display: flex;
+            gap: 15px;
+            margin-left: 20px;
+        }
+        
+        .header-link {
+            color: white;
+            text-decoration: none;
+            font-size: 11px;
+        }
+        
+        .header-link:hover {
+            text-decoration: underline;
+        }
+        
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .sidebar {
+            width: 200px;
+            background-color: #fff;
+        }
+        
+        .sidebar-section {
+            margin-bottom: 15px;
+            border: 1px solid #d4dae8;
+            background-color: #f7f7f7;
+        }
+        
+        .sidebar-header {
+            background-color: #6d84b4;
+            color: white;
+            padding: 3px 6px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .sidebar-content {
+            padding: 5px 8px;
+            font-size: 10px;
+        }
+        
+        .sidebar-link {
+            color: #3b5998;
+            text-decoration: none;
+            display: block;
+            margin: 2px 0;
+        }
+        
+        .sidebar-link:hover {
+            text-decoration: underline;
+        }
+        
+        .main-content {
+            flex: 1;
+            background-color: #fff;
+        }
+        
+        .profile-header {
+            border: 1px solid #d4dae8;
+            margin-bottom: 10px;
+        }
+        
+        .profile-header-bg {
+            background-color: #6d84b4;
+            color: white;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .profile-info {
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .profile-pic {
+            width: 100px;
+            height: 100px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #666;
+            text-align: center;
+        }
+        
+        .profile-details {
+            flex: 1;
+        }
+        
+        .profile-name {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #3b5998;
+        }
+        
+        .profile-detail {
+            margin: 2px 0;
+            font-size: 11px;
+        }
+        
+        .profile-actions {
+            margin-top: 10px;
+        }
+        
+        .btn {
+            background-color: #f2f2f2;
+            border: 1px solid #ccc;
+            padding: 2px 8px;
+            font-size: 10px;
+            margin-right: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #333;
+        }
+        
+        .btn:hover {
+            background-color: #e6e6e6;
+        }
+        
+        .section {
+            border: 1px solid #d4dae8;
+            margin-bottom: 10px;
+            background-color: #fff;
+        }
+        
+        .section-header {
+            background-color: #6d84b4;
+            color: white;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-content {
+            padding: 8px;
+        }
+        
+        .wall-post {
+            border-bottom: 1px solid #f0f0f0;
+            padding: 8px 0;
+        }
+        
+        .wall-post:last-child {
+            border-bottom: none;
+        }
+        
+        .wall-post-header {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 3px;
+        }
+        
+        .wall-post-content {
+            font-size: 11px;
+            line-height: 1.3;
+        }
+        
+        .wall-post-time {
+            font-size: 9px;
+            color: #999;
+            margin-top: 2px;
+        }
+        
+        .write-wall {
+            background-color: #f7f7f7;
+            padding: 5px;
+            border: 1px solid #d4dae8;
+            margin-bottom: 8px;
+        }
+        
+        .write-wall input {
+            width: 100%;
+            padding: 2px 4px;
+            border: 1px solid #bbb;
+            font-size: 11px;
+        }
+        
+        .basic-info {
+            font-size: 11px;
+        }
+        
+        .basic-info-row {
+            margin: 3px 0;
+            display: flex;
+        }
+        
+        .basic-info-label {
+            width: 80px;
+            font-weight: bold;
+            color: #666;
+        }
+        
+        .basic-info-value {
+            color: #3b5998;
+        }
+        
+        .friends-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+        }
+        
+        .friend-item {
+            text-align: center;
+            font-size: 10px;
+        }
+        
+        .friend-pic {
+            width: 50px;
+            height: 50px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            margin: 0 auto 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: #666;
+        }
+        
+        .friend-name {
+            color: #3b5998;
+            text-decoration: none;
+        }
+        
+        .friend-name:hover {
+            text-decoration: underline;
+        }
+        
+        .network-info {
+            background-color: #fffbcc;
+            border: 1px solid #e6db55;
+            padding: 5px;
+            font-size: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #d4dae8;
+            margin-top: 20px;
+        }
+        
+        .footer a {
+            color: #3b5998;
+            text-decoration: none;
+            margin: 0 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">facebook</div>
+            <div class="search-container">
+                <input type="text" class="search-box" placeholder="Search for people...">
+            </div>
+            <div class="header-links">
+                <a href="#" class="header-link">my profile</a>
+                <a href="#" class="header-link">browse</a>
+                <a href="#" class="header-link">invite</a>
+                <a href="#" class="header-link">logout</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="network-info">
+        You are in the <strong>Harvard University</strong> network. Only Harvard students can see your profile.
+    </div>
+    
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-header">browse</div>
+                <div class="sidebar-content">
+                    <a href="#" class="sidebar-link">search for classmates</a>
+                    <a href="#" class="sidebar-link">browse by class year</a>
+                    <a href="#" class="sidebar-link">browse by residence</a>
+                    <a href="#" class="sidebar-link">browse by concentration</a>
+                </div>
+            </div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-header">my account</div>
+                <div class="sidebar-content">
+                    <a href="#" class="sidebar-link">edit my profile</a>
+                    <a href="#" class="sidebar-link">account settings</a>
+                    <a href="#" class="sidebar-link">privacy settings</a>
+                </div>
+            </div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-header">facebook mobile</div>
+                <div class="sidebar-content">
+                    Ever wanted to access facebook from your mobile device? Now you can!<br>
+                    <a href="#" class="sidebar-link">learn more</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="profile-header">
+                <div class="profile-header-bg">Sarah Johnson</div>
+                <div class="profile-info">
+                    <div class="profile-pic">
+                        No Photo<br>Available
+                    </div>
+                    <div class="profile-details">
+                        <div class="profile-name">Sarah Johnson</div>
+                        <div class="profile-detail"><strong>Class:</strong> 2007</div>
+                        <div class="profile-detail"><strong>Concentration:</strong> Psychology</div>
+                        <div class="profile-detail"><strong>Residence:</strong> Winthrop House</div>
+                        <div class="profile-detail"><strong>Hometown:</strong> Boston, MA</div>
+                        <div class="profile-actions">
+                            <a href="#" class="btn">poke sarah</a>
+                            <a href="#" class="btn">message</a>
+                            <a href="#" class="btn">add as friend</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <span>Basic Information</span>
+                </div>
+                <div class="section-content">
+                    <div class="basic-info">
+                        <div class="basic-info-row">
+                            <div class="basic-info-label">Sex:</div>
+                            <div class="basic-info-value">Female</div>
+                        </div>
+                        <div class="basic-info-row">
+                            <div class="basic-info-label">Birthday:</div>
+                            <div class="basic-info-value">March 15, 1985</div>
+                        </div>
+                        <div class="basic-info-row">
+                            <div class="basic-info-label">Hometown:</div>
+                            <div class="basic-info-value">Boston, MA</div>
+                        </div>
+                        <div class="basic-info-row">
+                            <div class="basic-info-label">Relationship:</div>
+                            <div class="basic-info-value">Single</div>
+                        </div>
+                        <div class="basic-info-row">
+                            <div class="basic-info-label">Interested in:</div>
+                            <div class="basic-info-value">Men</div>
+                        </div>
+                        <div class="basic-info-row">
+                            <div class="basic-info-label">AIM:</div>
+                            <div class="basic-info-value">sarahj_harvard</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <span>The Wall</span>
+                    <span style="font-size: 9px; font-weight: normal;">write something</span>
+                </div>
+                <div class="section-content">
+                    <div class="write-wall">
+                        <input type="text" placeholder="Write something on Sarah's wall...">
+                    </div>
+                    
+                    <div class="wall-post">
+                        <div class="wall-post-header">
+                            <strong>Mike Chen</strong> wrote at 3:42pm on February 15th, 2005:
+                        </div>
+                        <div class="wall-post-content">
+                            Hey Sarah! Great meeting you at the dining hall yesterday. Hope your psych paper went well!
+                        </div>
+                        <div class="wall-post-time">
+                            <a href="#" style="font-size: 9px; color: #999;">remove</a>
+                        </div>
+                    </div>
+                    
+                    <div class="wall-post">
+                        <div class="wall-post-header">
+                            <strong>Emily Davis</strong> wrote at 11:23am on February 12th, 2005:
+                        </div>
+                        <div class="wall-post-content">
+                            Can't wait for spring break! We should definitely plan that trip to Florida.
+                        </div>
+                    </div>
+                    
+                    <div class="wall-post">
+                        <div class="wall-post-header">
+                            <strong>David Thompson</strong> wrote at 7:45pm on February 8th, 2005:
+                        </div>
+                        <div class="wall-post-content">
+                            Sarah got poked by David.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <span>Friends <span style="font-weight: normal;">(47)</span></span>
+                    <span style="font-size: 9px; font-weight: normal;">see all</span>
+                </div>
+                <div class="section-content">
+                    <div class="friends-grid">
+                        <div class="friend-item">
+                            <div class="friend-pic">MP</div>
+                            <a href="#" class="friend-name">Mike P.</a>
+                        </div>
+                        <div class="friend-item">
+                            <div class="friend-pic">ED</div>
+                            <a href="#" class="friend-name">Emily D.</a>
+                        </div>
+                        <div class="friend-item">
+                            <div class="friend-pic">JW</div>
+                            <a href="#" class="friend-name">John W.</a>
+                        </div>
+                        <div class="friend-item">
+                            <div class="friend-pic">AL</div>
+                            <a href="#" class="friend-name">Amy L.</a>
+                        </div>
+                        <div class="friend-item">
+                            <div class="friend-pic">RS</div>
+                            <a href="#" class="friend-name">Rob S.</a>
+                        </div>
+                        <div class="friend-item">
+                            <div class="friend-pic">KM</div>
+                            <a href="#" class="friend-name">Kate M.</a>
+                        </div>
+                        <div class="friend-item">
+                            <div class="friend-pic">TC</div>
+                            <a href="#" class="friend-name">Tom C.</a>
+                        </div>
+                        <div class="friend-item">
+                            <div class="friend-pic">LR</div>
+                            <a href="#" class="friend-name">Lisa R.</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <a href="#">about</a> |
+        <a href="#">help</a> |
+        <a href="#">terms</a> |
+        <a href="#">privacy</a> |
+        <a href="#">advertisers</a> |
+        <a href="#">developers</a> |
+        <a href="#">careers</a>
+        <br><br>
+        facebook © 2005
+    </div>
+</body>
+</html>

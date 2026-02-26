@@ -1,0 +1,343 @@
+<!-- nsf_diversity_program_timeline.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NSF Diversity Programs Timeline</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 1.1em;
+            margin-bottom: 40px;
+        }
+
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, #667eea, #764ba2);
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            margin-bottom: 40px;
+            position: relative;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        .timeline-item:nth-child(even) {
+            animation-delay: 0.2s;
+        }
+
+        .timeline-item:nth-child(odd) {
+            animation-delay: 0.1s;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .timeline-content {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            width: calc(50% - 40px);
+            position: relative;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .timeline-content:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .timeline-item:nth-child(odd) .timeline-content {
+            margin-left: auto;
+            margin-right: 20px;
+        }
+
+        .timeline-item:nth-child(even) .timeline-content {
+            margin-left: 20px;
+        }
+
+        .timeline-year {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: white;
+            border: 4px solid #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #667eea;
+            z-index: 2;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .program-title {
+            color: #2c3e50;
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .program-acronym {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .program-description {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-modified {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-terminated {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .timeline::before {
+                left: 30px;
+            }
+
+            .timeline-year {
+                left: 30px;
+                width: 60px;
+                height: 60px;
+                font-size: 0.9em;
+            }
+
+            .timeline-content {
+                width: calc(100% - 100px);
+                margin-left: 80px !important;
+                margin-right: 0 !important;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .note {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 30px 0;
+            border-radius: 5px;
+            color: #555;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>NSF Diversity Programs Timeline</h1>
+        <p class="subtitle">Evolution of Broadening Participation in STEM (1950 - 2025)</p>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <span class="status-badge status-active">Active</span>
+                <span>Program continuing</span>
+            </div>
+            <div class="legend-item">
+                <span class="status-badge status-modified">Modified</span>
+                <span>Recent changes</span>
+            </div>
+            <div class="legend-item">
+                <span class="status-badge status-terminated">Terminated</span>
+                <span>Discontinued 2025</span>
+            </div>
+        </div>
+
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-year">1950</div>
+                <div class="timeline-content">
+                    <div class="program-title">National Science Foundation Established</div>
+                    <p class="program-description">NSF created by Congress with the mission to promote the progress of science, advance national health, prosperity and welfare, and secure national defense.</p>
+                    <span class="status-badge status-active">Foundation</span>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-year">1952</div>
+                <div class="timeline-content">
+                    <div class="program-title">Graduate Fellowships Program</div>
+                    <p class="program-description">NSF began funding fellowships for graduate students, establishing early support for STEM education. This evolved into today's Graduate Research Fellowship Program (GRFP).</p>
+                    <span class="status-badge status-active">Active</span>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-year">1987</div>
+                <div class="timeline-content">
+                    <div class="program-title">Research Experiences for Undergraduates <span class="program-acronym">(REU)</span></div>
+                    <p class="program-description">Program offering research opportunities to undergraduate students in STEM fields, providing competitive stipends and assistance with housing, meals, and travel.</p>
+                    <span class="status-badge status-active">Active</span>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-year">1991</div>
+                <div class="timeline-content">
+                    <div class="program-title">Louis Stokes Alliances for Minority Participation <span class="program-acronym">(LSAMP)</span></div>
+                    <p class="program-description">Established by Congress to diversify the STEM workforce by increasing participation of underrepresented minorities (African Americans, Hispanic Americans, American Indians, Alaska Natives, Native Hawaiians, and Pacific Islanders) in STEM baccalaureate and graduate programs.</p>
+                    <span class="status-badge status-terminated">Terminated 2025</span>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-year">1991</div>
+                <div class="timeline-content">
+                    <div class="program-title">Centers of Research Excellence in Science and Technology <span class="program-acronym">(CREST)</span></div>
+                    <p class="program-description">Program to enhance research capabilities of minority-serving institutions through centers that integrate education and research, supporting faculty development and student participation in STEM.</p>
+                    <span class="status-badge status-modified">Modified 2025</span>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-year">1993</div>
+                <div class="timeline-content">
+                    <div class="program-title">Advanced Technological Education <span class="program-acronym">(ATE)</span></div>
+                    <p class="program-description">Supports partnerships between two-year colleges, other academic institutions, and industry to improve education of technicians in high-technology fields, with encouragement for minority-serving institutions.</p>
+                    <span class="status-badge status-active">Active</span>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-year">2000</div>
+                <div class="timeline-content">
+                    <div class="program-title">Historically Black Colleges and Universities Undergraduate Program <span class="program-acronym">(HBCU-UP)</span></div>
+                    <p class="program-description">Established to strengthen STEM education and research capacity at HBCUs through implementation projects, research initiatives, and targeted infusion projects to broaden participation in STEM fields.</p>
+                    <span class="status-badge status-modified">Modified 2025</span>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-year">2001</div>
+                <div class="timeline-content">
+                    <div class="program-title">ADVANCE</div>
+                    <p class="program-description">Program launched to increase representation and advancement of women in academic STEM careers. Since inception, invested over $130 million at more than 100 institutions to address systemic barriers and promote gender equity in STEM.</p>
+                    <span class="status-badge status-terminated">Terminated 2025</span>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-year">2016</div>
+                <div class="timeline-content">
+                    <div class="program-title">NSF INCLUDES</div>
+                    <p class="program-description">National network focused on collaborative approaches to broaden participation of underrepresented groups in STEM through alliances and partnerships across education, business, and government sectors.</p>
+                    <span class="status-badge status-terminated">Terminated 2025</span>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-year">2017</div>
+                <div class="timeline-content">
+                    <div class="program-title">HBCU Excellence in Research <span class="program-acronym">(HBCU-EiR)</span></div>
+                    <p class="program-description">Established to provide research opportunities for HBCUs that have not been successful in larger NSF competitions, aimed at building sustainable research capacity aligned with NSF research programs.</p>
+                    <span class="status-badge status-modified">Modified 2025</span>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-year">2025</div>
+                <div class="timeline-content">
+                    <div class="program-title">Program Restructuring</div>
+                    <p class="program-description">Significant changes to NSF diversity programs. Many DEI-focused initiatives terminated or modified to align with new agency priorities. Focus shifted to programs explicitly established in law and appropriations language. Approximately 1,500 research grants terminated, with majority led by women and underrepresented minorities.</p>
+                    <span class="status-badge status-modified">Major Changes</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Note:</strong> This timeline represents major NSF diversity and broadening participation programs from 1950 to 2025. The status indicators reflect the most recent information available as of January 2025. Some programs may continue in modified forms under different frameworks or with adjusted eligibility criteria.
+        </div>
+    </div>
+</body>
+</html>

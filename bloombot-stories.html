@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stories — bloombot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--ink:#1a1612;--cream:#f5f0e8;--warm:#e8dcc8;--rust:#c4541a;--amber:#d97706;--slate:#64748b;--border:#d1c4aa;--shadow:rgba(26,22,18,0.10);}
+    body{font-family:'Space Grotesk',sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;}
+    nav{position:sticky;top:0;z-index:100;background:var(--ink);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:56px;border-bottom:3px solid var(--rust);}
+    .nav-brand{font-family:'Space Mono',monospace;font-size:1.2rem;font-weight:700;color:var(--amber);text-decoration:none;letter-spacing:-0.03em;}
+    .nav-links{display:flex;list-style:none;overflow-x:auto;scrollbar-width:none;}
+    .nav-links li{position:relative;}
+    .nav-links li>a{display:flex;align-items:center;gap:0.3rem;height:56px;padding:0 0.9rem;color:rgba(255,255,255,0.65);text-decoration:none;font-size:0.78rem;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;transition:color 0.2s;}
+    .nav-links li>a:hover{color:#fff;background:rgba(255,255,255,0.07);}
+    .nav-links li>a.active{color:var(--amber);}
+    .caret{font-size:0.55rem;opacity:0.5;}
+    .dropdown{display:none;position:absolute;top:56px;left:0;background:#111;border:1px solid rgba(255,255,255,0.1);border-top:2px solid var(--rust);border-radius:0 0 8px 8px;min-width:180px;list-style:none;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+    .nav-links li:hover .dropdown{display:block;}
+    .dropdown li a{display:block;padding:0.6rem 1rem;font-size:0.78rem;color:rgba(255,255,255,0.65);border-bottom:1px solid rgba(255,255,255,0.06);white-space:nowrap;text-decoration:none;}
+    .dropdown li:last-child a{border-bottom:none;}
+    .dropdown li a:hover{color:#fff;background:rgba(255,255,255,0.07);}
+
+    .page-hero{background:var(--ink);color:#fff;padding:3.5rem 2rem 3rem;position:relative;overflow:hidden;}
+    .page-hero::before{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,0.035) 39px,rgba(255,255,255,0.035) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,0.035) 39px,rgba(255,255,255,0.035) 40px);}
+    .page-hero-inner{max-width:1100px;margin:0 auto;position:relative;}
+    .breadcrumb{font-family:'Space Mono',monospace;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:0.75rem;}
+    .breadcrumb a{color:rgba(255,255,255,0.4);text-decoration:none;}
+    .page-title{font-size:clamp(2rem,5vw,3.5rem);font-weight:700;letter-spacing:-0.04em;line-height:1.05;margin-bottom:0.75rem;}
+    .page-desc{font-size:1rem;color:rgba(255,255,255,0.65);max-width:620px;line-height:1.75;}
+
+    .stories-grid{max-width:1100px;margin:0 auto;padding:3rem 2rem;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+    .story-card{border-radius:12px;overflow:hidden;text-decoration:none;color:#fff;display:flex;flex-direction:column;min-height:280px;transition:transform 0.2s,box-shadow 0.2s;}
+    .story-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px var(--shadow);}
+    .story-card-body{padding:2rem;display:flex;flex-direction:column;flex:1;}
+    .story-icon{font-size:2.5rem;margin-bottom:1rem;}
+    .story-title{font-size:1.5rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:0.5rem;}
+    .story-desc{font-size:0.88rem;line-height:1.65;opacity:0.8;margin-top:auto;}
+    .story-tag{font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;opacity:0.5;margin-bottom:0.5rem;}
+
+    footer{background:var(--ink);color:rgba(255,255,255,0.4);text-align:center;padding:2.5rem 2rem;font-family:'Space Mono',monospace;font-size:0.72rem;letter-spacing:0.06em;line-height:2;}
+    footer a{color:var(--amber);text-decoration:none;}
+    @media(max-width:680px){.nav-links{display:none;}.stories-grid{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="bloombot-modern.html">bloombot</a>
+  <ul class="nav-links">
+    <li><a href="bloombot-i101.html">I 101 <span class="caret">▼</span></a><ul class="dropdown"><li><a href="bloombot-i101.html#networks">Networks</a></li><li><a href="bloombot-i101.html#ethics">Ethics</a></li><li><a href="bloombot-i101.html#security">Security</a></li><li><a href="bloombot-i101.html#diversity">Diversity</a></li></ul></li>
+    <li><a href="bloombot-stories.html" class="active">Stories <span class="caret">▼</span></a><ul class="dropdown"><li><a href="bloombot - Lightning.html">Lightning</a></li><li><a href="bloombot - Coffee.html">Coffee</a></li></ul></li>
+    <li>
+      <a href="bloombot-prototyping.html">Prototyping <span class="caret">▼</span></a>
+      <ul class="dropdown">
+        <li><a href="bloombot - 3D Graph Paper.html">3D Graph Paper</a></li>
+        <li><a href="bloombot - Lattice.html">Lattice</a></li>
+        <li><a href="bloombot - Encoder Wheel.html">Encoder Wheel</a></li>
+        <li><a href="webpage-main/stlM2.html">3D Model Viewer</a></li>
+      </ul>
+    </li>
+    <li><a href="bloombot-scaffolds.html">Scaffolds</a></li>
+  </ul>
+</nav>
+
+<header class="page-hero">
+  <div class="page-hero-inner">
+    <p class="breadcrumb"><a href="bloombot-modern.html">bloombot</a> / Stories</p>
+    <h1 class="page-title">Stories</h1>
+    <p class="page-desc">Two generators that are part of the teaching practice and part of the identity. Built for I 400 Explorations in Ed Tech — and for reasons that go further back than that.</p>
+  </div>
+</header>
+
+<div class="stories-grid">
+  <a class="story-card" href="bloombot - Lightning.html" style="background:#1e3a5f;">
+    <div class="story-card-body">
+      <div class="story-tag">Generator · I 400</div>
+      <div class="story-icon">🌩️</div>
+      <div class="story-title">Lightning</div>
+      <div class="story-desc">A zigzag pattern generator rooted in Navajo (Diné) weaving — Tłʼiish, lightning, as symbol and design system. Width, height, color, and alignment, all yours to configure.</div>
+    </div>
+  </a>
+  <a class="story-card" href="bloombot - Coffee.html" style="background:#6f4e37;">
+    <div class="story-card-body">
+      <div class="story-tag">Generator · I 400</div>
+      <div class="story-icon">☕</div>
+      <div class="story-title">Coffee</div>
+      <div class="story-desc">A D3.js coffee grounds generator with controls for size, bump length, and number of bumps. Also a quiet argument for weak coffee all day. Also a wood stove, if you look closely.</div>
+    </div>
+  </a>
+</div>
+
+<footer>
+  <div>bloombot &nbsp;·&nbsp; Matthew Francisco &nbsp;·&nbsp; Luddy School of Informatics, Computing &amp; Engineering</div>
+  <div>Indiana University &nbsp;·&nbsp; <a href="bloombot-modern.html">Home</a></div>
+</footer>
+</body>
+</html>

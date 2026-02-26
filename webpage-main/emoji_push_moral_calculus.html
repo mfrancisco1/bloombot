@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trolley Problem - Fat Man Variant</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: whitesmoke;
+      font-family: Arial, sans-serif;
+      overflow-x: auto;
+    }
+
+    .track-container {
+      position: relative;
+      width: 900px;
+      height: 700px;
+      margin: 0 auto;
+      background: whitesmoke;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .track {
+      position: absolute;
+      background: #444;
+      border: 2px solid #222;
+    }
+
+    .track-main {
+      height: 16px;
+      width: 90%;
+      top: 400px;
+      left: 5%;
+    }
+
+    /* Bridge/Platform */
+    .bridge {
+      position: absolute;
+      width: 120px;
+      height: 80px;
+      background: linear-gradient(to bottom, #8B7355, #6B5D4F);
+      border: 3px solid #4A4035;
+      border-radius: 5px;
+      top: 310px;
+      left: 250px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      z-index: 5;
+    }
+
+    .bridge::before {
+      content: 'BRIDGE';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-weight: bold;
+      font-size: 12px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+
+    /* Railing on bridge */
+    .bridge::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 3px;
+      background: #333;
+      bottom: 0;
+      left: 0;
+    }
+
+    /* Train container for positioning */
+    .train-container {
+        position: absolute;
+        top: 390px;
+        left: -140px;
+        transition: none;
+        z-index: 20;
+    }
+        
+    @keyframes trainMove {
+        0% { left: -140px; }
+        100% { left: 950px; }
+    }
+
+    @keyframes trainStop {
+        0% { left: -140px; }
+        40% { left: 280px; }
+        100% { left: 280px; }
+    }
+    
+    .running { animation: trainMove 5s linear forwards; }
+    .stopped { animation: trainStop 2s ease-out forwards; }
+        
+    /* ENHANCED MAIN TRAIN BODY */
+    .train {
+        position: relative;
+        width: 160px;
+        height: 50px;
+        background: linear-gradient(135deg, #c41e3a 0%, #e74c3c 50%, #dc2c2c 100%);
+        border: 3px solid #8b0000;
+        border-radius: 8px 15px 8px 8px;
+        z-index: 10;
+        box-shadow: 
+            0 6px 20px rgba(0,0,0,0.4),
+            inset 0 2px 0 rgba(255,255,255,0.3),
+            inset 0 -2px 0 rgba(0,0,0,0.2);
+    }
+        
+    /* ENHANCED WINDOWS */
+    .train::before {
+        content: '';
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        background: radial-gradient(circle, #fff 60%, #e6e6e6 100%);
+        border: 2px solid #ddd;
+        border-radius: 50%;
+        top: 15px;
+        left: 25px;
+        box-shadow: 
+            45px 0 0 -2px #ddd,
+            45px 0 0 0 #fff,
+            90px 0 0 -2px #ddd,
+            90px 0 0 0 #fff;
+        z-index: 11;
+    }
+        
+    /* ENHANCED CABIN */
+    .train::after {
+        content: '';
+        position: absolute;
+        width: 35px;
+        height: 30px;
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
+        top: 10px;
+        right: 8px;
+        border-radius: 6px 15px 6px 6px;
+        border: 2px solid #1a252f;
+        box-shadow: 
+            inset 0 2px 0 rgba(255,255,255,0.1),
+            0 3px 8px rgba(0,0,0,0.3);
+    }
+        
+    /* Smokestack */
+    .smokestack {
+        position: absolute;
+        width: 12px;
+        height: 25px;
+        background: linear-gradient(to right, #333 0%, #555 50%, #333 100%);
+        border-radius: 6px 6px 3px 3px;
+        top: -25px;
+        right: 45px;
+        border: 1px solid #222;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+        
+    .smokestack::before {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 4px;
+        background: #444;
+        top: -2px;
+        left: -2px;
+        border-radius: 2px;
+    }
+        
+    /* Front cowcatcher */
+    .cowcatcher {
+        position: absolute;
+        width: 0;
+        height: 0;
+        border-left: 20px solid transparent;
+        border-right: 0;
+        border-bottom: 15px solid black;
+        right: -17px;
+        bottom: 0;
+        filter: brightness(0.8);
+    }
+        
+    /* Wheels */
+    .wheels {
+        position: absolute;
+        bottom: -1px;
+        left: 20px;
+        right: 20px;
+    }
+        
+    .wheel {
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        background: radial-gradient(circle, #333 30%, #666 70%, #333 100%);
+        border: 3px solid #222;
+        border-radius: 50%;
+        box-shadow: 
+            inset 0 0 0 3px #444,
+            0 3px 6px rgba(0,0,0,0.4);
+        animation: spin 2s linear infinite;
+    }
+        
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+        
+    .wheel:nth-child(1) { left: 0; }
+    .wheel:nth-child(2) { left: 20px; }
+    .wheel:nth-child(3) { right: 20px; }
+    .wheel:nth-child(4) { right: 0; }
+        
+    /* Steam/smoke */
+    .steam {
+        position: absolute;
+        top: -40px;
+        right: 39px;
+        width: 20px;
+        height: 20px;
+    }
+        
+    .steam::before,
+    .steam::after {
+        content: '';
+        position: absolute;
+        background: black;
+        border-radius: 50%;
+        animation: float 3s ease-in-out infinite;
+    }
+        
+    .steam::before {
+        width: 8px;
+        height: 8px;
+        top: 0;
+        left: 6px;
+        animation-delay: 0s;
+    }
+        
+    .steam::after {
+        width: 12px;
+        height: 12px;
+        top: -10px;
+        left: 2px;
+        animation-delay: 1s;
+    }
+        
+    @keyframes float {
+        0% { 
+            opacity: 0.7; 
+            transform: translateY(0) scale(1); 
+        }
+        50% { 
+            opacity: 0.4; 
+            transform: translateY(-20px) scale(1.2); 
+        }
+        100% { 
+            opacity: 0; 
+            transform: translateY(-40px) scale(1.5); 
+        }
+    }
+        
+    /* Headlight */
+    .headlight {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: radial-gradient(circle, #ffff80 0%, #ffff00 70%, #ffd700 100%);
+        border: 1px solid #daa520;
+        border-radius: 50%;
+        top: 20px;
+        right: -4px;
+        box-shadow: 
+            0 0 10px rgba(255,255,0,0.6),
+            0 0 20px rgba(255,255,0,0.3);
+        animation: glow 2s ease-in-out infinite alternate;
+    }
+        
+    @keyframes glow {
+        from { box-shadow: 0 0 10px rgba(255,255,0,0.6), 0 0 20px rgba(255,255,0,0.3); }
+        to { box-shadow: 0 0 15px rgba(255,255,0,0.8), 0 0 30px rgba(255,255,0,0.5); }
+    }
+
+    .person {
+      position: absolute;
+      font-size: 70px;
+      transition: opacity 0.3s;
+      user-select: none;
+      z-index: 30;
+    }
+
+    .person.draggable {
+      cursor: grab;
+      z-index: 40;
+    }
+
+    .person.draggable:active,
+    .person.draggable.dragging {
+      cursor: grabbing;
+      z-index: 100;
+    }
+
+    .person.on-bridge {
+      z-index: 15;
+    }
+
+    /* Drop zone indicator */
+    .drop-zone {
+      position: absolute;
+      width: 100px;
+      height: 80px;
+      top: 370px;
+      left: 260px;
+      border: 3px dashed #e74c3c;
+      border-radius: 10px;
+      background: rgba(231, 76, 60, 0.1);
+      display: none;
+      z-index: 8;
+    }
+
+    .drop-zone.active {
+      display: block;
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.6; }
+    }
+
+    .controls {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .next-button {
+      background: #27ae60;
+      color: white;
+      border: none;
+      padding: 15px 25px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .next-button:hover { background: #2ecc71; }
+    .next-button:disabled { 
+      background: #95a5a6; 
+      cursor: not-allowed;
+    }
+
+    /* Timer Display */
+    .timer-display {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 48px;
+      font-weight: bold;
+      color: #e74c3c;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    /* Results Panel */
+    .results-panel {
+      position: absolute;
+      top: 450px;
+      right: 20px;
+      background: rgba(52,73,94,0.95);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      width: 280px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .results-panel h3 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+    }
+
+    .result-item {
+      margin: 5px 0;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .emoji-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 5px;
+      background: rgba(0,0,0,0.2);
+      padding: 5px;
+      border-radius: 5px;
+    }
+
+    .emoji-icon {
+      font-size: 24px;
+    }
+
+    /* Warning Modal */
+    .warning-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .warning-modal.show {
+      display: flex;
+    }
+
+    .warning-content {
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 400px;
+      animation: shake 0.5s;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+
+    .warning-content h2 {
+      color: #e74c3c;
+      margin: 0 0 15px 0;
+    }
+
+    .warning-content p {
+      margin: 15px 0;
+      font-size: 16px;
+    }
+
+    .warning-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .warning-button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .confirm-push {
+      background: #e74c3c;
+      color: white;
+    }
+
+    .cancel-push {
+      background: #95a5a6;
+      color: white;
+    }
+
+    /* Scenario Info */
+    .scenario-info {
+      position: absolute;
+      top: 80px;
+      left: 20px;
+      background: rgba(52,73,94,0.95);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      max-width: 300px;
+    }
+
+    .scenario-info h3 {
+      margin: 0 0 10px 0;
+    }
+
+    .instruction-text {
+      background: rgba(231, 76, 60, 0.1);
+      border-left: 4px solid #e74c3c;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 14px;
+      border-radius: 4px;
+    }
+
+    /* Impact effect */
+    @keyframes impact {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2) rotate(10deg); }
+      100% { transform: scale(1) rotate(0); }
+    }
+
+    .person.impacted {
+      animation: impact 0.5s ease-out;
+    }
+
+    /* Falling animation */
+    @keyframes fall {
+      0% { 
+        transform: translateY(0) rotate(0deg);
+      }
+      50% {
+        transform: translateY(20px) rotate(15deg);
+      }
+      100% { 
+        transform: translateY(0) rotate(0deg);
+      }
+    }
+
+    .person.falling {
+      animation: fall 0.3s ease-out;
+    }
+  </style>
+</head>
+<body>
+  <div class="track-container">
+    <!-- Track -->
+    <div class="track track-main"></div>
+
+    <!-- Bridge -->
+    <div class="bridge"></div>
+
+    <!-- Drop Zone (shows when dragging) -->
+    <div class="drop-zone" id="dropZone"></div>
+
+    <!-- Train -->
+    <div class="train-container" id="trainContainer">
+      <div class="train"></div>
+      <div class="smokestack"></div>
+      <div class="cowcatcher"></div>
+      <div class="headlight"></div>
+      <div class="steam"></div>
+      <div class="wheels">
+        <div class="wheel"></div>
+        <div class="wheel"></div>
+        <div class="wheel"></div>
+        <div class="wheel"></div>
+      </div>
+    </div>
+
+    <!-- People on track -->
+    <div class="person" style="top:360px; left:450px;">👧</div>
+    <div class="person" style="top:360px; left:500px;">👨</div>
+    <div class="person" style="top:360px; left:550px;">👩</div>
+    <div class="person" style="top:360px; left:600px;">👴</div>
+    <div class="person" style="top:360px; left:650px;">👶</div>
+    
+    <!-- Person on bridge (draggable) -->
+    <div class="person draggable on-bridge" id="draggablePerson" style="top:320px; left:280px;">🧑</div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="next-button" id="nextBtn">Next Scenario</button>
+    </div>
+
+    <!-- Timer Display -->
+    <div class="timer-display" id="timerDisplay">5</div>
+
+    <!-- Scenario Info -->
+    <div class="scenario-info">
+      <h3>Scenario <span id="scenarioNumber">1</span></h3>
+      <div id="scenarioDescription">A runaway trolley is heading toward five people tied to the tracks.</div>
+      <div class="instruction-text">
+        You can drag the person on the bridge onto the track to stop the train and save the five.
+      </div>
+    </div>
+
+    <!-- Results Panel -->
+    <div class="results-panel">
+      <h3>Moral Ledger</h3>
+      <div id="resultsHistory"></div>
+      <hr style="margin: 10px 0; border-color: #556;">
+      <div class="result-item">
+        <strong>Total Saved:</strong> <span id="totalSaved">0</span>
+      </div>
+      <div class="result-item">
+        <strong>Total Lost:</strong> <span id="totalLost">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Warning Modal -->
+  <div class="warning-modal" id="warningModal">
+    <div class="warning-content">
+      <h2>⚠️ WARNING ⚠️</h2>
+      <p><strong>You are about to push someone onto the tracks!</strong></p>
+      <p>This action will cause the death of <span id="pushedVictim">1 person</span> to stop the train and save the five people on the track.</p>
+      <p>Are you certain you want to take this action?</p>
+      <div class="warning-buttons">
+        <button class="warning-button confirm-push" id="confirmPush">Push Them</button>
+        <button class="warning-button cancel-push" id="cancelPush">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let isRunning = false;
+    let countdownTimer = null;
+    let currentTime = 5;
+    let currentScenario = 1;
+    let totalSaved = 0;
+    let totalLost = 0;
+    let resultsHistory = [];
+    let userActed = false;
+    let scenarioStarted = false;
+    let personPushed = false;
+    let draggedPerson = null;
+    let pendingDrop = null;
+
+    const train = document.getElementById('trainContainer');
+    const nextBtn = document.getElementById('nextBtn');
+    const draggablePerson = document.getElementById('draggablePerson');
+    const dropZone = document.getElementById('dropZone');
+    const people = document.querySelectorAll('.person:not(.draggable)');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const warningModal = document.getElementById('warningModal');
+    const confirmPush = document.getElementById('confirmPush');
+    const cancelPush = document.getElementById('cancelPush');
+    const scenarioNumber = document.getElementById('scenarioNumber');
+    const resultsHistoryDiv = document.getElementById('resultsHistory');
+    const totalSavedSpan = document.getElementById('totalSaved');
+    const totalLostSpan = document.getElementById('totalLost');
+
+    // Emoji sets for scenarios
+    const baseActivities = {
+      baby: ["👶"],
+      child: ["🧒"], 
+      boy: ["👦"],
+      girl: ["👧"],
+      man: ["👨"],
+      woman: ["👩"],
+      person: ["🧑"],
+      olderPerson: ["🧓"],
+      oldMan: ["👴"],
+      oldWoman: ["👵"],
+      doctor: ["👨‍⚕️", "👩‍⚕️"],
+      teacher: ["👨‍🏫", "👩‍🏫"],
+      student: ["👨‍🎓", "👩‍🎓"],
+      judge: ["👨‍⚖️", "👩‍⚖️"],
+      farmer: ["👨‍🌾", "👩‍🌾"],
+      cook: ["👨‍🍳", "👩‍🍳"],
+      scientist: ["👨‍🔬", "👩‍🔬"],
+      artist: ["👨‍🎨", "👩‍🎨"],
+      pilot: ["👨‍✈️", "👩‍✈️"],
+      firefighter: ["👨‍🚒", "👩‍🚒"],
+      police: ["👮‍♂️", "👮‍♀️"],
+      construction: ["👷"],
+      animals: ["🐕", "🐈", "🐘", "🐎", "🐅", "🐺", "🐻", "🐨"]
+    };
+
+    const skinTones = ["", "🏻", "🏼", "🏽", "🏾", "🏿"];
+
+    function addRandomVariation(baseEmoji) {
+      const randomSkinTone = skinTones[Math.floor(Math.random() * skinTones.length)];
+      
+      if (baseEmoji.includes('‍')) {
+        if (baseEmoji.startsWith('👨‍') || baseEmoji.startsWith('👩‍') || baseEmoji.startsWith('🧑‍')) {
+          return baseEmoji.charAt(0) + baseEmoji.charAt(1) + randomSkinTone + baseEmoji.slice(2);
+        }
+        return baseEmoji.replace(/^(.)/, '$1' + randomSkinTone);
+      }
+      
+      if (["👶", "🧒", "👦", "👧", "👨", "👩", "🧑", "🧓", "👴", "👵", "👷", "👮"].includes(baseEmoji)) {
+        return baseEmoji + randomSkinTone;
+      }
+      
+      return baseEmoji;
+    }
+
+    function getCategoryEmojis(categories, count) {
+      const result = [];
+      const availableCategories = categories.filter(cat => baseActivities[cat]);
+      
+      for (let i = 0; i < count; i++) {
+        const categoryName = availableCategories[i % availableCategories.length];
+        const baseEmojis = baseActivities[categoryName];
+        const randomBaseEmoji = baseEmojis[Math.floor(Math.random() * baseEmojis.length)];
+        const finalEmoji = addRandomVariation(randomBaseEmoji);
+        result.push(finalEmoji);
+      }
+      
+      return result;
+    }
+
+    const emojiSets = {
+      1: getCategoryEmojis(["girl", "man", "woman", "oldMan", "baby", "construction"], 6),
+      2: getCategoryEmojis(["doctor", "teacher", "student", "farmer", "cook", "oldWoman"], 6),
+      3: getCategoryEmojis(["animals", "animals", "animals", "animals", "animals", "person"], 6),
+      4: getCategoryEmojis(["artist", "scientist", "pilot", "firefighter", "farmer", "child"], 6),
+      5: getCategoryEmojis(["boy", "girl", "woman", "man", "olderPerson", "doctor"], 6),
+      6: getCategoryEmojis(["judge", "teacher", "doctor", "farmer", "student", "man"], 6),
+      7: getCategoryEmojis(["baby", "child", "child", "child", "child", "firefighter"], 6),
+      8: getCategoryEmojis(["oldMan", "oldWoman", "olderPerson", "woman", "man", "olderPerson"], 6),
+      9: getCategoryEmojis(["doctor", "artist", "scientist", "pilot", "teacher", "construction"], 6),
+    };
+
+    let currentSet = 1;
+
+    // Drag and Drop functionality
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let elementStartX = 0;
+    let elementStartY = 0;
+
+    // function startDrag(e) {
+    //   if (isRunning || !scenarioStarted) return;
+      
+    //   isDragging = true;
+    //   draggedPerson = e.target;
+    //   draggedPerson.classList.add('dragging');
+    //   dropZone.classList.add('active');
+      
+    //   const rect = draggedPerson.getBoundingClientRect();
+    //   const containerRect = draggedPerson.parentElement.getBoundingClientRect();
+      
+    //   if (e.type === 'mousedown') {
+    //     dragStartX = e.clientX;
+    //     dragStartY = e.clientY;
+    //   } else {
+    //     dragStartX = e.touches[0].clientX;
+    //     dragStartY = e.touches[0].clientY;
+    //   }
+      
+    //   elementStartX = rect.left - containerRect.left;
+    //   elementStartY = rect.top - containerRect.top;
+    // }
+    function startDrag(e) {
+      if (isRunning || !scenarioStarted) return;
+
+      isDragging = true;
+      draggedPerson = e.target;
+      draggedPerson.classList.add('dragging');
+      dropZone.classList.add('active');
+
+      const rect = draggedPerson.getBoundingClientRect();
+      const containerRect = draggedPerson.parentElement.getBoundingClientRect();
+
+      elementStartX = rect.left - containerRect.left;
+      elementStartY = rect.top - containerRect.top;
+
+      if (e.type === 'mousedown') {
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+      } else {
+        dragStartX = e.touches[0].clientX;
+        dragStartY = e.touches[0].clientY;
+      }
+    }
+
+
+    function drag(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+
+      let currentX, currentY;
+      if (e.type === 'mousemove') {
+        currentX = e.clientX;
+        currentY = e.clientY;
+      } else {
+        currentX = e.touches[0].clientX;
+        currentY = e.touches[0].clientY;
+      }
+
+      const containerRect = draggedPerson.parentElement.getBoundingClientRect();
+
+      const deltaX = currentX - dragStartX;
+      const deltaY = currentY - dragStartY;
+
+      draggedPerson.style.left = (elementStartX + deltaX) + 'px';
+      draggedPerson.style.top  = (elementStartY + deltaY) + 'px';
+    }
+
+    // function drag(e) {
+    //   if (!isDragging) return;
+      
+    //   e.preventDefault();
+      
+    //   let currentX, currentY;
+    //   if (e.type === 'mousemove') {
+    //     currentX = e.clientX;
+    //     currentY = e.clientY;
+    //   } else {
+    //     currentX = e.touches[0].clientX;
+    //     currentY = e.touches[0].clientY;
+    //   }
+      
+    //   const deltaX = currentX - dragStartX;
+    //   const deltaY = currentY - dragStartY;
+      
+    //   draggedPerson.style.left = (elementStartX + deltaX) + 'px';
+    //   draggedPerson.style.top = (elementStartY + deltaY) + 'px';
+      
+    //   // Check if over drop zone
+    //   const dropRect = dropZone.getBoundingClientRect();
+    //   const personRect = draggedPerson.getBoundingClientRect();
+      
+    //   const isOverDrop = !(dropRect.right < personRect.left || 
+    //                        dropRect.left > personRect.right || 
+    //                        dropRect.bottom < personRect.top || 
+    //                        dropRect.top > personRect.bottom);
+      
+    //   if (isOverDrop) {
+    //     dropZone.style.background = 'rgba(231, 76, 60, 0.3)';
+    //   } else {
+    //     dropZone.style.background = 'rgba(231, 76, 60, 0.1)';
+    //   }
+    // }
+
+    function endDrag(e) {
+      if (!isDragging) return;
+      
+      isDragging = false;
+      draggedPerson.classList.remove('dragging');
+      dropZone.classList.remove('active');
+      dropZone.style.background = 'rgba(231, 76, 60, 0.1)';
+      
+      // Check if dropped in zone
+      const dropRect = dropZone.getBoundingClientRect();
+      const personRect = draggedPerson.getBoundingClientRect();
+      
+      const isInDropZone = !(dropRect.right < personRect.left || 
+                             dropRect.left > personRect.right || 
+                             dropRect.bottom < personRect.top || 
+                             dropRect.top > personRect.bottom);
+      
+      // if (isInDropZone && !personPushed) {
+      //   // Show warning modal
+      //   const pushedEmoji = draggedPerson.getAttribute('data-original-emoji') || draggedPerson.textContent;
+      //   document.getElementById('pushedVictim').innerHTML = `<span style="font-size: 24px;">${pushedEmoji}</span>`;
+      //   warningModal.classList.add('show');
+        
+      //   // Keep person in drop position temporarily
+      //   pendingDrop = true;
+      // } else if (!personPushed) {
+      //   // Return to original position
+      //   draggedPerson.style.left = '280px';
+      //   draggedPerson.style.top = '320px';
+      // }
+      if (!personPushed) {
+        const trackTop = 340;   // adjust to match your track position
+        const trackBottom = 400;
+
+        const currentTop = parseInt(draggedPerson.style.top);
+
+        if (currentTop >= trackTop && currentTop <= trackBottom) {
+          // Dropped somewhere on the track – trigger warning modal
+          const pushedEmoji = draggedPerson.getAttribute('data-original-emoji') || draggedPerson.textContent;
+          document.getElementById('pushedVictim').innerHTML = `<span style="font-size: 24px;">${pushedEmoji}</span>`;
+          warningModal.classList.add('show');
+          pendingDrop = true;
+        } else {
+          // Not on track → leave them wherever dropped (no snap back)
+        }
+}
+      
+      draggedPerson = null;
+    }
+
+    // Add event listeners for drag and drop
+    draggablePerson.addEventListener('mousedown', startDrag);
+    draggablePerson.addEventListener('touchstart', startDrag);
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('touchmove', drag);
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchend', endDrag);
+
+    function checkCollisions() {
+      const trainRect = train.getBoundingClientRect();
+      
+      // Check collision with draggable person if they've been pushed
+      if (personPushed) {
+        const dragRect = draggablePerson.getBoundingClientRect();
+        if (!(dragRect.right < trainRect.left || dragRect.left > trainRect.right || 
+              dragRect.bottom < trainRect.top || dragRect.top > trainRect.bottom)) {
+          // Train hits the pushed person - stop the train
+          if (!train.classList.contains('stopped')) {
+            train.classList.remove('running');
+            train.classList.add('stopped');
+            draggablePerson.classList.add('impacted');
+            
+            // Mark pushed person as dead
+            setTimeout(() => {
+              draggablePerson.textContent = '❌';
+            }, 200);
+          }
+          return true; // Train stopped
+        }
+      }
+      
+      // Check collision with people on track
+      people.forEach((person) => {
+        const rect = person.getBoundingClientRect();
+        if (!(rect.right < trainRect.left || rect.left > trainRect.right || 
+              rect.bottom < trainRect.top || rect.top > trainRect.bottom)) {
+          if (person.textContent !== '❌') {
+            person.textContent = '❌';
+          }
+        }
+      });
+      
+      return false; // Train continues
+    }
+
+    function startCountdown() {
+      scenarioStarted = true;
+      userActed = false;
+      personPushed = false;
+      nextBtn.disabled = true;
+      
+      currentTime = 5;
+      timerDisplay.textContent = currentTime;
+      timerDisplay.style.display = 'block';
+      
+      countdownTimer = setInterval(() => {
+        currentTime--;
+        timerDisplay.textContent = currentTime;
+        
+        if (currentTime <= 2) {
+          timerDisplay.style.color = '#c0392b';
+        }
+        
+        if (currentTime === 0) {
+          clearInterval(countdownTimer);
+          startTrain();
+        }
+      }, 1000);
+    }
+
+    function startTrain() {
+      if (isRunning) return;
+      isRunning = true;
+      
+      train.classList.remove('running', 'stopped');
+      train.style.left = '-140px';
+
+      setTimeout(() => {
+        train.classList.add('running');
+      }, 50);
+
+      const interval = setInterval(() => {
+        const stopped = checkCollisions();
+        if (stopped) {
+          clearInterval(interval);
+          setTimeout(() => {
+            isRunning = false;
+            recordResults();
+            nextBtn.disabled = false;
+            timerDisplay.style.display = 'none';
+          }, 1000);
+        }
+      }, 50);
+
+      // End after animation completes (if not stopped)
+      setTimeout(() => {
+        if (!train.classList.contains('stopped')) {
+          clearInterval(interval);
+          isRunning = false;
+          recordResults();
+          nextBtn.disabled = false;
+          timerDisplay.style.display = 'none';
+        }
+      }, 5200);
+    }
+
+    function recordResults() {
+      const trackPeople = Array.from(people);
+      
+      let killedByAction = [];
+      let diedFromInaction = [];
+      let savedByAction = [];
+      let bystanders = [];
+      
+      if (personPushed) {
+        // User pushed someone
+        killedByAction.push(draggablePerson.getAttribute('data-original-emoji') || '🧑');
+        
+        // Count people saved on track
+        trackPeople.forEach(p => {
+          savedByAction.push(p.getAttribute('data-original-emoji') || '🧑');
+        });
+      } else {
+        // User did nothing
+        if (userActed) {
+          // User started to drag but cancelled - still counts as choosing not to act
+          bystanders.push(draggablePerson.getAttribute('data-original-emoji') || '🧑');
+        } else {
+          // User never even tried to drag
+          bystanders.push(draggablePerson.getAttribute('data-original-emoji') || '🧑');
+        }
+        
+        // People on track died from inaction
+        trackPeople.forEach(p => {
+          if (p.textContent === '❌') {
+            diedFromInaction.push(p.getAttribute('data-original-emoji') || '🧑');
+          }
+        });
+      }
+      
+      const result = {
+        scenario: currentScenario,
+        userActed: personPushed,
+        killedByAction: killedByAction,
+        diedFromInaction: diedFromInaction,
+        savedByAction: savedByAction,
+        bystanders: bystanders
+      };
+      
+      resultsHistory.push(result);
+      
+      // Update totals
+      totalSaved += savedByAction.length + bystanders.length;
+      totalLost += killedByAction.length + diedFromInaction.length;
+      
+      updateResultsDisplay();
+    }
+
+    function updateResultsDisplay() {
+      totalSavedSpan.textContent = totalSaved;
+      totalLostSpan.textContent = totalLost;
+      
+      let allKilledByAction = [];
+      let allDiedFromInaction = [];
+      let allSavedByAction = [];
+      let allBystanders = [];
+      
+      resultsHistory.forEach(result => {
+        allKilledByAction = allKilledByAction.concat(result.killedByAction);
+        allDiedFromInaction = allDiedFromInaction.concat(result.diedFromInaction);
+        allSavedByAction = allSavedByAction.concat(result.savedByAction);
+        allBystanders = allBystanders.concat(result.bystanders);
+      });
+      
+      resultsHistoryDiv.innerHTML = '';
+      
+      if (allKilledByAction.length > 0) {
+        resultsHistoryDiv.innerHTML += `
+          <div class="result-item" style="color: #e74c3c; margin-bottom: 15px;">
+            <strong>You pushed to their death (${allKilledByAction.length}):</strong>
+            <div class="emoji-list">${allKilledByAction.map(e => `<span class="emoji-icon">${e}</span>`).join('')}</div>
+          </div>
+        `;
+      }
+      
+      if (allDiedFromInaction.length > 0) {
+        resultsHistoryDiv.innerHTML += `
+          <div class="result-item" style="color: #d68910; margin-bottom: 15px;">
+            <strong>You watched die without acting (${allDiedFromInaction.length}):</strong>
+            <div class="emoji-list">${allDiedFromInaction.map(e => `<span class="emoji-icon">${e}</span>`).join('')}</div>
+          </div>
+        `;
+      }
+      
+      if (allSavedByAction.length > 0) {
+        resultsHistoryDiv.innerHTML += `
+          <div class="result-item" style="color: #27ae60; margin-bottom: 15px;">
+            <strong>You saved by pushing someone (${allSavedByAction.length}):</strong>
+            <div class="emoji-list">${allSavedByAction.map(e => `<span class="emoji-icon">${e}</span>`).join('')}</div>
+          </div>
+        `;
+      }
+      
+      if (allBystanders.length > 0) {
+        resultsHistoryDiv.innerHTML += `
+          <div class="result-item" style="color: #3498db; margin-bottom: 15px;">
+            <strong>Bystanders not pushed (${allBystanders.length}):</strong>
+            <div class="emoji-list">${allBystanders.map(e => `<span class="emoji-icon">${e}</span>`).join('')}</div>
+          </div>
+        `;
+      }
+      
+      resultsHistoryDiv.innerHTML += `
+        <div style="border-top: 1px solid #556; padding-top: 10px; margin-top: 10px; font-size: 12px; text-align: center;">
+          Completed Scenarios: ${resultsHistory.length}
+        </div>
+      `;
+    }
+
+    function populatePeople(type) {
+      const chosen = emojiSets[type];
+      people.forEach((p, i) => {
+        const emoji = chosen[i];
+        p.textContent = emoji;
+        p.setAttribute('data-original-emoji', emoji);
+      });
+      
+      // Set draggable person
+      const dragEmoji = chosen[5];
+      draggablePerson.textContent = dragEmoji;
+      draggablePerson.setAttribute('data-original-emoji', dragEmoji);
+    }
+
+    function resetForNextScenario() {
+      scenarioStarted = false;
+      clearInterval(countdownTimer);
+      
+      personPushed = false;
+      train.classList.remove('running', 'stopped');
+      train.style.left = '-140px';
+      
+      // Reset draggable person
+      draggablePerson.style.left = '280px';
+      draggablePerson.style.top = '320px';
+      draggablePerson.classList.add('on-bridge');
+      draggablePerson.classList.remove('impacted', 'falling');
+      draggablePerson.style.zIndex = '15';
+      
+      isRunning = false;
+      nextBtn.disabled = false;
+      timerDisplay.style.display = 'none';
+      timerDisplay.style.color = '#e74c3c';
+      
+      currentScenario++;
+      scenarioNumber.textContent = currentScenario;
+      
+      // Randomize people for next scenario
+      currentSet = currentScenario % 9 + 1;
+      populatePeople(currentSet);
+      
+      // Auto-start countdown for next scenario
+      setTimeout(startCountdown, 1000);
+    }
+
+    // Event Listeners
+    confirmPush.addEventListener('click', () => {
+      personPushed = true;
+      userActed = true;
+      
+      // Add falling animation
+      draggablePerson.classList.add('falling');
+      
+      // Move person to track position after animation starts
+      setTimeout(() => {
+        draggablePerson.style.left = '290px';
+        draggablePerson.style.top = '360px';
+        draggablePerson.classList.remove('on-bridge', 'falling');
+        draggablePerson.style.zIndex = '25';
+      }, 300);
+      
+      pendingDrop = null;
+      warningModal.classList.remove('show');
+    });
+
+    cancelPush.addEventListener('click', () => {
+      // Return person to bridge
+      draggablePerson.style.left = '280px';
+      draggablePerson.style.top = '320px';
+      
+      userActed = true; // They considered it but chose not to
+      pendingDrop = null;
+      warningModal.classList.remove('show');
+    });
+
+    nextBtn.addEventListener('click', resetForNextScenario);
+
+    // Initialize
+    populatePeople(currentSet);
+    
+    // Auto-start first scenario after 2 seconds
+    setTimeout(startCountdown, 2000);
+  </script>
+</body>
+</html>

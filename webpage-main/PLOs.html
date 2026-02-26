@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informatics Learning Outcomes - D3 Spring Simulation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #6f7175 0%, #494a4d 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+        
+        #header h1 {
+            font-size: 20px;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        #subtitle {
+            font-size: 14px;
+            color: #667eea;
+        }
+        
+        svg {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+        
+        svg.dragging {
+            cursor: grabbing;
+        }
+        
+        .link {
+            stroke: #cbd5e0;
+            stroke-width: 2;
+            stroke-opacity: 0.6;
+            fill: none;
+        }
+        
+        .link.active {
+            stroke: #667eea;
+            stroke-width: 3;
+            stroke-opacity: 1;
+        }
+        
+        .node {
+            cursor: pointer;
+            stroke: white;
+            stroke-width: 3;
+            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.16));
+            transition: filter 0.3s ease;
+        }
+        
+        .node:hover {
+            filter: drop-shadow(0 5px 12px rgba(0, 0, 0, 0.24));
+        }
+        
+        .node.pinned {
+            stroke: #f39c12;
+            stroke-width: 4;
+        }
+        
+        .node.expanded {
+            stroke: #667eea;
+            stroke-width: 4;
+        }
+        
+        .node-text {
+            fill: white;
+            font-weight: 600;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        
+        .outcome-node {
+            fill: white;
+            stroke-width: 2;
+            rx: 12;
+            ry: 12;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+        }
+        
+        .outcome-text {
+            fill: #2c3e50;
+            font-weight: 500;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+            font-size: 11px;
+        }
+        
+        .expand-indicator {
+            fill: white;
+            font-size: 14px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+        }
+        
+        #tooltip {
+            position: absolute;
+            background: rgba(30, 30, 30, 0.95);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            max-width: 400px;
+            z-index: 1000;
+            line-height: 1.6;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        #tooltip.show {
+            opacity: 1;
+        }
+        
+        #tooltip strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        .control-btn {
+            padding: 8px 12px;
+            border: none;
+            background: #667eea;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        
+        .control-btn:hover {
+            background: #764ba2;
+        }
+        
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            font-size: 12px;
+            z-index: 100;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .instructions {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            font-size: 12px;
+            z-index: 100;
+            max-width: 250px;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .instructions ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .instructions li {
+            margin-bottom: 5px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="header">
+            <h1>Informatics Learning Outcomes</h1>
+            <div id="subtitle">Interactive Spring Simulation - First Three Pillars</div>
+        </div>
+        
+        <div class="instructions">
+            <h3>Controls</h3>
+            <ul>
+                <li>• Click nodes to expand/collapse</li>
+                <li>• Drag nodes to pin/unpin</li>
+                <li>• Hover for full descriptions</li>
+                <li>• Pinned nodes stay in place</li>
+            </ul>
+        </div>
+        
+        <svg id="svg"></svg>
+        
+        <div class="controls">
+            <button class="control-btn" onclick="resetSimulation()">Reset</button>
+            <button class="control-btn" onclick="unpinAll()">Unpin All</button>
+            <button class="control-btn" onclick="expandAll()">Expand All</button>
+            <button class="control-btn" onclick="collapseAll()">Collapse All</button>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #e74c3c;"></div>
+                <span>Computational</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #27ae60;"></div>
+                <span>Sociotechnical</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #3498db;"></div>
+                <span>Design</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #f39c12;"></div>
+                <span>Pinned Node</span>
+            </div>
+        </div>
+        
+        <div id="tooltip"></div>
+    </div>
+    
+    <script>
+        const data = {
+            id: 'root',
+            name: "Informatics Core",
+            type: 'root',
+            children: [
+                {
+                    id: 'comp',
+                    name: "Computational Thinking",
+                    color: "#e74c3c",
+                    type: 'pillar',
+                    description: "Construct network-based, distributed information systems",
+                    children: [
+                        {
+                            id: 'comp-reason',
+                            name: "Reason Logically",
+                            color: "#ec7063",
+                            type: 'category',
+                            outcomes: [
+                                "Translate arguments into formal language",
+                                "Manipulate mathematical objects",
+                                "Recognize equivalence between structures",
+                                "Decompose problems into simpler structures",
+                                "Apply data-driven approaches"
+                            ]
+                        },
+                        {
+                            id: 'comp-data',
+                            name: "Curate Data",
+                            color: "#ec7063",
+                            type: 'category',
+                            outcomes: [
+                                "Apply visual methods for complex structures",
+                                "Recognize and use basic data structures",
+                                "Construct data models of systems",
+                                "Evaluate data quality",
+                                "Convert data into knowledge",
+                                "Manage data securely"
+                            ]
+                        },
+                        {
+                            id: 'comp-algo',
+                            name: "Apply Algorithms",
+                            color: "#ec7063",
+                            type: 'category',
+                            outcomes: [
+                                "Translate strategies into algorithms",
+                                "Apply graph theory to solve problems",
+                                "Integrate algorithms into complex ones",
+                                "Research new problem-solving strategies",
+                                "Address security concerns"
+                            ]
+                        },
+                        {
+                            id: 'comp-impl',
+                            name: "Effectively Implement",
+                            color: "#ec7063",
+                            type: 'category',
+                            outcomes: [
+                                "Apply basic programming structures",
+                                "Translate algorithms into code",
+                                "Construct distributed systems",
+                                "Research new software tools",
+                                "Implement security solutions",
+                                "Evaluate solution effectiveness"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'socio',
+                    name: "Sociotechnical Thinking",
+                    color: "#27ae60",
+                    type: 'pillar',
+                    description: "Evaluate and construct solutions from a human(e) perspective",
+                    children: [
+                        {
+                            id: 'socio-ethics',
+                            name: "Ethical Sensibility",
+                            color: "#52be80",
+                            type: 'category',
+                            outcomes: [
+                                "Formulate and articulate ideas",
+                                "Recognize assumptions and biases",
+                                "Weigh connections between actors",
+                                "Consider diversity and responsibility",
+                                "Contribute to human well-being"
+                            ]
+                        },
+                        {
+                            id: 'socio-analyze',
+                            name: "Analyze Solutions",
+                            color: "#52be80",
+                            type: 'category',
+                            outcomes: [
+                                "Identify stakeholders",
+                                "Identify values at stake",
+                                "Discuss diverse perspectives",
+                                "Explain technical and social processes",
+                                "Assess technological affordances",
+                                "Evaluate power dynamics"
+                            ]
+                        },
+                        {
+                            id: 'socio-create',
+                            name: "Create Solutions",
+                            color: "#52be80",
+                            type: 'category',
+                            outcomes: [
+                                "Engage imagination for possibilities",
+                                "Collaborate with diverse teams",
+                                "Propose harm-reducing solutions",
+                                "Communicate with stakeholders",
+                                "Make values-based decisions",
+                                "Assess policy and governance"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'design',
+                    name: "Design Thinking",
+                    color: "#3498db",
+                    type: 'pillar',
+                    description: "Complete interaction design projects independently",
+                    children: [
+                        {
+                            id: 'design-research',
+                            name: "Research",
+                            color: "#5dade2",
+                            type: 'category',
+                            outcomes: [
+                                "Classify HCI research methods",
+                                "Execute ethical research",
+                                "Deconstruct and reframe problems",
+                                "Identify design opportunities",
+                                "Use design thinking process",
+                                "Translate research to prototypes"
+                            ]
+                        },
+                        {
+                            id: 'design-design',
+                            name: "Design",
+                            color: "#5dade2",
+                            type: 'category',
+                            outcomes: [
+                                "Select appropriate methods",
+                                "Design with HCI techniques",
+                                "Generate user personas",
+                                "Develop proof-of-concept",
+                                "Produce interactive prototypes"
+                            ]
+                        },
+                        {
+                            id: 'design-eval',
+                            name: "Evaluate",
+                            color: "#5dade2",
+                            type: 'category',
+                            outcomes: [
+                                "Evaluate with feedback",
+                                "Critique designs",
+                                "Summarize research insights",
+                                "Generate recommendations",
+                                "Create improved designs"
+                            ]
+                        },
+                        {
+                            id: 'design-dissem',
+                            name: "Disseminate",
+                            color: "#5dade2",
+                            type: 'category',
+                            outcomes: [
+                                "Create design portfolio",
+                                "Generate documentation",
+                                "Design presentations",
+                                "Present research posters"
+                            ]
+                        },
+                        {
+                            id: 'design-collab',
+                            name: "Collaborate",
+                            color: "#5dade2",
+                            type: 'category',
+                            outcomes: [
+                                "Work in peer teams",
+                                "Understand project roles",
+                                "Judge contributions"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+     
+     let nodes = [];
+    let links = [];
+    let simulation;
+    let expandedNodes = new Set(['root']);
+    let pinnedNodes = new Set();
+
+    const svg = d3.select("#svg");
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const tooltip = d3.select("#tooltip");
+
+    // Add zoomable group
+    const zoomGroup = svg.append("g");
+    const linkGroup = zoomGroup.append("g").attr("class", "links");
+    const nodeGroup = zoomGroup.append("g").attr("class", "nodes");
+
+    svg.call(
+        d3.zoom()
+            .scaleExtent([0.3, 3])
+            .on("zoom", (event) => {
+                zoomGroup.attr("transform", event.transform);
+            })
+    );
+
+    function flattenData(node, parent = null, level = 0) {
+        const result = { nodes: [], links: [] };
+
+        const nodeData = {
+            ...node,
+            level,
+            parent,
+            pinned: false,
+            expanded: expandedNodes.has(node.id)
+        };
+        result.nodes.push(nodeData);
+
+        if (parent) {
+            result.links.push({ source: parent.id, target: node.id, type: 'parent' });
+        }
+
+        if (expandedNodes.has(node.id) && node.children) {
+            node.children.forEach(child => {
+                const childData = flattenData(child, node, level + 1);
+                childData.nodes.forEach(c => {
+                    if (!c.x || !c.y) {   // if new
+                        c.x = node.x;
+                        c.y = node.y;
+                    }
+                });
+                result.nodes.push(...childData.nodes);
+                result.links.push(...childData.links);
+            });
+        }
+
+       
+        if (expandedNodes.has(node.id) && node.outcomes && node.type === 'category') {
+            node.outcomes.forEach((outcome, i) => {
+                const outcomeNode = {
+                    id: `${node.id}-outcome-${i}`,
+                    name: outcome,
+                    type: 'outcome',
+                    parent: node,
+                    level: level + 1,
+                    color: d3.color(node.color).brighter(1.5),
+                    pinned: false,
+                    x: node.x,   // initialize at parent’s position
+                    y: node.y
+                };
+                result.nodes.push(outcomeNode);
+                result.links.push({ source: node.id, target: outcomeNode.id, type: 'outcome' });
+            });
+        }
+
+        return result;
+    }
+
+    function initSimulation() {
+        const flatData = flattenData(data);
+        nodes = flatData.nodes;
+        links = flatData.links;
+
+        simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(links)
+                .id(d => d.id)
+                .distance(d => {
+                    if (d.type === 'outcome') return 80;
+                    if (d.source.level === 0) return 150;
+                    if (d.source.level === 1) return 120;
+                    return 100;
+                })
+                .strength(0.9)
+            )
+            .force("charge", d3.forceManyBody()
+                .strength(d => {
+                    if (d.type === 'root') return -2000;
+                    if (d.type === 'pillar') return -1500;
+                    if (d.type === 'category') return -800;
+                    return -400;
+                })
+            )
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collision", d3.forceCollide()
+                .radius(d => {
+                    if (d.type === 'root') return 60;
+                    if (d.type === 'pillar') return 50;
+                    if (d.type === 'category') return 40;
+                    return 30;
+                })
+            )
+            .on("tick", tick);
+    }
+
+    
+  function updateVisualization() {
+    const flatData = flattenData(data);
+
+    // old nodes with coordinates
+    const oldNodeMap = new Map(nodes.map(d => [d.id, d]));
+
+    flatData.nodes.forEach(d => {
+        const existing = oldNodeMap.get(d.id);
+
+        if (existing) {
+            // Preserve old coordinates and velocities
+            d.x = existing.x;
+            d.y = existing.y;
+            d.vx = existing.vx;
+            d.vy = existing.vy;
+            d.pinned = existing.pinned;
+            if (d.pinned) {
+                d.fx = existing.fx;
+                d.fy = existing.fy;
+            }
+        } else if (d.parent) {
+            // This is a NEW node → try to find parent in old nodes
+            const parentExisting = oldNodeMap.get(d.parent.id);
+            if (parentExisting) {
+                // Initialize at parent’s last known position
+                d.x = parentExisting.x;
+                d.y = parentExisting.y;
+            }
+            // } else {
+            //     // fallback: center of screen
+            //     d.x = width / 2;
+            //     d.y = height / 2;
+            // }
+        } 
+        // else {
+        //     // root fallback
+        //     d.x = width / 2;
+        //     d.y = height / 2;
+        // }
+    });
+
+    nodes = flatData.nodes;
+    links = flatData.links;
+
+    simulation.nodes(nodes);
+    simulation.force("link").links(links);
+    simulation.alpha(0.6).restart(); // bump alpha higher so they spread smoothly
+
+    renderVisualization();
+}
+
+    function renderVisualization() {
+    const link = linkGroup.selectAll(".link")
+        .data(links, d => `${d.source.id}-${d.target.id}`);
+
+    link.exit().remove();
+    link.enter().append("line")
+        .attr("class", d => `link ${d.type}`)
+        .merge(link);
+
+    const node = nodeGroup.selectAll(".node-group")
+        .data(nodes, d => d.id);
+
+    node.exit().remove();
+
+    const nodeEnter = node.enter().append("g")
+        .attr("class", "node-group")
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended)
+        );
+
+    // Circle nodes (root, pillar, category)
+    nodeEnter.filter(d => d.type !== 'outcome')
+        .append("circle")
+        .attr("class", "node")
+        .attr("r", d => {
+            if (d.type === 'root') return 50;
+            if (d.type === 'pillar') return 40;
+            if (d.type === 'category') return 35;
+            return 25;
+        })
+        .attr("fill", d => d.color || "#666");
+
+    // Outcome nodes (rectangles)
+    nodeEnter.filter(d => d.type === 'outcome')
+        .append("rect")
+        .attr("class", "node outcome-node")
+        .attr("width", d => Math.max(d.name.length * 6, 80))
+        .attr("height", 24)
+        .attr("x", d => -Math.max(d.name.length * 6, 80) / 2)
+        .attr("y", -12)
+        .attr("fill", d => d.color)
+        .attr("stroke", d => d3.color(d.color).darker(1));
+
+    // Labels
+    nodeEnter.append("text")
+        .attr("class", d => d.type === 'outcome' ? "outcome-text" : "node-text")
+        .attr("dy", ".35em")
+        .text(d => d.name.length > 45 ? d.name.substring(0, 42) + '...' : d.name);
+
+    // Expand/collapse indicator
+    nodeEnter.filter(d => (d.children && d.children.length > 0) || (d.outcomes && d.outcomes.length > 0))
+        .append("text")
+        .attr("class", "expand-indicator")
+        .attr("x", d => d.type === 'root' ? 35 : (d.type === 'pillar' ? 28 : 25))
+        .attr("y", d => d.type === 'root' ? -35 : (d.type === 'pillar' ? -28 : -25))
+        .text(d => expandedNodes.has(d.id) ? '−' : '+');
+
+    // === Event handlers ===
+
+    // Left click → expand/collapse
+    nodeEnter.merge(node)
+        .on("click", function(event, d) {
+            if (d.type === 'outcome') return; // outcomes can't expand
+            event.stopPropagation();
+            if (expandedNodes.has(d.id)) {
+                expandedNodes.delete(d.id);
+            } else {
+                expandedNodes.add(d.id);
+            }
+            updateVisualization();
+        })
+        // Right click → pin/unpin
+        .on("contextmenu", function(event, d) {
+            event.preventDefault();
+            if (d.pinned) {
+                d.fx = null;
+                d.fy = null;
+                d.pinned = false;
+                pinnedNodes.delete(d.id);
+            } else {
+                d.fx = d.x;
+                d.fy = d.y;
+                d.pinned = true;
+                pinnedNodes.add(d.id);
+            }
+            renderVisualization();
+        })
+        // Tooltip on hover
+        .on("mouseenter", function(event, d) {
+            let content = `<strong>${d.name}</strong>`;
+            if (d.description) content += `<br>${d.description}`;
+            if (d.outcomes && d.outcomes.length > 0) {
+                content += `<br><br><strong>Learning Outcomes:</strong>`;
+                d.outcomes.forEach(outcome => {
+                    content += `<br>• ${outcome}`;
+                });
+            }
+            if (d.type === 'outcome') {
+                content = `<strong>Learning Outcome</strong><br>${d.name}`;
+            }
+            tooltip.html(content).classed("show", true);
+        })
+        .on("mousemove", function(event) {
+            tooltip.style("left", Math.min(event.pageX + 10, window.innerWidth - 420) + "px")
+                   .style("top", Math.min(event.pageY + 10, window.innerHeight - 200) + "px");
+        })
+        .on("mouseleave", () => tooltip.classed("show", false));
+
+    // Update classes and expand indicators
+    nodeEnter.merge(node).select(".node")
+        .attr("class", d => {
+            let classes = "node";
+            if (d.pinned) classes += " pinned";
+            if (d.expanded) classes += " expanded";
+            return classes;
+        });
+
+    nodeEnter.merge(node).select(".expand-indicator")
+        .text(d => expandedNodes.has(d.id) ? '−' : '+')
+        .style("opacity", d => ((d.children && d.children.length > 0) || (d.outcomes && d.outcomes.length > 0)) ? 1 : 0);
+}
+
+    function tick() {
+        linkGroup.selectAll(".link")
+            .attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
+
+        nodeGroup.selectAll(".node-group")
+            .attr("transform", d => `translate(${d.x},${d.y})`);
+    }
+
+    function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+    }
+    function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+    }
+    function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+    }
+
+    function expandAll() {
+        function expandRecursive(node) {
+            expandedNodes.add(node.id);  // mark this node expanded
+            if (node.children) {
+                node.children.forEach(child => expandRecursive(child));
+            }
+            if (node.outcomes) {
+                // categories with outcomes should also expand
+                expandedNodes.add(node.id);
+            }
+        }
+
+        expandRecursive(data);   // start from root
+        updateVisualization();   // redraw with all expanded
+    }
+
+    initSimulation();
+    renderVisualization();
+</script>
+
+</body>
+</html>

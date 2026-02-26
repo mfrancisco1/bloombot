@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Encoder Pattern Generator</title>
+  <style>
+    :root{
+      --bg:#f7fafc;
+      --panel:#ffffff;
+      --muted:#6b7280;
+      --accent:#2563eb;
+      --border:#e5e7eb;
+      --control-padding:12px;
+      --max-width:1200px;
+    }
+
+    html,body{
+      height:100%;
+      margin:0;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background:var(--bg);
+      color:#111827;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .wrap{
+      max-width:var(--max-width);
+      margin:24px auto;
+      padding:16px;
+      box-sizing:border-box;
+    }
+
+    .header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:16px;
+    }
+    .title {
+      font-size:20px;
+      font-weight:700;
+    }
+    .download-btn {
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      background:var(--accent);
+      color:white;
+      padding:8px 12px;
+      border-radius:8px;
+      border:0;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .download-btn:active{ transform:translateY(1px) }
+
+    /* Two column layout */
+    .grid {
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap:18px;
+      align-items:start;
+    }
+
+    /* stack vertically on small screens */
+    @media (max-width:900px){
+      .grid{
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:16px;
+      box-shadow: 0 6px 18px rgba(15,23,42,0.04);
+    }
+
+    .controls .field {
+      margin-bottom:12px;
+    }
+    .label {
+      display:block;
+      margin-bottom:6px;
+      font-size:13px;
+      color:var(--muted);
+      font-weight:600;
+    }
+    .small {
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    select, input[type="range"], input[type="number"], input[type="checkbox"] {
+      width:100%;
+      box-sizing:border-box;
+    }
+
+    input[type="range"] {
+      -webkit-appearance:none;
+      width:100%;
+      height:6px;
+      background:linear-gradient(90deg,#cbd5e1,#e6eefb);
+      border-radius:6px;
+      outline:none;
+      margin:6px 0 2px;
+    }
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance:none;
+      width:16px;height:16px;border-radius:50%;
+      background:#ffffff;border:2px solid var(--accent);
+      box-shadow:0 2px 6px rgba(37,99,235,0.25);
+    }
+
+    .row {
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .row .value {
+      min-width:56px;
+      text-align:right;
+      font-weight:700;
+      color:#111827;
+    }
+
+    .muted-block {
+      font-size:13px;
+      color:var(--muted);
+      background:#fbfdff;
+      border:1px solid var(--border);
+      padding:10px;
+      border-radius:8px;
+    }
+
+    /* svg container */
+    .svg-wrap {
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:480px;
+    }
+    svg.border{
+      border:1px solid var(--border);
+      background:black;
+      border-radius:8px;
+    }
+
+    /* small helper style for labels inside controls */
+    .inline-label {
+      display:inline-block;
+      font-size:13px;
+      color:var(--muted);
+      margin-right:8px;
+    }
+
+    /* checkbox style */
+    .checkbox {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .checkbox input { transform:scale(1.1) }
+
+    footer.note {
+      margin-top:12px;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div class="title">Encoder Pattern Generator</div>
+      <button id="downloadBtn" class="download-btn" title="Download SVG">
+        <!-- simple download icon (svg) -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Download SVG
+      </button>
+    </div>
+
+    <div class="grid">
+      <!-- controls column -->
+      <div class="panel controls" id="controlsPanel">
+        <div class="field">
+          <label class="label" for="encoderType">Encoder Type</label>
+          <select id="encoderType">
+            <option value="single">Single Track (Incremental)</option>
+            <option value="quadrature">Quadrature (Direction)</option>
+            <option value="gray">Gray Code (Absolute)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="label">Steps: <span id="stepsVal" style="font-weight:800">32</span></label>
+          <input id="steps" type="range" min="8" max="128" step="4" value="32" />
+        </div>
+
+        <div class="field">
+          <label class="label">Outer Diameter (mm): <span id="outerVal" style="font-weight:800">100</span></label>
+          <input id="outerDiameter" type="range" min="50" max="200" step="5" value="100" />
+        </div>
+
+        <div class="field">
+          <label class="label">Inner Diameter (mm): <span id="innerVal" style="font-weight:800">20</span></label>
+          <input id="innerDiameter" type="range" min="5" max="50" step="1" value="20" />
+        </div>
+
+        <div class="field">
+          <label class="label">Slit Width Ratio: <span id="slitVal" style="font-weight:800">0.40</span></label>
+          <input id="slitWidth" type="range" min="0.2" max="0.8" step="0.05" value="0.4" />
+        </div>
+
+        <div class="field">
+          <label class="label">Label Every N Steps: <span id="labelIntervalVal" style="font-weight:800">4</span></label>
+          <input id="labelInterval" type="range" min="1" max="16" step="1" value="4" />
+        </div>
+
+        <div class="field checkbox">
+          <input id="showLabels" type="checkbox" checked />
+          <label for="showLabels" class="small">Show Position Labels</label>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="muted-block">
+          <div style="margin-bottom:8px; font-weight:700">Pattern Info</div>
+          <div class="small"><strong>Type:</strong> <span id="infoType">Single Track</span></div>
+          <div class="small"><strong>Resolution:</strong> <span id="infoRes">32 steps (11.25° per step)</span></div>
+          <div class="small" id="grayInfo" style="display:none"><strong>Bits Required:</strong> <span id="bitsInfo"></span></div>
+        </div>
+
+        <footer class="note">Tip: SVG preserves scalablity — use Download SVG to export the design.</footer>
+      </div>
+
+      <!-- svg / canvas column -->
+      <div class="panel svg-wrap">
+        <svg id="encoder-svg" class="border" width="440" height="440" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-label="Encoder pattern">
+          <!-- background rectangle -->
+          <rect width="100%" height="100%" fill="black"></rect>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  // Namespace for SVG creation
+  const SVG_NS = "http://www.w3.org/2000/svg";
+
+  // DOM references
+  const encoderTypeEl = document.getElementById('encoderType');
+  const stepsEl = document.getElementById('steps');
+  const outerEl = document.getElementById('outerDiameter');
+  const innerEl = document.getElementById('innerDiameter');
+  const slitEl = document.getElementById('slitWidth');
+  const labelIntervalEl = document.getElementById('labelInterval');
+  const showLabelsEl = document.getElementById('showLabels');
+  const svgEl = document.getElementById('encoder-svg');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  // display elements
+  const stepsVal = document.getElementById('stepsVal');
+  const outerVal = document.getElementById('outerVal');
+  const innerVal = document.getElementById('innerVal');
+  const slitVal = document.getElementById('slitVal');
+  const labelIntervalVal = document.getElementById('labelIntervalVal');
+  const infoType = document.getElementById('infoType');
+  const infoRes = document.getElementById('infoRes');
+  const grayInfoBlock = document.getElementById('grayInfo');
+  const bitsInfo = document.getElementById('bitsInfo');
+
+  // initial state default values match original
+  let state = {
+    encoderType: encoderTypeEl.value,
+    steps: parseInt(stepsEl.value,10),
+    outerDiameter: parseInt(outerEl.value,10),
+    innerDiameter: parseInt(innerEl.value,10),
+    slitWidth: parseFloat(slitEl.value),
+    labelInterval: parseInt(labelIntervalEl.value,10),
+    showLabels: showLabelsEl.checked
+  };
+
+  // helpers
+  function decimalToGray(n){
+    return n ^ (n >> 1);
+  }
+
+  // Clear dynamic children except the background rect (index 0)
+  function clearDynamicSVG(){
+    // remove all child nodes; we'll add background back first
+    while (svgEl.lastChild) {
+      svgEl.removeChild(svgEl.lastChild);
+    }
+    // add background rect
+    const rect = document.createElementNS(SVG_NS,'rect');
+    rect.setAttribute('width','100%');
+    rect.setAttribute('height','100%');
+    rect.setAttribute('fill','black');
+    svgEl.appendChild(rect);
+  }
+
+  // Add a circle helper
+  function addCircle(cx, cy, r, attrs){
+    const c = document.createElementNS(SVG_NS,'circle');
+    c.setAttribute('cx', cx);
+    c.setAttribute('cy', cy);
+    c.setAttribute('r', r);
+    for (let k in attrs) c.setAttribute(k, attrs[k]);
+    svgEl.appendChild(c);
+    return c;
+  }
+
+  function addPath(d, attrs){
+    const p = document.createElementNS(SVG_NS,'path');
+    p.setAttribute('d', d);
+    for (let k in attrs) p.setAttribute(k, attrs[k]);
+    svgEl.appendChild(p);
+    return p;
+  }
+
+  function addText(x,y,txt,attrs){
+    const t = document.createElementNS(SVG_NS,'text');
+    t.setAttribute('x', x);
+    t.setAttribute('y', y);
+    t.textContent = txt;
+    for (let k in attrs) t.setAttribute(k, attrs[k]);
+    svgEl.appendChild(t);
+    return t;
+  }
+
+  // Generation functions mirror your original logic
+  function generateSingleTrack(cx, cy){
+    const slits = [];
+    const radius = (state.outerDiameter - state.innerDiameter) / 2 + state.innerDiameter / 2;
+    const trackWidth = (state.outerDiameter - state.innerDiameter) / 2;
+    const angleStep = 360 / state.steps;
+
+    for (let i = 0; i < state.steps; i++) {
+      if (i % 2 === 0) {
+        const startAngle = (i * angleStep - state.slitWidth * angleStep / 2) * Math.PI / 180;
+        const endAngle = (i * angleStep + state.slitWidth * angleStep / 2) * Math.PI / 180;
+
+        const path = [
+          `M ${cx + (radius - trackWidth / 2) * Math.cos(startAngle)} ${cy + (radius - trackWidth / 2) * Math.sin(startAngle)}`,
+          `L ${cx + (radius + trackWidth / 2) * Math.cos(startAngle)} ${cy + (radius + trackWidth / 2) * Math.sin(startAngle)}`,
+          `A ${radius + trackWidth / 2} ${radius + trackWidth / 2} 0 0 1 ${cx + (radius + trackWidth / 2) * Math.cos(endAngle)} ${cy + (radius + trackWidth / 2) * Math.sin(endAngle)}`,
+          `L ${cx + (radius - trackWidth / 2) * Math.cos(endAngle)} ${cy + (radius - trackWidth / 2) * Math.sin(endAngle)}`,
+          `A ${radius - trackWidth / 2} ${radius - trackWidth / 2} 0 0 0 ${cx + (radius - trackWidth / 2) * Math.cos(startAngle)} ${cy + (radius - trackWidth / 2) * Math.sin(startAngle)}`,
+          'Z'
+        ].join(' ');
+
+        slits.push(path);
+      }
+    }
+
+    // add them to svg
+    slits.forEach(d => addPath(d, {fill:'white', stroke:'none'}));
+  }
+
+  function generateQuadratureTrack(cx, cy){
+    const trackWidth = (state.outerDiameter - state.innerDiameter) / 5;
+    const radius1 = (state.outerDiameter - state.innerDiameter) * 0.7 + state.innerDiameter / 2;
+    const radius2 = (state.outerDiameter - state.innerDiameter) * 0.4 + state.innerDiameter / 2;
+    const angleStep = 360 / state.steps;
+    const phaseOffset = angleStep / 4;
+
+    const slits = [];
+
+    // Track A
+    for (let i = 0; i < state.steps; i++) {
+      if (i % 2 === 0) {
+        const startAngle = (i * angleStep - state.slitWidth * angleStep / 2) * Math.PI / 180;
+        const endAngle = (i * angleStep + state.slitWidth * angleStep / 2) * Math.PI / 180;
+
+        const path = [
+          `M ${cx + (radius1 - trackWidth / 2) * Math.cos(startAngle)} ${cy + (radius1 - trackWidth / 2) * Math.sin(startAngle)}`,
+          `L ${cx + (radius1 + trackWidth / 2) * Math.cos(startAngle)} ${cy + (radius1 + trackWidth / 2) * Math.sin(startAngle)}`,
+          `A ${radius1 + trackWidth / 2} ${radius1 + trackWidth / 2} 0 0 1 ${cx + (radius1 + trackWidth / 2) * Math.cos(endAngle)} ${cy + (radius1 + trackWidth / 2) * Math.sin(endAngle)}`,
+          `L ${cx + (radius1 - trackWidth / 2) * Math.cos(endAngle)} ${cy + (radius1 - trackWidth / 2) * Math.sin(endAngle)}`,
+          `A ${radius1 - trackWidth / 2} ${radius1 - trackWidth / 2} 0 0 0 ${cx + (radius1 - trackWidth / 2) * Math.cos(startAngle)} ${cy + (radius1 - trackWidth / 2) * Math.sin(startAngle)}`,
+          'Z'
+        ].join(' ');
+
+        slits.push(path);
+      }
+    }
+
+    // Track B
+    for (let i = 0; i < state.steps; i++) {
+      if (i % 2 === 0) {
+        const startAngle = (i * angleStep + phaseOffset - state.slitWidth * angleStep / 2) * Math.PI / 180;
+        const endAngle = (i * angleStep + phaseOffset + state.slitWidth * angleStep / 2) * Math.PI / 180;
+
+        const path = [
+          `M ${cx + (radius2 - trackWidth / 2) * Math.cos(startAngle)} ${cy + (radius2 - trackWidth / 2) * Math.sin(startAngle)}`,
+          `L ${cx + (radius2 + trackWidth / 2) * Math.cos(startAngle)} ${cy + (radius2 + trackWidth / 2) * Math.sin(startAngle)}`,
+          `A ${radius2 + trackWidth / 2} ${radius2 + trackWidth / 2} 0 0 1 ${cx + (radius2 + trackWidth / 2) * Math.cos(endAngle)} ${cy + (radius2 + trackWidth / 2) * Math.sin(endAngle)}`,
+          `L ${cx + (radius2 - trackWidth / 2) * Math.cos(endAngle)} ${cy + (radius2 - trackWidth / 2) * Math.sin(endAngle)}`,
+          `A ${radius2 - trackWidth / 2} ${radius2 - trackWidth / 2} 0 0 0 ${cx + (radius2 - trackWidth / 2) * Math.cos(startAngle)} ${cy + (radius2 - trackWidth / 2) * Math.sin(startAngle)}`,
+          'Z'
+        ].join(' ');
+
+        slits.push(path);
+      }
+    }
+
+    slits.forEach(d => addPath(d, {fill:'white', stroke:'none'}));
+  }
+
+  function generateGrayCodeTrack(cx, cy){
+    const bits = Math.ceil(Math.log2(state.steps));
+    const actualSteps = Math.pow(2, bits);
+    const trackWidth = (state.outerDiameter - state.innerDiameter) / (bits + 1);
+    const angleStep = 360 / actualSteps;
+    const slits = [];
+
+    for (let bit = 0; bit < bits; bit++) {
+      const radius = state.outerDiameter - (bit + 0.5) * trackWidth - state.innerDiameter / 2;
+
+      for (let i = 0; i < actualSteps; i++) {
+        const grayCode = decimalToGray(i);
+        const bitValue = (grayCode >> (bits - 1 - bit)) & 1;
+
+        if (bitValue === 1) {
+          const startAngle = (i * angleStep) * Math.PI / 180;
+          const endAngle = ((i + 1) * angleStep) * Math.PI / 180;
+
+          const path = [
+            `M ${cx + (radius - trackWidth / 3) * Math.cos(startAngle)} ${cy + (radius - trackWidth / 3) * Math.sin(startAngle)}`,
+            `L ${cx + (radius + trackWidth / 3) * Math.cos(startAngle)} ${cy + (radius + trackWidth / 3) * Math.sin(startAngle)}`,
+            `A ${radius + trackWidth / 3} ${radius + trackWidth / 3} 0 0 1 ${cx + (radius + trackWidth / 3) * Math.cos(endAngle)} ${cy + (radius + trackWidth / 3) * Math.sin(endAngle)}`,
+            `L ${cx + (radius - trackWidth / 3) * Math.cos(endAngle)} ${cy + (radius - trackWidth / 3) * Math.sin(endAngle)}`,
+            `A ${radius - trackWidth / 3} ${radius - trackWidth / 3} 0 0 0 ${cx + (radius - trackWidth / 3) * Math.cos(startAngle)} ${cy + (radius - trackWidth / 3) * Math.sin(startAngle)}`,
+            'Z'
+          ].join(' ');
+
+          slits.push(path);
+        }
+      }
+    }
+
+    slits.forEach(d => addPath(d, {fill:'white', stroke:'none'}));
+  }
+
+  function generateLabels(cx, cy){
+    const labelRadius = state.outerDiameter * 0.55;
+    const labels = [];
+    for (let i = 0; i < state.steps; i += state.labelInterval) {
+      const angle = (i * 360 / state.steps - 90) * Math.PI / 180;
+      const x = cx + labelRadius * Math.cos(angle);
+      const y = cy + labelRadius * Math.sin(angle);
+      labels.push({x,y,text:i});
+    }
+
+    labels.forEach(l => {
+      addText(l.x, l.y, String(l.text), {
+        'text-anchor':'middle',
+        'dominant-baseline':'middle',
+        'fill':'red',
+        'font-size': Math.max(3, Math.min(6, state.outerDiameter/20)),
+        'font-weight':'bold'
+      });
+    });
+  }
+
+  // main render function
+  function render(){
+    // update display info
+    stepsVal.textContent = state.steps;
+    outerVal.textContent = state.outerDiameter;
+    innerVal.textContent = state.innerDiameter;
+    slitVal.textContent = state.slitWidth.toFixed(2);
+    labelIntervalVal.textContent = state.labelInterval;
+
+    // pattern info
+    infoType.textContent = state.encoderType === 'single' ? 'Single Track' : state.encoderType === 'quadrature' ? 'Quadrature' : 'Gray Code';
+    infoRes.textContent = state.steps + ' steps per revolution (' + (360/state.steps).toFixed(2) + '° per step)';
+
+    // gray info block if needed
+    if (state.encoderType === 'gray') {
+      grayInfoBlock.style.display = 'block';
+      const bits = Math.ceil(Math.log2(state.steps));
+      bitsInfo.textContent = bits + ' tracks (supports up to ' + Math.pow(2,bits) + ' positions)';
+    } else {
+      grayInfoBlock.style.display = 'none';
+    }
+
+    // Prepare svg size and viewBox. We'll use viewBox 0..(outer*2)
+    const vbSize = state.outerDiameter * 2;
+    svgEl.setAttribute('viewBox', `0 0 ${vbSize} ${vbSize}`);
+    // make visual pixel size a bit larger for usability (scale to outer*2.2 pixels)
+    const px = Math.round(state.outerDiameter * 2.2);
+    svgEl.setAttribute('width', px);
+    svgEl.setAttribute('height', px);
+
+    // clear and draw
+    clearDynamicSVG();
+
+    // draw main circles
+    // outer background big circle (stroke to show edge)
+    addCircle(state.outerDiameter, state.outerDiameter, state.outerDiameter, {fill:'black', stroke:'white', 'stroke-width':0.5});
+
+    // inner hole
+    addCircle(state.outerDiameter, state.outerDiameter, state.innerDiameter/2, {fill:'white', stroke:'white', 'stroke-width':0.5});
+
+    // generate tracks
+    if (state.encoderType === 'single') {
+      generateSingleTrack(state.outerDiameter, state.outerDiameter);
+    } else if (state.encoderType === 'quadrature') {
+      generateQuadratureTrack(state.outerDiameter, state.outerDiameter);
+    } else if (state.encoderType === 'gray') {
+      generateGrayCodeTrack(state.outerDiameter, state.outerDiameter);
+    }
+
+    // labels if enabled
+    if (state.showLabels) {
+      generateLabels(state.outerDiameter, state.outerDiameter);
+    }
+
+    // center dot
+    addCircle(state.outerDiameter, state.outerDiameter, 2, {fill:'red', stroke:'none'});
+  }
+
+  // wire up events
+  function bind() {
+    // UI -> state updates + render
+    encoderTypeEl.addEventListener('change', function(){
+      state.encoderType = encoderTypeEl.value;
+      render();
+    });
+
+    stepsEl.addEventListener('input', function(){
+      state.steps = parseInt(this.value,10);
+      render();
+    });
+
+    outerEl.addEventListener('input', function(){
+      state.outerDiameter = parseInt(this.value,10);
+      render();
+    });
+
+    innerEl.addEventListener('input', function(){
+      state.innerDiameter = parseInt(this.value,10);
+      render();
+    });
+
+    slitEl.addEventListener('input', function(){
+      state.slitWidth = parseFloat(this.value);
+      render();
+    });
+
+    labelIntervalEl.addEventListener('input', function(){
+      state.labelInterval = parseInt(this.value,10);
+      render();
+    });
+
+    showLabelsEl.addEventListener('change', function(){
+      state.showLabels = this.checked;
+      render();
+    });
+
+    downloadBtn.addEventListener('click', function(){
+      // ensure svg has xmlns attribute for serialization
+      if(!svgEl.getAttribute('xmlns')) svgEl.setAttribute('xmlns','http://www.w3.org/2000/svg');
+
+      const serializer = new XMLSerializer();
+      const svgString = serializer.serializeToString(svgEl);
+      const blob = new Blob([svgString], {type:'image/svg+xml;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      const safeType = state.encoderType.replace(/\s+/g,'-');
+      a.href = url;
+      a.download = `encoder-${safeType}-${state.steps}steps.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  // initialize displayed values and bindings
+  function init(){
+    // reflect initial control values in UI
+    stepsVal.textContent = state.steps;
+    outerVal.textContent = state.outerDiameter;
+    innerVal.textContent = state.innerDiameter;
+    slitVal.textContent = state.slitWidth.toFixed(2);
+    labelIntervalVal.textContent = state.labelInterval;
+
+    bind();
+    render();
+  }
+
+  init();
+
+})();
+</script>
+</body>
+</html>

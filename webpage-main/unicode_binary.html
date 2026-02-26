@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Unicode Explorer</title>
+<style>
+    body {
+        background: black;
+        color: white;
+        font-family: sans-serif;
+        text-align: center;
+        padding: 20px;
+    }
+    #unicodeCanvas {
+        border: 1px solid white;
+        background: black;
+        display: block;
+        margin: 20px auto;
+    }
+    select, input, button {
+        background: black;
+        color: white;
+        border: 1px solid white;
+        padding: 5px 10px;
+        margin: 5px;
+        cursor: pointer;
+    }
+    #bitContainer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin: 15px 0;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .bit {
+        width: 20px;
+        height: 28px;
+        margin: 2px;
+        border: 1px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-family: monospace;
+    }
+    .bit.on {
+        background: white;
+        color: black;
+    }
+</style>
+</head>
+<body>
+
+<h1>Unicode Character Display</h1>
+
+<canvas id="unicodeCanvas" width="700" height="500"></canvas>
+
+<div>
+    <label for="fontSelect">Font: </label>
+    <select id="fontSelect">
+        <option value="Arial">Arial</option>
+        <option value="Courier New">Courier New</option>
+        <option value="Times New Roman">Times New Roman</option>
+        <option value="Verdana">Verdana</option>
+        <option value="Georgia">Georgia</option>
+        <option value="monospace">Monospace</option>
+    </select>
+</div>
+
+<div>
+    <label for="charInput">Enter character: </label>
+    <input type="text" id="charInput" maxlength="2" size="2">
+</div>
+
+<div id="bitContainer"></div>
+
+<div>
+    <button id="decBtn">−1</button>
+    <button id="incBtn">+1</button>
+    <button id="randBtn">Random</button>
+</div>
+
+<p>
+    Character: <span id="charDisplay"></span><br>
+    Unicode: <span id="unicodeHex"></span><br>
+    Decimal: <span id="unicodeDec"></span>
+</p>
+
+<script>
+let currentCodePoint = 0x41; // Start with 'A'
+
+// // Draw the bit buttons
+// function createBitButtons() {
+//     const container = document.getElementById('bitContainer');
+//     container.innerHTML = '';
+//     for (let i = 20; i >= 0; i--) { // 21 bits
+//         const div = document.createElement('div');
+//         div.classList.add('bit');
+//         div.dataset.bit = i;
+//         div.textContent = '0';
+//         div.addEventListener('click', () => {
+//             div.classList.toggle('on');
+//             div.textContent = div.classList.contains('on') ? '1' : '0';
+//             updateFromBits();
+//         });
+//         container.appendChild(div);
+//     }
+// }
+
+function createBitButtons() {
+    const container = document.getElementById('bitContainer');
+    container.innerHTML = '';
+    for (let i = 20; i >= 0; i--) { // 21 bits
+        const div = document.createElement('div');
+        div.classList.add('bit');
+        div.dataset.bit = i;
+        div.textContent = '0';
+        div.addEventListener('click', () => {
+            div.classList.toggle('on');
+            div.textContent = div.classList.contains('on') ? '1' : '0';
+            updateFromBits();
+        });
+        container.appendChild(div);
+
+        // Add a spacer every 4 bits (except after the last group)
+        if (i % 4 === 0 && i !== 0) {
+            const spacer = document.createElement('div');
+            spacer.style.width = '10px';
+            container.appendChild(spacer);
+        }
+    }
+}
+
+async function getUnicodeName(cp) {
+    try {
+        const hex = cp.toString(16).toUpperCase();
+        const url = `https://codepoints.net/api/v1/codepoint/${hex}`;
+        console.log('Requesting:', url);
+
+        const res = await fetch(url);
+        console.log('Response status:', res.status);
+
+        if (!res.ok) {
+            console.error('Fetch error:', await res.text());
+            throw new Error('Network error');
+        }
+
+        const data = await res.json();
+        console.log('Response JSON:', data);
+
+        return data.na || '[No Name]';
+    } catch (err) {
+        console.error('Error in getUnicodeName:', err);
+        return '[Name not available]';
+    }
+}
+
+// Update Unicode display
+function updateUnicodeDisplay(decimal) {
+    currentCodePoint = decimal;
+
+    const canvas = document.getElementById('unicodeCanvas');
+    const ctx = canvas.getContext('2d');
+    const font = document.getElementById('fontSelect').value;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    let char = '';
+    let charName = '';
+
+    if (decimal === 0) {
+        charName = 'NULL';
+        char = '∅';
+    } else if (decimal < 32) {
+        charName = 'Control Character';
+        char = '�';
+    } else if (decimal === 127) {
+        charName = 'DEL';
+        char = '⌫';
+    } else if (decimal > 0x10FFFF) {
+        charName = 'Out of Range';
+        char = '?';
+    } else {
+        char = String.fromCodePoint(decimal);
+        charName = char;
+        if (decimal === 32) charName = 'SPACE';
+        if (decimal >= 128 && decimal <= 159) {
+            charName = 'Extended Control';
+            char = '�';
+        }
+    }
+
+    // Draw character
+    ctx.font = `bold 300px ${font}, sans-serif`;
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.3)';
+    ctx.shadowBlur = 5;
+    ctx.fillText(char, canvas.width / 2, canvas.height / 2);
+
+    // Update text info
+    document.getElementById('charDisplay').textContent = charName;
+    // getUnicodeName(decimal).then(name => {
+    //     document.getElementById('charDisplay').textContent = name;
+    // });
+    document.getElementById('unicodeHex').textContent =
+        'U+' + decimal.toString(16).toUpperCase().padStart(6, '0');
+
+    document.getElementById('unicodeDec').textContent =
+        decimal.toString().toUpperCase();
+
+    // Update bits
+    const bits = decimal.toString(2).padStart(21, '0');
+    const bitDivs = document.querySelectorAll('.bit');
+    for (let i = 0; i < 21; i++) {
+        const div = bitDivs[i];
+        const val = bits[i];
+        if (val === '1') {
+            div.classList.add('on');
+            div.textContent = '1';
+        } else {
+            div.classList.remove('on');
+            div.textContent = '0';
+        }
+    }
+}
+
+// Update when toggling bits
+function updateFromBits() {
+    const bitDivs = document.querySelectorAll('.bit');
+    let binary = '';
+    bitDivs.forEach(div => binary += div.textContent);
+    const decimal = parseInt(binary, 2);
+    updateUnicodeDisplay(decimal);
+}
+
+// Character input handler
+document.getElementById('charInput').addEventListener('input', (e) => {
+    const value = e.target.value;
+    if (value.length > 0) {
+        const codePoint = value.codePointAt(0);
+        updateUnicodeDisplay(codePoint);
+    }
+});
+
+// Font selector handler
+document.getElementById('fontSelect').addEventListener('change', () => {
+    updateUnicodeDisplay(currentCodePoint);
+});
+
+// Increment/Decrement buttons
+document.getElementById('incBtn').addEventListener('click', () => {
+    updateUnicodeDisplay(Math.min(currentCodePoint + 1, 0x10FFFF));
+});
+document.getElementById('decBtn').addEventListener('click', () => {
+    updateUnicodeDisplay(Math.max(currentCodePoint - 1, 0));
+});
+
+// Random button
+document.getElementById('randBtn').addEventListener('click', () => {
+    const rand = Math.floor(Math.random() * 0x10FFFF);
+    updateUnicodeDisplay(rand);
+});
+
+// Init
+createBitButtons();
+updateUnicodeDisplay(currentCodePoint);
+</script>
+
+</body>
+</html>

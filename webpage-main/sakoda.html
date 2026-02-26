@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sakoda Checkerboard Model — Interactive</title>
+  <style>
+    :root{--cell:44px;--gap:1px}
+    body{font-family:Inter,system-ui,Segoe UI,Arial;display:flex;gap:18px;padding:18px}
+    .controls{width:360px;max-height:90vh;overflow:auto;padding:12px;border-radius:8px;background:#fafafa;border:1px solid #ddd}
+    .board-wrap{flex:1;display:flex;flex-direction:column;gap:8px}
+    .board{display:grid;grid-gap:var(--gap);background:#666;padding:var(--gap);border-radius:8px}
+    .cell{width:var(--cell);height:var(--cell);display:flex;align-items:center;justify-content:center;background:#fff;font-size:18px;border-radius:4px}
+    .piece{width:84%;height:84%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff}
+    .square{background:#1f77b4}
+    .cross{background:#ff7f0e}
+    label{display:block;font-size:13px;margin-top:8px}
+    input[type=range]{width:100%}
+    .row{display:flex;gap:8px;align-items:center}
+    button{padding:8px 10px;border-radius:6px;border:1px solid #bbb;background:#fff;cursor:pointer}
+    .small{font-size:13px;padding:6px}
+    .stats{font-size:13px;margin-top:8px}
+    .preset{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+    .preset button{padding:6px 8px}
+    .footer{font-size:12px;color:#666;margin-top:8px}
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <h3>Sakoda Checkerboard — Interactive</h3>
+    <div class="row">
+      <button id="play">▶ Play</button>
+      <button id="step" class="small">Step</button>
+      <button id="reset" class="small">Reset</button>
+      <button id="randomize" class="small">Randomize</button>
+    </div>
+
+    <label>Board size: <span id="bszLabel">8</span></label>
+    <input id="boardSize" type="range" min="4" max="12" value="8">
+
+    <label>Pieces per group: <span id="npLabel">6</span></label>
+    <input id="numPieces" type="range" min="2" max="12" value="6">
+
+    <label>Distance weight (w) — higher ⇒ distant pieces count more: <span id="wLabel">4</span></label>
+    <input id="distanceWeight" type="range" min="1" max="6" value="4">
+
+    <label>Allow jump distance (1 = adjacent only, 2 = allow 2-cell jump): <span id="jumpLabel">1</span></label>
+    <input id="jumpDist" type="range" min="1" max="2" value="1">
+
+    <hr>
+    <strong>Valences (attitudes)</strong>
+    <div class="row">
+      <div style="flex:1">
+        <label>Squares → own group: <span id="sOwn">1</span></label>
+        <input id="sOwnInp" type="range" min="-4" max="4" value="1">
+        <label>Squares → other group: <span id="sOther">0</span></label>
+        <input id="sOtherInp" type="range" min="-4" max="4" value="0">
+      </div>
+      <div style="flex:1">
+        <label>Crosses → own group: <span id="cOwn">1</span></label>
+        <input id="cOwnInp" type="range" min="-4" max="4" value="1">
+        <label>Crosses → other group: <span id="cOther">0</span></label>
+        <input id="cOtherInp" type="range" min="-4" max="4" value="0">
+      </div>
+    </div>
+
+    <label>Cycles per second: <span id="speedLabel">3</span></label>
+    <input id="speed" type="range" min="1" max="10" value="3">
+
+    <div style="margin-top:8px">
+      <strong>Presets (from Sakoda)</strong>
+      <div class="preset">
+        <button class="presetBtn" data-preset="crossroads">Crossroads</button>
+        <button class="presetBtn" data-preset="mutual">Mutual Suspicion</button>
+        <button class="presetBtn" data-preset="segregation">Segregation</button>
+        <button class="presetBtn" data-preset="socialclimber">Social Climber</button>
+        <button class="presetBtn" data-preset="socialworker">Social Worker</button>
+        <button class="presetBtn" data-preset="boygirl">Boy-Girl</button>
+        <button class="presetBtn" data-preset="couples">Couples</button>
+        <button class="presetBtn" data-preset="husbandwives">Husband-Wives</button>
+      </div>
+    </div>
+
+    <hr>
+    <div class="stats" id="stats">Cycles: 0 • Centroid distance: 0 • Dispersion S: 0 • Dispersion C: 0</div>
+    <div class="footer">Implementation follows rules described by James M. Sakoda (1971). Use presets to load classic runs or tweak parameters and press Play. </div>
+  </div>
+
+  <div class="board-wrap">
+    <div id="board" class="board" style="--cell:44px"></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div id="log" style="font-size:13px;color:#444"></div>
+      <div style="flex:1"></div>
+      <div style="font-size:12px;color:#666">Empty cells: <span id="emptyCount">0</span></div>
+    </div>
+  </div>
+
+<script>
+// Sakoda Checkerboard Interactive — JS implementation
+(() => {
+  const get = id=>document.getElementById(id);
+  const boardEl = get('board');
+  const bszInp = get('boardSize');
+  const numPiecesInp = get('numPieces');
+  const distanceWeightInp = get('distanceWeight');
+  const jumpDistInp = get('jumpDist');
+  const speedInp = get('speed');
+  const sOwnInp = get('sOwnInp');
+  const sOtherInp = get('sOtherInp');
+  const cOwnInp = get('cOwnInp');
+  const cOtherInp = get('cOtherInp');
+
+  const playBtn = get('play');
+  const stepBtn = get('step');
+  const resetBtn = get('reset');
+  const randomBtn = get('randomize');
+  const statsEl = get('stats');
+  const emptyCountEl = get('emptyCount');
+
+  const labels = {
+    bsz:get('bszLabel'), np:get('npLabel'), w:get('wLabel'), jump:get('jumpLabel'), speed:get('speedLabel'), sOwn:get('sOwn'), sOther:get('sOther'), cOwn:get('cOwn'), cOther:get('cOther')
+  };
+
+  // state
+  let boardSize = +bszInp.value;
+  let numPieces = +numPiecesInp.value;
+  let w = +distanceWeightInp.value;
+  let jumpDist = +jumpDistInp.value;
+  let speed = +speedInp.value;
+  let pieces = []; // {id,group:'S'|'C',r,c}
+  let cycle = 0;
+  let timer = null;
+  let seed = 1;
+
+  function randSeeded(){ seed = (seed*16807) % 2147483647; return seed/2147483647; }
+  function seededShuffle(arr){ for(let i=arr.length-1;i>0;i--){ let j=Math.floor(randSeeded()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]] } }
+
+  function setupBoard(){ boardSize = +bszInp.value; numPieces = +numPiecesInp.value; w = +distanceWeightInp.value; jumpDist = +jumpDistInp.value; speed = +speedInp.value; updateLabels();
+    boardEl.style.gridTemplateColumns = `repeat(${boardSize}, var(--cell))`;
+    boardEl.innerHTML = '';
+    for(let r=0;r<boardSize;r++) for(let c=0;c<boardSize;c++){ const cell=document.createElement('div'); cell.className='cell'; cell.dataset.r=r; cell.dataset.c=c; cell.textContent=''; boardEl.appendChild(cell);} 
+  }
+
+  function updateLabels(){ labels.bsz.textContent=boardSize; labels.np.textContent=numPieces; labels.w.textContent=w; labels.jump.textContent=jumpDist; labels.speed.textContent=speed; labels.sOwn.textContent=sOwnInp.value; labels.sOther.textContent=sOtherInp.value; labels.cOwn.textContent=cOwnInp.value; labels.cOther.textContent=cOtherInp.value; }
+
+  function placeRandom(seedVal){ seed = seedVal||Date.now()%2147483647; pieces=[]; // place pieces randomly, avoid overlap
+    const cells=[]; for(let r=0;r<boardSize;r++) for(let c=0;c<boardSize;c++) cells.push([r,c]); seededShuffle(cells);
+    const total = numPieces*2; if(total>cells.length) throw new Error('Too many pieces');
+    for(let i=0;i<total;i++){ const [r,c]=cells[i]; pieces.push({id:i+1,group: i < numPieces ? 'S' : 'C', r, c}); }
+    cycle=0; render(); updateStats(); }
+
+  function clearBoard(){ pieces=[]; cycle=0; render(); updateStats(); }
+
+  function render(){ // draw pieces into DOM
+    // clear cells
+    boardEl.querySelectorAll('.cell').forEach(cell=>{ cell.innerHTML=''; });
+    for(const p of pieces){ const idx = p.r*boardSize + p.c; const cell = boardEl.children[idx]; const el = document.createElement('div'); el.className='piece '+(p.group==='S'?'square':'cross'); el.textContent = p.group==='S' ? '■' : '✚'; el.title = `${p.group}${p.id} (${p.r},${p.c})`; cell.appendChild(el);} 
+    emptyCountEl.textContent = boardSize*boardSize - pieces.length;
+  }
+
+  // compute D = dx^2 + dy^2; influence = valence * (1 / D^(1/w)). If D==0 => skip
+  function influenceFrom(a_r,a_c,b_r,b_c,valence){ const dx=a_r-b_r; const dy=a_c-b_c; const D = dx*dx + dy*dy; if(D===0) return 0; return valence * (1 / Math.pow(D, 1/w)); }
+
+  function occupied(r,c){ return pieces.some(p=>p.r===r && p.c===c); }
+
+  function neighborsWithin(r,c,dist){ const out=[]; for(let rr=Math.max(0,r-dist); rr<=Math.min(boardSize-1,r+dist); rr++) for(let cc=Math.max(0,c-dist); cc<=Math.min(boardSize-1,c+dist); cc++){ if(rr===r && cc===c) continue; if(!occupied(rr,cc)) out.push([rr,cc]); } return out; }
+
+  function bestMoveForPiece(p){ const dist = jumpDist; const candidates = neighborsWithin(p.r,p.c,dist); // include staying
+    candidates.push([p.r,p.c]); let best = {score:-Infinity, pos:[p.r,p.c]};
+    for(const [tr,tc] of candidates){ let score=0; for(const q of pieces){ if(q===p) continue; // determine valence of p toward q
+          let V = 0; if(p.group==='S'){ if(q.group==='S') V = +(+sOwnInp.value); else V = +(+sOtherInp.value); } else { if(q.group==='C') V = +(+cOwnInp.value); else V = +(+cOtherInp.value); }
+          score += influenceFrom(tr,tc,q.r,q.c,V);
+    }
+      if(score>best.score){ best.score=score; best.pos=[tr,tc]; }
+    }
+    return best;
+  }
+
+  function stepCycle(){ // each piece in random order gets one move
+    const order = pieces.slice(); seededShuffle(order);
+    // for performance, we'll update positions in place but ensure no two move into same cell by checking occupied status dynamically
+    for(const p of order){ const mv = bestMoveForPiece(p); // only move if target cell is not occupied by other piece after earlier moves
+      const [tr,tc] = mv.pos; if(tr===p.r && tc===p.c) continue; if(!occupied(tr,tc)){ p.r=tr; p.c=tc; }
+    }
+    cycle++; render(); updateStats(); }
+
+  function updateStats(){ // centroid, dispersion, centroid distance
+    const S = pieces.filter(p=>p.group==='S'); const C = pieces.filter(p=>p.group==='C');
+    function centroid(arr){ if(arr.length===0) return null; const sx=arr.reduce((a,b)=>a+b.r,0)/arr.length; const sy=arr.reduce((a,b)=>a+b.c,0)/arr.length; return [sx,sy]; }
+    const cs = centroid(S); const cc = centroid(C);
+    let cd = 0; if(cs && cc){ const dx=cs[0]-cc[0]; const dy=cs[1]-cc[1]; cd = Math.sqrt(dx*dx+dy*dy).toFixed(3); }
+    function dispersion(arr,cent){ if(!cent) return 0; const N=arr.length; if(N===0) return 0; const dsum = arr.reduce((a,b)=>{ const dx=b.r-cent[0]; const dy=b.c-cent[1]; return a + (dx*dx+dy*dy); },0); return (dsum/N).toFixed(3); }
+    const ds = dispersion(S,cs); const dc = dispersion(C,cc);
+    statsEl.textContent = `Cycles: ${cycle} • Centroid distance: ${cd} • Dispersion S: ${ds} • Dispersion C: ${dc}`;
+  }
+
+  // controls
+  playBtn.addEventListener('click', ()=>{
+    if(timer){ clearInterval(timer); timer=null; playBtn.textContent='▶ Play'; }
+    else { timer = setInterval(()=>{ for(let i=0;i<speed;i++) stepCycle(); }, 1000/Math.max(1,speed)); playBtn.textContent='⏸ Pause'; }
+  });
+  stepBtn.addEventListener('click', ()=>{ stepCycle(); });
+  resetBtn.addEventListener('click', ()=>{ setupBoard(); placeRandom(Date.now()%2147483647); });
+  randomBtn.addEventListener('click', ()=>{ placeRandom(); });
+
+  // parameter bindings
+  [bszInp,numPiecesInp,distanceWeightInp,jumpDistInp,speedInp].forEach(el=>el.addEventListener('input', ()=>{ boardSize=+bszInp.value; numPieces=+numPiecesInp.value; w=+distanceWeightInp.value; jumpDist=+jumpDistInp.value; speed=+speedInp.value; updateLabels(); setupBoard(); placeRandom(); }));
+  [sOwnInp,sOtherInp,cOwnInp,cOtherInp].forEach(el=>el.addEventListener('input', ()=>{ updateLabels(); }));
+
+  // presets
+  const presets = {
+    crossroads(){ sOwnInp.value=1; sOtherInp.value=0; cOwnInp.value=1; cOtherInp.value=0; distanceWeightInp.value=4; jumpDistInp.value=1; bszInp.value=8; numPiecesInp.value=6; updateLabels(); setupBoard(); placeRandom(12345); },
+    mutual(){ sOwnInp.value=0; sOtherInp.value=-1; cOwnInp.value=0; cOtherInp.value=-1; distanceWeightInp.value=4; jumpDistInp.value=2; bszInp.value=8; numPiecesInp.value=6; updateLabels(); setupBoard(); placeRandom(222); },
+    segregation(){ sOwnInp.value=1; sOtherInp.value=-1; cOwnInp.value=1; cOtherInp.value=-1; distanceWeightInp.value=4; jumpDistInp.value=2; bszInp.value=8; numPiecesInp.value=6; updateLabels(); setupBoard(); placeRandom(333); },
+    socialclimber(){ sOwnInp.value=-1; sOtherInp.value=1; cOwnInp.value=1; cOtherInp.value=-1; distanceWeightInp.value=4; jumpDistInp.value=2; bszInp.value=8; numPiecesInp.value=6; updateLabels(); setupBoard(); placeRandom(444); },
+    socialworker(){ sOwnInp.value=1; sOtherInp.value=1; cOwnInp.value=-1; cOtherInp.value=-1; distanceWeightInp.value=4; jumpDistInp.value=2; bszInp.value=8; numPiecesInp.value=6; updateLabels(); setupBoard(); placeRandom(555); },
+    boygirl(){ sOwnInp.value=-1; sOtherInp.value=1; cOwnInp.value=-1; cOtherInp.value=1; distanceWeightInp.value=4; jumpDistInp.value=1; bszInp.value=8; numPiecesInp.value=6; updateLabels(); setupBoard(); placeRandom(666); },
+    couples(){ sOwnInp.value=-4; sOtherInp.value=1; cOwnInp.value=-4; cOtherInp.value=1; distanceWeightInp.value=4; jumpDistInp.value=1; bszInp.value=8; numPiecesInp.value=6; updateLabels(); setupBoard(); placeRandom(777); },
+    husbandwives(){ sOwnInp.value=-4; sOtherInp.value=2; cOwnInp.value=1; cOtherInp.value=2; distanceWeightInp.value=4; jumpDistInp.value=1; bszInp.value=8; numPiecesInp.value=6; updateLabels(); setupBoard(); placeRandom(888); }
+  };
+  document.querySelectorAll('.presetBtn').forEach(b=>b.addEventListener('click', e=>{ presets[e.target.dataset.preset](); }));
+
+  // initial boot
+  setupBoard(); placeRandom(1001);
+})();
+</script>
+</body>
+</html>

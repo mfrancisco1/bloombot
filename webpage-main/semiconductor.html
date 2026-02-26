@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semiconductor Crystal Structure - Electron Behavior</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #0f0f23, #1a1a3a);
+            font-family: 'Arial', sans-serif;
+            color: white;
+            min-height: 100vh;
+            overflow-x: auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .crystal-container {
+            width: 600px;
+            height: 400px;
+            background: radial-gradient(circle at center, #1a1a3a, #0f0f23);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .crystal-lattice {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .atom {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #4a90e2, #2171b5);
+            border: 2px solid rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .atom.silicon {
+            background: radial-gradient(circle, #4a90e2, #2171b5);
+        }
+
+        .atom.phosphorus {
+            background: radial-gradient(circle, #ff6b6b, #e55555);
+        }
+
+        .atom.boron {
+            background: radial-gradient(circle, #50e3c2, #4bc0c8);
+        }
+
+        .bond {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+            transform-origin: left center;
+        }
+
+        .electron {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: radial-gradient(circle, #00ffff, #0080ff);
+            border-radius: 50%;
+            box-shadow: 0 0 8px #00ffff;
+        }
+
+        .hole {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, transparent 40%, #ff4757 70%);
+            border: 2px solid #ff4757;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #ff4757;
+        }
+
+        .electron.free {
+            animation: freeElectronMovement 3s ease-in-out infinite;
+        }
+
+        .electron.thermal {
+            animation: thermalExcitation 4s ease-in-out infinite;
+        }
+
+        .hole.drift {
+            animation: holeDrift 5s linear infinite;
+        }
+
+        @keyframes freeElectronMovement {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(30px, -20px); }
+            50% { transform: translate(-15px, 25px); }
+            75% { transform: translate(25px, 10px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        @keyframes thermalExcitation {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+            50% { transform: translate(40px, -30px) scale(1.3); opacity: 1; }
+        }
+
+        @keyframes holeDrift {
+            0% { left: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { left: 100%; opacity: 0; }
+        }
+
+        .energy-diagram {
+            width: 300px;
+            height: 400px;
+            background: linear-gradient(180deg, #2c3e50 0%, #34495e 40%, #95a5a6 60%, #ecf0f1 100%);
+            border-radius: 15px;
+            position: relative;
+            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .band-label {
+            position: absolute;
+            right: 10px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .conduction-band {
+            top: 20px;
+            color: #ecf0f1;
+        }
+
+        .band-gap {
+            top: 50%;
+            transform: translateY(-50%);
+            color: #95a5a6;
+        }
+
+        .valence-band {
+            bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .energy-electron {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, #00ffff, #0080ff);
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00ffff;
+        }
+
+        .energy-electron.jumping {
+            animation: bandJump 3s ease-in-out infinite;
+        }
+
+        @keyframes bandJump {
+            0%, 100% { bottom: 60px; }
+            50% { bottom: 320px; }
+        }
+
+        .controls-panel {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .control-group {
+            margin: 20px 0;
+        }
+
+        .control-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            margin: 0 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .control-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .control-button.active {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+        }
+
+        .info-panels {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .info-panel {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .info-panel h3 {
+            margin-top: 0;
+            color: #4ecdc4;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-symbol {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .electron-symbol { background: radial-gradient(circle, #00ffff, #0080ff); }
+        .hole-symbol { background: radial-gradient(circle, transparent 40%, #ff4757 70%); border: 2px solid #ff4757; }
+        .silicon-symbol { background: radial-gradient(circle, #4a90e2, #2171b5); }
+        .phosphorus-symbol { background: radial-gradient(circle, #ff6b6b, #e55555); }
+        .boron-symbol { background: radial-gradient(circle, #50e3c2, #4bc0c8); }
+
+        .temperature-indicator {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 0.9em;
+        }
+
+        .temp-bar {
+            width: 100px;
+            height: 6px;
+            background: linear-gradient(90deg, #4a90e2, #ff6b6b);
+            border-radius: 3px;
+            margin-top: 5px;
+            position: relative;
+        }
+
+        .temp-indicator {
+            position: absolute;
+            width: 3px;
+            height: 10px;
+            background: white;
+            top: -2px;
+            left: 30%;
+            animation: tempFluctuation 2s ease-in-out infinite;
+        }
+
+        @keyframes tempFluctuation {
+            0%, 100% { left: 30%; }
+            50% { left: 70%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="title">Semiconductor Crystal Structure</h1>
+        <p class="subtitle">Silicon Lattice with Dopants - Electron & Hole Behavior</p>
+    </div>
+
+    <div class="main-container">
+        <div class="crystal-container">
+            <div class="temperature-indicator">
+                <div>Temperature: ~300K</div>
+                <div class="temp-bar">
+                    <div class="temp-indicator"></div>
+                </div>
+            </div>
+            
+            <div class="crystal-lattice" id="crystal">
+                <!-- Crystal structure will be generated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="energy-diagram">
+            <div class="band-label conduction-band">Conduction Band</div>
+            <div class="band-label band-gap">Band Gap (~1.1 eV)</div>
+            <div class="band-label valence-band">Valence Band</div>
+            
+            <div class="energy-electron jumping" style="left: 50px;"></div>
+            <div class="energy-electron jumping" style="left: 100px; animation-delay: -1s;"></div>
+            <div class="energy-electron jumping" style="left: 150px; animation-delay: -2s;"></div>
+        </div>
+    </div>
+
+    <div class="controls-panel">
+        <div class="control-group">
+            <button class="control-button active" onclick="setDoping('intrinsic')">Intrinsic (Pure)</button>
+            <button class="control-button" onclick="setDoping('ntype')">N-Type (Phosphorus)</button>
+            <button class="control-button" onclick="setDoping('ptype')">P-Type (Boron)</button>
+        </div>
+        <div class="control-group">
+            <label for="tempSlider">Temperature (K): </label>
+            <input type="range" id="tempSlider" min="100" max="500" step="10" value="300" oninput="setTemperature(this.value)">
+            <span id="tempValue">300K</span>
+        </div>
+    </div>
+
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-symbol electron-symbol"></div>
+            <span>Free Electron</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-symbol hole-symbol"></div>
+            <span>Electron Hole</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-symbol silicon-symbol"></div>
+            <span>Silicon Atom</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-symbol phosphorus-symbol"></div>
+            <span>Phosphorus (N-type)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-symbol boron-symbol"></div>
+            <span>Boron (P-type)</span>
+        </div>
+    </div>
+
+    <div class="info-panels">
+        <div class="info-panel">
+            <h3>Crystal Lattice Structure</h3>
+            <p>Silicon atoms form a crystalline structure where each atom bonds with four neighbors. This creates a stable lattice with electrons shared in covalent bonds.</p>
+        </div>
+        <div class="info-panel">
+            <h3>Thermal Excitation</h3>
+            <p>At room temperature, thermal energy can break covalent bonds, creating free electrons and holes. Higher temperatures increase this effect exponentially.</p>
+        </div>
+        <div class="info-panel">
+            <h3>Doping Effects</h3>
+            <p><strong>N-type:</strong> Phosphorus atoms donate extra electrons.<br>
+            <strong>P-type:</strong> Boron atoms create electron holes.<br>
+            This controlled doping enables semiconductor devices.</p>
+        </div>
+        <div class="info-panel">
+            <h3>Energy Bands</h3>
+            <p>The band gap determines semiconductor properties. Electrons must gain enough energy to jump from the valence band to the conduction band to conduct electricity.</p>
+        </div>
+    </div>
+
+    <script>
+    let currentDoping = 'intrinsic';
+    let currentTemp = 'room';
+    let currentTempK = 300;
+
+    function createCrystalStructure() {
+        const crystal = document.getElementById('crystal');
+        crystal.innerHTML = '';
+
+        // Silicon lattice
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 12; col++) {
+                const atom = document.createElement('div');
+                atom.className = 'atom silicon';
+                atom.textContent = 'Si';
+                atom.style.left = (col * 45 + 25) + 'px';
+                atom.style.top = (row * 45 + 25) + 'px';
+                
+                if (currentDoping === 'ntype' && Math.random() < 0.1) {
+                    atom.className = 'atom phosphorus';
+                    atom.textContent = 'P';
+                } else if (currentDoping === 'ptype' && Math.random() < 0.1) {
+                    atom.className = 'atom boron';
+                    atom.textContent = 'B';
+                }
+                
+                crystal.appendChild(atom);
+
+                if (col < 11) {
+                    const hBond = document.createElement('div');
+                    hBond.className = 'bond';
+                    hBond.style.left = (col * 45 + 45) + 'px';
+                    hBond.style.top = (row * 45 + 35) + 'px';
+                    hBond.style.width = '25px';
+                    crystal.appendChild(hBond);
+                }
+                
+                if (row < 7) {
+                    const vBond = document.createElement('div');
+                    vBond.className = 'bond';
+                    vBond.style.left = (col * 45 + 35) + 'px';
+                    vBond.style.top = (row * 45 + 45) + 'px';
+                    vBond.style.width = '25px';
+                    vBond.style.transform = 'rotate(90deg)';
+                    crystal.appendChild(vBond);
+                }
+            }
+        }
+        addChargeCarriers();
+    }
+
+    function addChargeCarriers() {
+        const crystal = document.getElementById('crystal');
+        crystal.querySelectorAll('.electron, .hole').forEach(el => el.remove());
+
+        const electronCount = getElectronCount();
+        const holeCount = getHoleCount();
+
+        for (let i = 0; i < electronCount; i++) {
+            const electron = document.createElement('div');
+            electron.className = 'electron free';
+            electron.style.left = Math.random() * 550 + 'px';
+            electron.style.top = Math.random() * 350 + 'px';
+            electron.style.animationDelay = Math.random() * 3 + 's';
+            crystal.appendChild(electron);
+        }
+
+        for (let i = 0; i < holeCount; i++) {
+            const hole = document.createElement('div');
+            hole.className = 'hole drift';
+            hole.style.top = Math.random() * 350 + 'px';
+            hole.style.animationDelay = Math.random() * 5 + 's';
+            crystal.appendChild(hole);
+        }
+
+        if (currentTemp !== 'low') {
+            const thermalCount = currentTemp === 'high' ? 6 : 3;
+            for (let i = 0; i < thermalCount; i++) {
+                const electron = document.createElement('div');
+                electron.className = 'electron thermal';
+                electron.style.left = Math.random() * 550 + 'px';
+                electron.style.top = Math.random() * 350 + 'px';
+                electron.style.animationDelay = Math.random() * 4 + 's';
+                crystal.appendChild(electron);
+            }
+        }
+    }
+
+    function getElectronCount() {
+        const baseCount = { low: 2, room: 5, high: 12 }[currentTemp];
+        const dopingMultiplier = { intrinsic: 1, ntype: 2.5, ptype: 0.6 }[currentDoping];
+        return Math.floor(baseCount * dopingMultiplier);
+    }
+
+    function getHoleCount() {
+        const baseCount = { low: 1, room: 3, high: 8 }[currentTemp];
+        const dopingMultiplier = { intrinsic: 1, ntype: 0.4, ptype: 2.5 }[currentDoping];
+        return Math.floor(baseCount * dopingMultiplier);
+    }
+
+    function setDoping(type) {
+        currentDoping = type;
+        document.querySelectorAll('.control-button').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        createCrystalStructure();
+    }
+
+    function setTemperature(tempK) {
+        currentTempK = parseInt(tempK);
+        if (currentTempK < 200) currentTemp = 'low';
+        else if (currentTempK > 400) currentTemp = 'high';
+        else currentTemp = 'room';
+
+        addChargeCarriers();
+        updateEnergyDiagram();
+
+        document.querySelector('.temperature-indicator div').textContent = `Temperature: ~${currentTempK}K`;
+        document.getElementById('tempValue').textContent = currentTempK + "K";
+    }
+
+    function updateEnergyDiagram() {
+    const diagram = document.querySelector('.energy-diagram');
+    diagram.querySelectorAll('.energy-electron').forEach(el => el.remove());
+
+    let count, speed, gapShift, gapValue, gapStart, gapEnd;
+    if (currentTemp === 'low') {
+        count = 1; speed = 5; gapShift = -40; gapValue = 1.2;
+        gapStart = 40; gapEnd = 70; // thicker gap
+    } else if (currentTemp === 'room') {
+        count = 3; speed = 3; gapShift = 0; gapValue = 1.1;
+        gapStart = 45; gapEnd = 65; // normal gap
+    } else {
+        count = 6; speed = 1.5; gapShift = 30; gapValue = 1.0;
+        gapStart = 48; gapEnd = 62; // thinner gap
+    }
+
+    // Add electrons
+    for (let i = 0; i < count; i++) {
+        const electron = document.createElement('div');
+        electron.className = 'energy-electron jumping';
+        electron.style.left = (50 + i * 40) + "px";
+        electron.style.animation = `bandJump ${speed}s ease-in-out infinite`;
+        electron.style.animationDelay = `${-i * 0.7}s`;
+        diagram.appendChild(electron);
+    }
+
+    // Update band gap label text & position
+    const bandGapLabel = diagram.querySelector('.band-gap');
+    bandGapLabel.textContent = `Band Gap (~${gapValue.toFixed(1)} eV)`;
+    bandGapLabel.style.transform = `translateY(calc(-50% + ${gapShift}px))`;
+
+    // Move conduction/valence labels slightly
+    const conduction = diagram.querySelector('.conduction-band');
+    const valence = diagram.querySelector('.valence-band');
+    conduction.style.top = (20 + gapShift/2) + "px";
+    valence.style.bottom = (20 - gapShift/2) + "px";
+
+    // Smooth gradient for conduction → gap → valence
+    diagram.style.background = `linear-gradient(
+        180deg,
+        #2c3e50 0%,
+        #34495e ${gapStart}%,
+        #95a5a6 ${gapEnd}%,
+        #ecf0f1 100%
+    )`;
+}
+
+    createCrystalStructure();
+    updateEnergyDiagram();
+
+    setInterval(() => {
+        if (Math.random() < 0.3) addChargeCarriers();
+    }, 5000);
+</script>
+</body>
+</html>

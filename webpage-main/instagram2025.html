@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram 2025 Feed</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+        }
+        
+        .container {
+            max-width: 470px;
+            margin: 0 auto;
+            background-color: #000;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background-color: #000;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #262626;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            font-style: italic;
+        }
+        
+        .header-icons {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .header-icon {
+            font-size: 24px;
+            color: #fff;
+            text-decoration: none;
+        }
+        
+        .notification-dot {
+            position: relative;
+        }
+        
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background-color: #ff3040;
+            border-radius: 50%;
+        }
+        
+        .stories-container {
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        
+        .stories-container::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .story {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            min-width: 70px;
+        }
+        
+        .story-pic {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 3px;
+            position: relative;
+        }
+        
+        .your-story {
+            background: #262626;
+            border: 2px solid #262626;
+        }
+        
+        .story-inner {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .add-story {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: #0095f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            border: 2px solid #000;
+        }
+        
+        .story-name {
+            font-size: 12px;
+            max-width: 70px;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .post {
+            margin-bottom: 12px;
+        }
+        
+        .post-header {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            gap: 12px;
+        }
+        
+        .profile-pic {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .username {
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .verified {
+            color: #0095f6;
+            font-size: 12px;
+        }
+        
+        .location {
+            font-size: 12px;
+            color: #a8a8a8;
+        }
+        
+        .more-options {
+            font-size: 20px;
+            color: #fff;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .post-media {
+            position: relative;
+            width: 100%;
+            height: 470px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+            font-weight: 300;
+        }
+        
+        .carousel-indicator {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            background: rgba(0,0,0,0.6);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .carousel-dots {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+        }
+        
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.4);
+        }
+        
+        .dot.active {
+            background: rgba(255,255,255,1);
+        }
+        
+        .post-actions {
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .left-actions {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            color: #fff;
+            padding: 8px;
+        }
+        
+        .liked {
+            color: #ff3040;
+        }
+        
+        .save-btn {
+            font-size: 22px;
+        }
+        
+        .post-stats {
+            padding: 0 16px 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .liked-by {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        
+        .liked-by-pics {
+            display: flex;
+            margin-left: -4px;
+        }
+        
+        .liked-by-pic {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #555;
+            border: 2px solid #000;
+            font-size: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .post-caption {
+            padding: 0 16px 8px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .caption-username {
+            font-weight: 600;
+            margin-right: 6px;
+        }
+        
+        .hashtag {
+            color: #e0f1ff;
+        }
+        
+        .post-comments {
+            padding: 0 16px 8px;
+            font-size: 14px;
+        }
+        
+        .view-comments {
+            color: #a8a8a8;
+            margin-bottom: 8px;
+        }
+        
+        .comment {
+            margin-bottom: 4px;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .comment-text {
+            flex: 1;
+        }
+        
+        .comment-username {
+            font-weight: 600;
+            margin-right: 6px;
+        }
+        
+        .comment-like {
+            font-size: 12px;
+            color: #a8a8a8;
+        }
+        
+        .post-time {
+            padding: 0 16px 12px;
+            font-size: 12px;
+            color: #a8a8a8;
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 470px;
+            width: 100%;
+            background-color: #000;
+            border-top: 1px solid #262626;
+            padding: 8px 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        
+        .nav-btn {
+            font-size: 26px;
+            color: #fff;
+            text-decoration: none;
+            padding: 8px;
+            position: relative;
+        }
+        
+        .nav-btn.active {
+            color: #fff;
+            font-weight: bold;
+        }
+        
+        .reels-media {
+            height: 590px;
+            background: linear-gradient(135deg, #ff9a56 0%, #ffad56 100%);
+        }
+        
+        .shopping-tag {
+            position: absolute;
+            top: 50%;
+            left: 30%;
+            background: rgba(0,0,0,0.8);
+            padding: 6px 10px;
+            border-radius: 16px;
+            font-size: 12px;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .shopping-tag::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">Instagram</div>
+            <div class="header-icons">
+                <a href="#" class="header-icon notification-dot">♡</a>
+                <a href="#" class="header-icon">💬</a>
+            </div>
+        </header>
+        
+        <div class="stories-container">
+            <div class="story">
+                <div class="story-pic your-story">
+                    <div class="story-inner">+</div>
+                    <div class="add-story">+</div>
+                </div>
+                <div class="story-name">Your story</div>
+            </div>
+            <div class="story">
+                <div class="story-pic">J</div>
+                <div class="story-name">john_doe</div>
+            </div>
+            <div class="story">
+                <div class="story-pic">S</div>
+                <div class="story-name">sarah_j</div>
+            </div>
+            <div class="story">
+                <div class="story-pic">M</div>
+                <div class="story-name">mike_photo</div>
+            </div>
+            <div class="story">
+                <div class="story-pic">A</div>
+                <div class="story-name">art_student</div>
+            </div>
+            <div class="story">
+                <div class="story-pic">C</div>
+                <div class="story-name">coffee_shop</div>
+            </div>
+        </div>
+        
+        <div class="post">
+            <div class="post-header">
+                <div class="profile-pic">J</div>
+                <div class="user-info">
+                    <div class="username">
+                        john_doe 
+                        <span class="verified">✓</span>
+                    </div>
+                    <div class="location">Brooklyn, New York</div>
+                </div>
+                <button class="more-options">⋯</button>
+            </div>
+            <div class="post-media">
+                <div class="carousel-indicator">1/3</div>
+                <div class="carousel-dots">
+                    <div class="dot active"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+                <div class="shopping-tag">$45</div>
+                📷 Multiple Photos<br>
+                <small>Swipe → (Any Aspect Ratio)</small>
+            </div>
+            <div class="post-actions">
+                <div class="left-actions">
+                    <button class="action-btn liked">❤️</button>
+                    <button class="action-btn">💬</button>
+                    <button class="action-btn">📤</button>
+                </div>
+                <button class="action-btn save-btn">🔖</button>
+            </div>
+            <div class="post-stats">
+                <div class="liked-by">
+                    <div class="liked-by-pics">
+                        <div class="liked-by-pic">S</div>
+                        <div class="liked-by-pic">M</div>
+                        <div class="liked-by-pic">A</div>
+                    </div>
+                    <span>Liked by <strong>sarah_j</strong> and <strong>1,247 others</strong></span>
+                </div>
+            </div>
+            <div class="post-caption">
+                <span class="caption-username">john_doe</span>
+                Amazing weekend exploring the city! Swipe to see more shots 📸 <span class="hashtag">#photography #nyc #weekend</span>
+                <div style="margin-top: 4px; color: #a8a8a8;">...more</div>
+            </div>
+            <div class="post-comments">
+                <div class="view-comments">View all 89 comments</div>
+                <div class="comment">
+                    <div class="comment-text">
+                        <span class="comment-username">sarah_j</span>These shots are incredible! 🔥🔥
+                    </div>
+                    <div class="comment-like">♡</div>
+                </div>
+                <div class="comment">
+                    <div class="comment-text">
+                        <span class="comment-username">mike_photo</span>What camera did you use?
+                    </div>
+                    <div class="comment-like">♡</div>
+                </div>
+            </div>
+            <div class="post-time">2 hours ago</div>
+        </div>
+        
+        <div class="post">
+            <div class="post-header">
+                <div class="profile-pic">R</div>
+                <div class="user-info">
+                    <div class="username">
+                        reels_creator
+                        <span class="verified">✓</span>
+                    </div>
+                    <div class="location">Original audio</div>
+                </div>
+                <button class="more-options">⋯</button>
+            </div>
+            <div class="post-media reels-media">
+                🎥 Reels Video<br>
+                <small>Vertical Format</small><br>
+                <small>Auto-play with sound</small>
+            </div>
+            <div class="post-actions">
+                <div class="left-actions">
+                    <button class="action-btn">♡</button>
+                    <button class="action-btn">💬</button>
+                    <button class="action-btn">📤</button>
+                </div>
+                <button class="action-btn save-btn">🔖</button>
+            </div>
+            <div class="post-stats">
+                <div class="liked-by">
+                    <span><strong>3,491 likes</strong></span>
+                </div>
+            </div>
+            <div class="post-caption">
+                <span class="caption-username">reels_creator</span>
+                Quick morning routine ✨ <span class="hashtag">#morningroutine #lifestyle #reels</span>
+            </div>
+            <div class="post-comments">
+                <div class="view-comments">View all 156 comments</div>
+                <div class="comment">
+                    <div class="comment-text">
+                        <span class="comment-username">wellness_guru</span>Love this energy! 💫
+                    </div>
+                    <div class="comment-like">❤️</div>
+                </div>
+            </div>
+            <div class="post-time">4 hours ago</div>
+        </div>
+        
+        <div class="post">
+            <div class="post-header">
+                <div class="profile-pic">C</div>
+                <div class="user-info">
+                    <div class="username">
+                        coffee_shop
+                        <span class="verified">✓</span>
+                    </div>
+                    <div class="location">Downtown Coffee Co.</div>
+                </div>
+                <button class="more-options">⋯</button>
+            </div>
+            <div class="post-media">
+                ☕ Business Post<br>
+                <small>Rectangle Format</small><br>
+                <small>Tagged Products</small>
+            </div>
+            <div class="post-actions">
+                <div class="left-actions">
+                    <button class="action-btn">♡</button>
+                    <button class="action-btn">💬</button>
+                    <button class="action-btn">📤</button>
+                </div>
+                <button class="action-btn save-btn">🔖</button>
+            </div>
+            <div class="post-stats">
+                <div class="liked-by">
+                    <span><strong>892 likes</strong></span>
+                </div>
+            </div>
+            <div class="post-caption">
+                <span class="caption-username">coffee_shop</span>
+                Fresh batch of our signature blend ☕ Order online for pickup! <span class="hashtag">#coffee #local #freshroasted</span>
+            </div>
+            <div class="post-time">6 hours ago</div>
+        </div>
+    </div>
+    
+    <nav class="bottom-nav">
+        <a href="#" class="nav-btn active">🏠</a>
+        <a href="#" class="nav-btn">🔍</a>
+        <a href="#" class="nav-btn">🎬</a>
+        <a href="#" class="nav-btn">🛍️</a>
+        <a href="#" class="nav-btn">👤</a>
+    </nav>
+</body>
+</html>

@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Interactive NPN Transistor Model</title>
+<style>
+    /* --- base page styling (adapted from your lattice page) --- */
+    body {
+        margin: 0;
+        padding: 20px;
+        background: linear-gradient(135deg, #071021, #0b1b2a);
+        font-family: 'Arial', sans-serif;
+        color: white;
+        min-height: 100vh;
+    }
+    .header { text-align:center; margin-bottom:18px; }
+    .title {
+        font-size: 2em;
+        margin: 0;
+        background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .subtitle { color: #9dbacc; margin-top:6px; font-size:0.95em; }
+
+    /* layout */
+    .container {
+        display:flex;
+        gap: 26px;
+        justify-content:center;
+        align-items:flex-start;
+        flex-wrap:wrap;
+    }
+
+    /* transistor panel */
+    .transistor-panel {
+        width: 760px;
+        min-height: 520px;
+        background: radial-gradient(circle at 10% 10%, #0f1b25 0%, #071021 40%, #051016 100%);
+        border-radius: 14px;
+        padding: 18px;
+        border: 2px solid rgba(255,255,255,0.06);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+        position: relative;
+        overflow: hidden;
+        padding-bottom: 30px;
+    }
+
+    .top-row {
+        display:flex;
+        gap:16px;
+        align-items:flex-start;
+    }
+
+    /* lattice area */
+    .lattice-area {
+        position: relative;
+        width: 480px;
+        height: 420px;
+        margin-bottom: 20px;
+    }
+
+    /* transistor zones - horizontally arranged: emitter (left), base (center narrow), collector (right) */
+    .zone {
+        position:absolute;
+        top: 12px;
+        bottom:12px;
+        padding: 8px;
+        box-sizing: border-box;
+        border-radius: 10px;
+    }
+    .zone .zone-label {
+        position:absolute;
+        top:6px;
+        left:8px;
+        font-weight:bold;
+        font-size:0.95em;
+        color:#dfeff6;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    }
+
+    .zone.emitter {
+        left: 12px;
+        width: 200px;
+        background: linear-gradient(90deg, rgba(80,120,180,0.06), rgba(80,120,180,0.02));
+        border: 1px solid rgba(78,205,196,0.05);
+    }
+    .zone.base {
+        left: 232px;
+        width: 80px;
+        background: linear-gradient(90deg, rgba(220,100,100,0.05), rgba(220,100,100,0.02));
+        border: 1px solid rgba(255,107,107,0.05);
+    }
+    .zone.collector {
+        left: 332px;
+        right:12px;
+        background: linear-gradient(90deg, rgba(80,120,180,0.02), rgba(80,120,180,0.06));
+        border: 1px solid rgba(78,205,196,0.04);
+    }
+
+    /* atoms */
+    .atom {
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:8px;
+        font-weight:bold;
+        color: rgba(255,255,255,0.85);
+        border: 1px solid rgba(255,255,255,0.06);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        pointer-events: none;
+    }
+    .atom.si { background: radial-gradient(circle, #4a90e2, #2171b5); }
+    .atom.n { background: radial-gradient(circle, #dff7ff, #9be8ff); color:#003; }
+    .atom.p { background: radial-gradient(circle, #ffc9c9, #ff8b8b); color:#300; }
+
+    /* carriers */
+    .electron {
+        position:absolute;
+        width:8px;height:8px;border-radius:50%;
+        background:radial-gradient(circle,#00ffff,#0080ff);
+        box-shadow:0 0 10px #00ffff;
+    }
+    .electron.base-electron {
+        background:radial-gradient(circle,#ff8b8b,#ff4757);
+        box-shadow:0 0 10px #00ffff; 
+/*        #ff4757;*/
+        width:8px;height:8px;border-radius:50%;
+    }
+    .hole {
+        position:absolute;
+        width:9px;height:9px;border-radius:50%;
+        background: radial-gradient(circle, transparent 40%, #ff4757 70%);
+        border:2px solid #ff4757;
+        box-shadow:0 0 10px #ff4757;
+    }
+
+    /* flow animation for electrons moving across transistor */
+    @keyframes flow-right {
+        0% { transform: translateX(0) translateY(0); opacity:1; }
+        90% { opacity: 1; }
+        100% { transform: translateX(400px) translateY(0px); opacity: 0; }
+    }
+
+    @keyframes flow-up-into-base {
+        0%   { transform: translateY(0); opacity: 1; }
+        70%  { opacity: 0.8; }
+        100% { transform: translateY(200px); opacity: 0; }
+    }
+
+    /* electron moves right with small vertical bounce */
+    @keyframes flow-right-bounce {
+        100% { transform: translateX(0) translateY(0); opacity: 1; }
+        100% { transform: translateX(80px) translateY(-15px); }
+        100% { transform: translateX(160px) translateY(18px); }
+        100% { transform: translateX(240px) translateY(-14px); }
+        100% { transform: translateX(280px) translateY(16px); }
+        100% { transform: translateX(300px) translateY(0px); opacity: .5; }
+    }
+
+    /* electron moves up and right into base with organic wobble */
+    @keyframes flow-up-right-bounce {
+        0%   { transform: translateX(0) translateY(0); opacity: 1; }
+        25%  { transform: translateX(100px) translateY(-80px); opacity: 0.9; }
+        50%  { transform: translateX(200px) translateY(-60px); opacity: 0.8; }
+        75%  { transform: translateX(300px) translateY(-40px); opacity: 0.6; }
+        100% { transform: translateX(400px) translateY(-20px); opacity: 0; }
+    }
+
+    /* circuit area */
+    .circuit-panel {
+        width:240px;
+        min-height:360px;
+        padding:12px;
+        box-sizing:border-box;
+        border-radius:12px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+        border:1px solid rgba(255,255,255,0.03);
+    }
+
+    .circuit-title { font-weight:bold; color:#bfe8e0; margin-bottom:8px; font-size:0.95em; }
+
+    /* simple svg circuit styling */
+    .circuit-svg { width:100%; height:220px; display:block; }
+
+    .controls {
+        margin-top:12px;
+        display:flex;
+        gap:10px;
+        align-items:center;
+        flex-direction:column;
+    }
+
+    .btn {
+        background: linear-gradient(45deg,#667eea,#764ba2);
+        border:none;color:white;padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:bold;
+    }
+    .btn.toggle-on { background: linear-gradient(45deg,#4ecdc4,#2fa07e); box-shadow:0 8px 20px rgba(46,204,113,0.08); }
+
+    .meter {
+        margin-top:10px;
+        width:100%;
+        height:42px;
+        background: rgba(255,255,255,0.02);
+        border-radius:8px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:1.2em;
+        color:#d7f2ee;
+        border:1px solid rgba(255,255,255,0.02);
+    }
+
+    .current-display {
+        margin-top: 8px;
+        font-size: 0.9em;
+        color: #9dbacc;
+        text-align: center;
+    }
+
+    .legend {
+        margin-top:12px;
+        display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:flex-start;
+    }
+    .legend-item { display:flex; gap:8px; align-items:center; font-size:0.9em; color:#c9e9e0; }
+    .legend-symbol { width:12px;height:12px;border-radius:50%; }
+
+    /* info area below whole panel */
+    .info-area {
+        margin-top:16px;
+        display:flex;
+        gap:12px;
+        justify-content:space-between;
+        flex-wrap:wrap;
+    }
+    .info-card {
+        flex:1 1 220px;
+        background: rgba(255,255,255,0.02);
+        padding:10px;
+        border-radius:10px;
+        border:1px solid rgba(255,255,255,0.02);
+    }
+    .info-card h4 { margin:0 0 6px 0; color:#bfe8e0; font-size:0.95em; }
+    .info-card p { margin:0; color:#9dbacc; font-size:0.86em; }
+
+    /* small transistor symbol overlay lines */
+    .transistor-symbol {
+        position:absolute;
+        left:190px;
+        top: 160px;
+        width:120px;height:120px;
+        pointer-events:none;
+        opacity:0.12;
+    }
+
+    /* responsive tweaks */
+    @media (max-width:900px) {
+        .container { flex-direction:column; align-items:center; }
+        .transistor-panel { width: 92%; }
+        .lattice-area { width:100%; height:300px; }
+    }
+</style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="title">Interactive NPN Transistor — Lattice & Circuit</h1>
+        <div class="subtitle">Emitter (n⁺) — Base (p) — Collector (n) visualization. Toggle base current to see flow.</div>
+    </div>
+
+    <div class="container">
+        <div class="transistor-panel">
+            <div class="top-row">
+                <div class="lattice-area" id="latticeArea">
+                    <!-- zones -->
+                    <div class="zone emitter" id="zoneEmitter">
+                        <div class="zone-label">Emitter (n⁺)</div>
+                    </div>
+                    <div class="zone base" id="zoneBase">
+                        <div class="zone-label">Base (p)</div>
+                    </div>
+                    <div class="zone collector" id="zoneCollector">
+                        <div class="zone-label">Collector (n)</div>
+                    </div>
+
+                    <!-- transistor symbol faint -->
+                    <svg class="transistor-symbol" viewBox="0 0 120 120">
+                        <defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#4ecdc4"/><stop offset="1" stop-color="#667eea"/></linearGradient></defs>
+                        <g stroke="url(#g)" stroke-width="3" fill="none">
+                            <path d="M10 90 L45 60" />
+                            <path d="M110 20 L70 55" />
+                            <path d="M45 60 L70 55" />
+                            <path d="M80 85 L110 60" />
+                            <circle cx="45" cy="60" r="6" />
+                            <circle cx="70" cy="55" r="6" />
+                        </g>
+                    </svg>
+
+                </div>
+
+                <div class="circuit-panel">
+                    <div class="circuit-title">Circuit (V<sub>CC</sub>, R<sub>C</sub>, Base drive)</div>
+                    <!-- simple circuit illustration -->
+                    
+
+                    <div class="controls">
+                        <button class="btn" id="baseToggle">Apply Base Current</button>
+                        <div style="width:100%; display:flex; gap:8px; justify-content:space-between; align-items:center;">
+                            <label style="font-size:0.86em; color:#cfeee5">V<sub>CC</sub> (V)</label>
+                            <input id="vcc" type="range" min="1" max="12" value="6" style="width: 140px" />
+                            <span id="vccVal" style="width:36px; text-align:right; color:#d7f2ee">6V</span>
+                        </div>
+                        <div style="width:100%;display:flex;gap:8px;justify-content:space-between;align-items:center;">
+                            <label style="font-size:0.86em; color:#cfeee5">R<sub>C</sub> (Ω)</label>
+                            <input id="rc" type="range" min="100" max="2000" value="560" style="width: 120px" />
+                            <span id="rcVal" style="width:56px; text-align:right; color:#d7f2ee">560Ω</span>
+                        </div>
+                        <div style="width:100%;display:flex;gap:8px;justify-content:space-between;align-items:center;">
+                            <label style="font-size:0.86em; color:#cfeee5">Animation Speed</label>
+                            <input id="animSpeed" type="range" min="0.1" max="2" value="0.4" step="0.1" style="width: 50px" />
+                            <span id="animSpeedVal" style="width:36px; text-align:right; color:#d7f2ee">0.4x</span>
+                        </div>
+                        <div class="meter" id="currentMeter">I<sub>C</sub> ≈ 0.00 mA</div>
+                        <div class="current-display" id="currentDetails">I<sub>B</sub> ≈ 0.00 µA</div>
+
+                        <div class="legend">
+                            <div class="legend-item"><div class="legend-symbol" style="background:radial-gradient(circle,#00ffff,#0080ff)"></div> Emitter e⁻</div>
+                            <div class="legend-item"><div class="legend-symbol" style="background:radial-gradient(circle,#ff8b8b,#ff4757)"></div> Base e⁻</div>
+                            <div class="legend-item"><div class="legend-symbol" style="background:radial-gradient(circle,#4a90e2,#2171b5)"></div> Si lattice</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-area">
+                <div class="info-card">
+                    <svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 173.1 270.5">
+  <!-- Generator: Adobe Illustrator 29.7.1, SVG Export Plug-In . SVG Version: 2.1.1 Build 8)  -->
+  <defs>
+    <style>
+      .st0 {
+        font-size: 11px;
+      }
+
+      .st0, .st1, .st2, .st3, .st4, .st5, .st6, .st7, .st8, .st9, .st10, .st11 {
+        isolation: isolate;
+      }
+
+      .st0, .st1, .st2, .st4, .st5, .st6, .st7, .st8 {
+        font-family: ArialMT, Arial;
+      }
+
+      .st0, .st7, .st10 {
+        fill: #bfe8e0;
+      }
+
+      .st12, .st13 {
+        stroke: #8fd9cf;
+      }
+
+      .st12, .st13, .st14, .st15, .st9, .st16, .st17, .st11 {
+        fill: none;
+      }
+
+      .st12, .st14, .st15 {
+        stroke-width: 2px;
+      }
+
+      .st18 {
+        fill: #9be8ff;
+      }
+
+      .st1, .st4, .st7, .st8 {
+        font-size: 8px;
+      }
+
+      .st1, .st5 {
+        fill: #8fd9cf;
+      }
+
+      .st2, .st5, .st6, .st10 {
+        font-size: 10px;
+      }
+
+      .st2, .st8 {
+        fill: #cfeee5;
+      }
+
+      .st19 {
+        fill: #ff8b8b;
+      }
+
+      .st13, .st17 {
+        stroke-width: 3px;
+      }
+
+      .st4, .st6 {
+        fill: #f6a6a6;
+      }
+
+      .st14 {
+        stroke: #f6a6a6;
+      }
+
+      .st15, .st16, .st17 {
+        stroke: #8fd9cf;
+      }
+
+      .st9 {
+        stroke: #ff8b8b;
+      }
+
+      .st9, .st11 {
+        opacity: .3;
+      }
+
+      .st10 {
+        font-family: Arial-BoldMT, Arial;
+        font-weight: 700;
+      }
+
+      .st11 {
+        stroke: #cfeee5;
+      }
+    </style>
+  </defs>
+  <g id="battery">
+    <line class="st17" x1="43" y1="200.8" x2="43" y2="220.8"/>
+    <line class="st17" x1="53" y1="205.8" x2="53" y2="215.8"/>
+    <line class="st15" x1="43" y1="210.8" x2="33" y2="210.8"/>
+    <line class="st15" x1="53" y1="210.8" x2="63" y2="210.8"/>
+  </g>
+  <g class="st3">
+    <text class="st0" transform="translate(38.3 194.5)"><tspan x="0" y="0">V</tspan></text>
+    <text class="st7" transform="translate(45.6 196.7)"><tspan x="0" y="0">CC</tspan></text>
+  </g>
+  <line class="st15" x1="42" y1="210.8" x2="25.4" y2="210.8"/>
+  <line class="st15" x1="26.4" y1="210.8" x2="26.4" y2="150.8"/>
+  <g id="rc_resistor">
+    <path class="st15" d="M26.4,150.8v-8l-6-4,12-8-12-8,12-8-12-8,6-4v-8"/>
+    <rect class="st11" x="-1.6" y="114.8" width="56" height="16" transform="translate(-96.4 149.3) rotate(-90)"/>
+  </g>
+  <g class="st3">
+    <text class="st2" transform="translate(37.8 132.3)"><tspan x="0" y="0">R</tspan></text>
+    <text class="st8" transform="translate(45 134.3)"><tspan x="0" y="0">C</tspan></text>
+  </g>
+  <g id="ammeter">
+    <circle class="st15" cx="26.4" cy="80.8" r="12"/>
+    <text class="st10" transform="translate(22.4 84.8)"><tspan x="0" y="0">A</tspan></text>
+  </g>
+  <line class="st15" x1="26.4" y1="94.8" x2="26.4" y2="92.8"/>
+  <line class="st15" x1="26.4" y1="68.8" x2="26.4" y2="50.8"/>
+  <line class="st15" x1="26.4" y1="50.8" x2="76.4" y2="50.8"/>
+  <g id="transistor">
+    <line class="st13" x1="76.4" y1="70.8" x2="116.4" y2="70.8"/>
+    <line class="st15" x1="86.4" y1="70.8" x2="76.4" y2="50.8"/>
+    <circle class="st18" cx="76.4" cy="50.8" r="2"/>
+    <line class="st12" x1="106.4" y1="70.8" x2="116.4" y2="50.8"/>
+    <circle class="st18" cx="116.4" cy="50.8" r="2"/>
+    <circle class="st19" cx="96.4" cy="70.8" r="2"/>
+  </g>
+  <line class="st15" x1="116.4" y1="50.8" x2="141.4" y2="50.8"/>
+  <line class="st15" x1="141.4" y1="50.8" x2="141.4" y2="210.8"/>
+  <line class="st15" x1="141.4" y1="210.8" x2="66.4" y2="210.8"/>
+  <g id="ground">
+    <line class="st15" x1="141.4" y1="210.8" x2="151.4" y2="210.8"/>
+    <line class="st17" x1="151.4" y1="218.8" x2="151.4" y2="202.8"/>
+    <line class="st15" x1="154.4" y1="215.8" x2="154.4" y2="205.8"/>
+    <line class="st16" x1="157.4" y1="212.8" x2="157.4" y2="208.8"/>
+  </g>
+  <line class="st15" x1="56.4" y1="210.8" x2="66.4" y2="210.8"/>
+  <g id="rb_resistor">
+    <path class="st14" d="M96.4,182.6v-6l-4-3,8-6-8-6,8-6-8-6,4-3v-6"/>
+    <rect class="st9" x="75.4" y="155.6" width="42" height="12" transform="translate(-65.2 258.1) rotate(-90)"/>
+  </g>
+  <g class="st3">
+    <text class="st6" transform="translate(108 165.2)"><tspan x="0" y="0">R</tspan></text>
+    <text class="st4" transform="translate(115.2 167.2)"><tspan x="0" y="0">B</tspan></text>
+  </g>
+  <line class="st14" x1="96.4" y1="210.8" x2="96.4" y2="182.6"/>
+  <line class="st14" x1="96.4" y1="107.4" x2="96.4" y2="70.8"/>
+  <circle class="st19" cx="96.4" cy="210.8" r="3"/>
+  <g class="st3">
+    <text class="st6" transform="translate(100.6 201.8)"><tspan x="0" y="0">V</tspan></text>
+    <text class="st4" transform="translate(107.3 203.8)"><tspan x="0" y="0">in</tspan></text>
+  </g>
+  <circle class="st18" cx="56.4" cy="30.8" r="3"/>
+  <g class="st3">
+    <text class="st5" transform="translate(48.1 23)"><tspan x="0" y="0">V</tspan></text>
+    <text class="st1" transform="translate(54.8 25)"><tspan x="0" y="0">out</tspan></text>
+  </g>
+  <line class="st15" x1="56.4" y1="50.8" x2="56.4" y2="30.8"/>
+  <circle class="st19" cx="96.4" cy="130.2" r="3"/>
+  <line class="st14" x1="96.4" y1="143.4" x2="96.4" y2="129.3"/>
+  <line class="st14" x1="114" y1="123.8" x2="96.4" y2="106.3"/>
+  <circle class="st19" cx="96.4" cy="106.7" r="3"/>
+  <g class="st3">
+    <text class="st5" transform="translate(73.1 44.3)"><tspan x="0" y="0">n</tspan></text>
+    <text class="st1" transform="translate(79.8 46.3)"><tspan x="0" y="0">+</tspan></text>
+  </g>
+  <g class="st3">
+    <text class="st5" transform="translate(111.8 45.3)"><tspan x="0" y="0">n</tspan></text>
+  </g>
+  <g class="st3">
+    <text class="st5" transform="translate(94.4 60.8)"><tspan x="0" y="0">p</tspan></text>
+  </g>
+</svg>
+                </div>
+                <div class="info-card">
+                    <h2>Basic Computer Logic Circuit</h2>
+
+        <div class="key-concept">
+            <strong>Main Idea:</strong> This transistor circuit is the foundation of all computer logic - it's basically a switch controlled by electricity!
+        </div>
+
+        <h3>How It Works</h3>
+        
+        <div class="switch-demo">
+            <strong>Input Signal → Transistor → Output Signal</strong><br>
+            <span style="color: #28a745;">Small voltage IN</span> controls <span style="color: #dc3545;">Large current OUT</span>
+        </div>
+
+        <h3>Computer Connection</h3>
+        <ul>
+            <li><strong>Binary Logic:</strong> Input HIGH = Output ON, Input LOW = Output OFF</li>
+            <li><strong>Digital Gates:</strong> Multiple transistors create AND, OR, NOT gates</li>
+            <li><strong>Memory:</strong> Transistors can store 1s and 0s</li>
+            <li><strong>Processing:</strong> Millions of these switches do calculations</li>
+        </ul>
+
+        <div class="binary">
+            Input: 0V (OFF) → Output: LOW<br>
+            Input: 5V (ON) → Output: HIGH
+        </div>
+
+        <h3>Key Components</h3>
+        <ul>
+            <li><strong>Transistor:</strong> The electronic switch</li>
+            <li><strong>Base:</strong> Control input (like a light switch)</li>
+            <li><strong>Collector/Emitter:</strong> Main current path</li>
+            <li><strong>Resistors:</strong> Control current flow</li>
+        </ul>
+
+        <div class="key-concept">
+            <strong>Bottom Line:</strong> Your computer has billions of these tiny switches working together to process information, run programs, and display this text!
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
+            <em>This simple circuit is the building block of all digital technology</em>
+        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+/* --- simplified transistor animation --- */
+
+const latticeArea = document.getElementById('latticeArea');
+const zoneEmitter = document.getElementById('zoneEmitter');
+const zoneBase = document.getElementById('zoneBase');
+const zoneCollector = document.getElementById('zoneCollector');
+
+const baseToggle = document.getElementById('baseToggle');
+const currentMeter = document.getElementById('currentMeter');
+const currentDetails = document.getElementById('currentDetails');
+const vccInput = document.getElementById('vcc');
+const vccVal = document.getElementById('vccVal');
+const rcInput = document.getElementById('rc');
+const rcVal = document.getElementById('rcVal');
+const animSpeedInput = document.getElementById('animSpeed');
+const animSpeedVal = document.getElementById('animSpeedVal');
+
+let baseActive = false;
+let ic_mA = 0.0;
+let ib_uA = 0.0;
+const beta = 100;
+
+// Single animation state
+let animationLoop = null;
+let animationSpeed = 0.4;
+
+// Timing control - much simpler approach
+let lastCollectorTime = 0;
+let lastBaseTime = 0;
+let collectorInterval = 1000; // ms between collector electrons
+let baseInterval = 1000;     // ms between base electrons
+
+let emitterDelay = 500; 
+
+function placeAtomsInZone(zoneEl, rect, dopingType, density=0.12) {
+    zoneEl.querySelectorAll('.atom').forEach(n=>n.remove());
+    const cols = Math.max(6, Math.floor(rect.width / 18));
+    const rows = Math.max(12, Math.floor(rect.height / 18));
+    for (let r=0;r<rows;r++){
+        for (let c=0;c<cols;c++){
+            const x = rect.left + 8 + c*(rect.width/(cols)) + (Math.random()*6-3);
+            const y = rect.top + 22 + r*(rect.height/(rows)) + (Math.random()*6-3);
+            const atom = document.createElement('div');
+            atom.className = 'atom si';
+            atom.style.left = x + 'px';
+            atom.style.top = y + 'px';
+            atom.textContent = 'Si';
+            if (Math.random() < density) {
+                if (dopingType === 'n') {
+                    atom.className = 'atom n';
+                    atom.textContent = 'N';
+                } else if (dopingType === 'p') {
+                    atom.className = 'atom p';
+                    atom.textContent = 'P';
+                }
+            }
+            latticeArea.appendChild(atom);
+        }
+    }
+}
+
+function createTransistorLattice() {
+    latticeArea.querySelectorAll('.electron, .hole').forEach(el => el.remove());
+    latticeArea.querySelectorAll('.atom').forEach(el => el.remove());
+
+    // emitter: heavy n-type
+    placeAtomsInZone(zoneEmitter, {left:12, top:12, width:200, height:336}, 'n', 0.22);
+    // base: p-type thin  
+    placeAtomsInZone(zoneBase, {left:232, top:12, width:80, height:336}, 'p', 0.18);
+    // collector: light n-type
+    placeAtomsInZone(zoneCollector, {left:332, top:12, width:128, height:336}, 'n', 0.10);
+
+    addBaselineCarriers();
+}
+
+function addBaselineCarriers() {
+    for (let i=0;i<8;i++){
+        const e = document.createElement('div');
+        e.className = 'electron';
+        e.style.left = (Math.random() * 160 + 24) + 'px';
+        e.style.top = (Math.random() * 320 + 24) + 'px';
+        e.style.opacity = 0.7;
+        latticeArea.appendChild(e);
+    }
+    for (let i=0;i<6;i++){
+        const h = document.createElement('div');
+        h.className = 'hole';
+        h.style.left = (Math.random() * 60 + 242) + 'px';
+        h.style.top = (Math.random() * 320 + 24) + 'px';
+        latticeArea.appendChild(h);
+    }
+}
+
+function createCollectorElectron() {
+    // Limit total particles for performance
+    // if (latticeArea.querySelectorAll('.electron:not(.base-electron)').length > 20) return;
+    
+    const p = document.createElement('div');
+    p.className = 'electron';
+    const startX = Math.random() * 160 + 20;
+    const startY = Math.random() * 300 + 50;
+    p.style.left = startX + 'px';
+    p.style.top = startY + 'px';
+    latticeArea.appendChild(p);
+
+    const duration = 500 / animationSpeed;
+    p.style.animation = `flow-right-bounce ${duration}ms linear forwards`;
+    setTimeout(() => p.remove(), duration + 100);
+}
+
+function createBaseElectron() {
+    // Limit base particles
+    // if (latticeArea.querySelectorAll('.base-electron').length > 8) return;
+    
+    const p = document.createElement('div');
+    p.className = 'electron base-electron';
+    const startX = Math.random() * 60 + 242;
+    const startY = Math.random() * 120 + 100;
+    p.style.left = startX + 'px';
+    p.style.top = startY + 'px';
+    latticeArea.appendChild(p);
+
+    const duration = 600 / animationSpeed;
+    p.style.animation = `flow-up-into-base ${duration}ms ease-out forwards`;
+    setTimeout(() => p.remove(), duration + 100);
+}
+
+// Single unified animation loop
+function startAnimation() {
+    if (animationLoop) return;
+
+    const emitterStartTime = Date.now() + emitterDelay;
+    
+    animationLoop = setInterval(() => {
+        if (!baseActive || ic_mA < 0.01) return;
+        
+        const now = Date.now();
+        
+        // Create collector electrons based on collector current
+        if (now > emitterStartTime && now - lastCollectorTime >= collectorInterval) {
+            createCollectorElectron();
+            lastCollectorTime = now;
+        }
+        
+        // Create base electrons based on base current (much less frequent)
+        if (now - lastBaseTime >= baseInterval) {
+            createBaseElectron();
+            lastBaseTime = now;
+        }
+        
+    }, 1); // 20 FPS update rate
+}
+
+function stopAnimation() {
+    if (animationLoop) {
+        clearInterval(animationLoop);
+        animationLoop = null;
+    }
+}
+
+function computeAndDisplayCurrent() {
+    const Vcc = Number(vccInput.value);
+    const Rc = Number(rcInput.value);
+    animationSpeed = Number(animSpeedInput.value);
+
+    // Calculate base current
+    ib_uA = 0;
+    if (baseActive) {
+        const Vb = Math.max(0, Vcc - 0.7);
+        const Rb = 10000; // fixed base resistor
+        ib_uA = (Vb / Rb) * 1e6; // µA
+    }
+
+    // Calculate collector current
+    let Ic_A = beta * (ib_uA * 1e-6);
+    const Vdrop = Ic_A * Rc;
+    if (Vdrop > Vcc) Ic_A = Vcc / Rc; // saturation
+    ic_mA = Ic_A * 1000;
+
+    // Update display
+    currentMeter.innerHTML = `I<sub>C</sub> ≈ ${ic_mA.toFixed(2)} mA`;
+    currentDetails.innerHTML = `I<sub>B</sub> ≈ ${ib_uA.toFixed(2)} µA`;
+    
+    // Calculate animation intervals based on currents
+    // Collector: more current = faster particles
+    collectorInterval = 1/ic_mA * 25;// * 10;//Math.max(100, 10 / Math.max(ic_mA * 2, 1));
+    
+    // Base: much less frequent (proper ratio)
+    baseInterval = 1/ic_mA * 500;//Math.max(500, 50 / Math.max(ib_uA * 0.1, 1));
+    
+    // Start/stop animation based on state
+    if (baseActive && ic_mA > 0.01) {
+        startAnimation();
+    } else {
+        stopAnimation();
+    }
+}
+
+// Event listeners
+baseToggle.addEventListener('click', () => {
+    baseActive = !baseActive;
+    baseToggle.classList.toggle('toggle-on', baseActive);
+    baseToggle.textContent = baseActive ? 'Base Current: ON' : 'Apply Base Current';
+    computeAndDisplayCurrent();
+});
+
+vccInput.addEventListener('input', () => {
+    vccVal.textContent = vccInput.value + 'V';
+    computeAndDisplayCurrent();
+});
+
+rcInput.addEventListener('input', () => {
+    rcVal.textContent = rcInput.value + 'Ω';
+    computeAndDisplayCurrent();
+});
+
+animSpeedInput.addEventListener('input', () => {
+    animSpeedVal.textContent = animSpeedInput.value + 'x';
+    computeAndDisplayCurrent();
+});
+
+// Initialize
+createTransistorLattice();
+computeAndDisplayCurrent();
+</script>
+</body>
+</html>

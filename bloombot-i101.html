@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INFO-I 101 — bloombot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink:#1a1612; --cream:#f5f0e8; --warm:#e8dcc8; --rust:#c4541a;
+      --amber:#d97706; --forest:#2d5a27; --slate:#64748b;
+      --border:#d1c4aa; --card-bg:#ffffff; --shadow:rgba(26,22,18,0.10);
+      --c101:#1d4ed8;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family:'Space Grotesk',sans-serif; background:var(--cream); color:var(--ink); line-height:1.6; }
+
+    /* NAV */
+    nav { position:sticky; top:0; z-index:100; background:var(--ink); display:flex; align-items:center; justify-content:space-between; padding:0 2rem; height:56px; border-bottom:3px solid var(--rust); }
+    .nav-brand { font-family:'Space Mono',monospace; font-size:1.2rem; font-weight:700; color:var(--amber); text-decoration:none; letter-spacing:-0.03em; }
+    .nav-links { display:flex; list-style:none; overflow-x:auto; scrollbar-width:none; }
+    .nav-links::-webkit-scrollbar { display:none; }
+    .nav-links li { position:relative; }
+    .nav-links li>a { display:flex; align-items:center; gap:0.3rem; height:56px; padding:0 0.9rem; color:rgba(255,255,255,0.65); text-decoration:none; font-size:0.78rem; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; white-space:nowrap; transition:color 0.2s,background 0.2s; }
+    .nav-links li>a:hover,.nav-links li>a.active { color:#fff; }
+    .nav-links li>a.active { color:var(--amber); }
+    .caret { font-size:0.55rem; opacity:0.5; }
+    .dropdown { display:none; position:absolute; top:56px; left:0; background:#111; border:1px solid rgba(255,255,255,0.1); border-top:2px solid var(--rust); border-radius:0 0 8px 8px; min-width:200px; list-style:none; z-index:200; box-shadow:0 8px 24px rgba(0,0,0,0.4); }
+    .nav-links li:hover .dropdown { display:block; }
+    .dropdown li a { display:block; padding:0.6rem 1rem; font-size:0.78rem; color:rgba(255,255,255,0.65); border-bottom:1px solid rgba(255,255,255,0.06); white-space:nowrap; text-decoration:none; }
+    .dropdown li:last-child a { border-bottom:none; }
+    .dropdown li a:hover { color:#fff; background:rgba(255,255,255,0.07); }
+
+    /* HERO */
+    .page-hero { background:var(--c101); color:#fff; padding:3.5rem 2rem 3rem; position:relative; overflow:hidden; }
+    .page-hero::before { content:''; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,0.04) 39px,rgba(255,255,255,0.04) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,0.04) 39px,rgba(255,255,255,0.04) 40px); }
+    .page-hero-inner { max-width:1100px; margin:0 auto; position:relative; }
+    .breadcrumb { font-family:'Space Mono',monospace; font-size:0.7rem; letter-spacing:0.14em; text-transform:uppercase; color:rgba(255,255,255,0.5); margin-bottom:0.75rem; }
+    .breadcrumb a { color:rgba(255,255,255,0.4); text-decoration:none; }
+    .breadcrumb a:hover { color:var(--amber); }
+    .page-number { font-family:'Space Mono',monospace; font-size:0.72rem; letter-spacing:0.12em; color:rgba(255,255,255,0.5); margin-bottom:0.4rem; }
+    .page-title { font-size:clamp(2rem,5vw,3.5rem); font-weight:700; letter-spacing:-0.04em; line-height:1.05; margin-bottom:0.75rem; }
+    .page-desc { font-size:1rem; color:rgba(255,255,255,0.72); max-width:640px; line-height:1.75; }
+
+    /* CONTEXT */
+    .context-band { background:var(--warm); border-bottom:1.5px solid var(--border); }
+    .context-inner { max-width:1100px; margin:0 auto; padding:2rem; display:grid; grid-template-columns:1fr 1fr; gap:2rem; }
+    .context-label { font-family:'Space Mono',monospace; font-size:0.65rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--slate); margin-bottom:0.5rem; }
+    .context-text { font-size:0.9rem; line-height:1.7; color:var(--ink); }
+    .status-chip { display:inline-flex; align-items:center; gap:0.4rem; background:rgba(196,84,26,0.1); border:1px solid rgba(196,84,26,0.25); border-radius:5px; padding:0.25rem 0.6rem; font-family:'Space Mono',monospace; font-size:0.65rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--rust); margin-top:0.75rem; }
+    .status-dot { width:6px; height:6px; border-radius:50%; background:var(--rust); }
+
+    /* TOPIC SECTIONS */
+    .topic-section { max-width:1100px; margin:0 auto; padding:2.5rem 2rem 0.5rem; }
+    .topic-section-header { display:flex; align-items:baseline; gap:1rem; margin-bottom:1.25rem; border-bottom:1.5px solid var(--border); padding-bottom:0.75rem; }
+    .topic-section-label { font-family:'Space Mono',monospace; font-size:0.68rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--slate); }
+    .topic-section-name { font-size:1.1rem; font-weight:700; letter-spacing:-0.02em; }
+
+    /* ARTIFACT CARDS */
+    .artifact-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:0.85rem; padding-bottom:2rem; }
+    .acard { background:var(--card-bg); border:1.5px solid var(--border); border-radius:9px; overflow:hidden; text-decoration:none; color:var(--ink); display:flex; flex-direction:column; transition:transform 0.18s,box-shadow 0.18s,border-color 0.18s; }
+    .acard:hover { transform:translateY(-3px); box-shadow:0 8px 20px var(--shadow); border-color:var(--c101); }
+    .acard-top { height:3px; background:var(--c101); }
+    .acard-body { padding:1rem 1.1rem; display:flex; flex-direction:column; gap:0.3rem; flex:1; }
+    .acard-icon { font-size:1.35rem; line-height:1; margin-bottom:0.15rem; }
+    .acard-title { font-size:0.88rem; font-weight:700; letter-spacing:-0.01em; line-height:1.25; }
+    .acard-desc { font-size:0.74rem; color:var(--slate); line-height:1.45; margin-top:auto; padding-top:0.4rem; }
+    .acard-foot { display:flex; align-items:center; justify-content:space-between; padding:0.45rem 1.1rem; border-top:1px solid var(--border); background:var(--cream); }
+    .acard-tag { font-family:'Space Mono',monospace; font-size:0.58rem; letter-spacing:0.07em; text-transform:uppercase; color:var(--slate); }
+    .acard-arrow { font-size:0.7rem; color:var(--c101); opacity:0; transition:opacity 0.2s; }
+    .acard:hover .acard-arrow { opacity:1; }
+
+    hr.div { border:none; border-top:1.5px solid var(--border); margin:0 2rem; }
+
+    /* SLIDES BAND */
+    .slides-band { background:var(--ink); }
+    .slides-inner { max-width:1100px; margin:0 auto; padding:2.5rem 2rem; display:flex; align-items:center; justify-content:space-between; gap:2rem; flex-wrap:wrap; }
+    .slides-text h3 { font-size:1.05rem; font-weight:700; color:#fff; margin-bottom:0.3rem; }
+    .slides-text p { font-size:0.82rem; color:rgba(255,255,255,0.5); max-width:520px; line-height:1.6; }
+    .slides-badge { font-family:'Space Mono',monospace; font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--amber); border:1px solid rgba(217,119,6,0.35); border-radius:5px; padding:0.4rem 0.8rem; white-space:nowrap; }
+
+    footer { background:var(--ink); color:rgba(255,255,255,0.4); text-align:center; padding:2.5rem 2rem; font-family:'Space Mono',monospace; font-size:0.72rem; letter-spacing:0.06em; line-height:2; }
+    footer a { color:var(--amber); text-decoration:none; }
+    @media (max-width:680px) { .nav-links{display:none;} .context-inner{grid-template-columns:1fr;} .artifact-grid{grid-template-columns:1fr 1fr;} }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="bloombot-modern.html">bloombot</a>
+  <ul class="nav-links">
+    <li>
+      <a href="bloombot-i101.html" class="active">I 101 <span class="caret">▼</span></a>
+      <ul class="dropdown">
+        <li><a href="#networks">Networks</a></li>
+        <li><a href="#standards">Standards</a></li>
+        <li><a href="#electricity">Electricity</a></li>
+        <li><a href="#ethics">Ethics</a></li>
+        <li><a href="#diversity">Diversity</a></li>
+        <li><a href="#data">Data</a></li>
+        <li><a href="#design">Design</a></li>
+        <li><a href="#security">Security</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="bloombot-stories.html">Stories <span class="caret">▼</span></a>
+      <ul class="dropdown">
+        <li><a href="bloombot - Lightning.html">Lightning</a></li>
+        <li><a href="bloombot - Coffee.html">Coffee</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="bloombot-prototyping.html">Prototyping <span class="caret">▼</span></a>
+      <ul class="dropdown">
+        <li><a href="bloombot - 3D Graph Paper.html">3D Graph Paper</a></li>
+        <li><a href="bloombot - Lattice.html">Lattice</a></li>
+        <li><a href="bloombot - Encoder Wheel.html">Encoder Wheel</a></li>
+        <li><a href="webpage-main/stlM2.html">3D Model Viewer</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="bloombot-scaffolds.html">Scaffolds</a>
+    </li>
+  </ul>
+</nav>
+
+<header class="page-hero">
+  <div class="page-hero-inner">
+    <p class="breadcrumb"><a href="bloombot-modern.html">bloombot</a> / Teaching</p>
+    <p class="page-number">INFO-I 101</p>
+    <h1 class="page-title">Introduction to Informatics</h1>
+    <p class="page-desc">A hands-on introduction to informatics and computing. Each weekly topic is paired with an interactive artifact built for lecture — download it, open it, change something, break something.</p>
+  </div>
+</header>
+
+<div class="context-band">
+  <div class="context-inner">
+    <div>
+      <p class="context-label">About these artifacts</p>
+      <p class="context-text">These tools were built to live inside weekly lectures — not as pre-reading, but as something to pull up mid-class and explore together. First tried in FA 25. Quickly built, intentionally rough — starting points for conversation.</p>
+      <div class="status-chip"><span class="status-dot"></span>FA 25 · First iteration</div>
+    </div>
+    <div>
+      <p class="context-label">How to use them</p>
+      <p class="context-text">Every artifact runs locally in your browser. Download the file, open it, hand it to an LLM and start tinkering. They're seeds — working code meant to be modified, broken, and rebuilt.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ NETWORKS ═══ -->
+<div id="networks" class="topic-section">
+  <div class="topic-section-header">
+    <span class="topic-section-label">Week ·</span>
+    <span class="topic-section-name">Networks</span>
+  </div>
+  <div class="artifact-grid">
+    <a class="acard" href="webpage-main/topology.html"><div class="acard-top"></div><div class="acard-body"><div class="acard-icon">🕸️</div><div class="acard-title">Network Topology</div><div class="acard-desc">Build and explore network structures — star, ring, mesh, and more</div></div><div class="acard-foot"><span class="acard-tag">Simulation</span><span class="acard-arrow">→</span></div></a>
+    <a class="acard" href="webpage-main/network_analysis.html"><div class="acard-top"></div><div class="acard-body"><div class="acard-icon">📊</div><div class="acard-title">Network Analysis</div><div class="acard-desc">Node importance, clustering, and information flow in a graph</div></div><div class="acard-foot"><span class="acard-tag">Analysis</span><span class="acard-arrow">→</span></div></a>
+    <a class="acard" href="webpage-main/network_strategic_link.html"><div class="acard-top"></div><div class="acard-body"><div class="acard-icon">🔗</div><div class="acard-title">Strategic Links</div><div class="acard-desc">Which connections matter most in a network?</div></div><div class="acard-foot"><span class="acard-tag">Simulation</span><span class="acard-arrow">→</span></div></a>
+    <a class="acard" href="webpage-main/hand.html"><div class="acard-top"></div><div class="acard-body"><div class="acard-icon">🤚</div><div class="acard-title">Hand Skeleton</div><div class="acard-desc">Human hand anatomy as a force-directed network — bones as nodes, joints as edges</div></div><div class="acard-foot"><span class="acard-tag">Visualization</span><span class="acard-arrow">→</span></div></a>
+    <a class="acard" href="webpage-main/program_class_network4b.html"><div class="acard-top"></div><div class="acard-body"><div class="acard-icon">🎓</div><div class="acard-title">Luddy Program Map</div><div class="acard-desc">Network visualization of Informatics program minors and course connections</div></div><div class="acard-foot"><span class="acard-tag">Visualization</span><span class="acard-arrow">→</span></div></a>
+    <a class="acard" href="webpage-main/class_simulation_iteration_A.html"><div class="acard-top"></div><div class="acard-body"><div class="acard-icon">🪑</div><div class="acard-title">Classroom Networks</div><div class="acard-desc">How seating arrangements shape information flow and group formation</div></div><div class="acard-foot"><span class="acard-tag">Simulation</span><span class="acard-arrow">→</span></div></a>
+  </div>
+</div>
+
+<hr class="div">
+
+<!-- ═══ STANDARDS ═══ -->
+<div id="standards" class="topic-section">
+  <div class="topic-section-header">
+    <span class="topic-section-label">Week ·</span>
+    <span class="topic-section-name">Standards</span>
+  </div>
+  <div class="artifact-grid">
+    <a class="acard" href="webpage-main/unicode_binary.html"><div class="acard-top"></div><div class="acard-body"><div class="acard-icon">🔤</div><div class="acard-title">Unicode Binary Explorer</div><div class="acard-desc">How text becomes numbers — characters, encoding, and the Unicode standard</div></div><div class="acard-foot"><span class="acard-tag">Tool</span><span class="acard-arrow">→</span></div></a>
+    <a class="acard" href="webpage-main/cartesian_convention.html"><div class="acard-top"></div><div class="acard-body"><div class="acard-icon">📐</div><div class="acard-title">Cartesian Conventions (2D)</div><div class="acard-desc">The agreements behind coordinate systems — and what breaks when you don't share them</div></div><div class="acard-foot"><span class="acard-tag">Interactive</span><span class="acard-arrow">→</span></div></a>
+    <a class="acard" href="webpage-main/3d_cartesian_conventions.html"><div class="acard-top"></div><div class="acard-body"><div class="acard-icon">📦</div><div class="acard-title">Cartesian Conventions (3D)</div><div class="acard-desc">Right-hand vs left-hand, math vs graphics — how 3D coordinate standards diverge</div></div><div class="acard-foot"><span class="acard-tag">Interactive</span><span class="acard-arrow">→</span></div></a>
+  </div>
+</div>
+
+<hr class="div">
+
+<!-- ═══ ELECTRICITY ═══ -->
+<div id="electricity" class="topic-section">
+  <div class="topic-section-header">
+    <span class="topic-section-label">Week ·</span>
+    <span class="topic-section-name">Electricity</span>
+  </div>
+  <div class="artifact-grid">
+    <a class="acard" href="webpage-main/conductivity.html"><div class="acard-top"></div><div class="acard-body"><div class="acard-icon">⚡</div><div class="acard-title">Conductivity</div><div class="acard-desc">Electrons moving through conductors, semiconductors, and insulators in real time</div></div><div class="acard-foot"><span class="acard-tag">Simulation</span><span class="acard-arrow">→</span></div></a>
+    <a class="acard" href="webpage-main/semiconductor.html"><div class="acard-top"></div><div class="acard-body"><div class="acard-icon">💡</div><div class="acard-title">Semiconductors</div><div class="acard-desc">How materials switch between conducting and insulating — energy bands made visible</div></div><div class="acard-foot"><span class="acard-tag">Simulation</span><span class="acard-arrow">→</span></div></a>
+    <a class="acard" href="webpage-main/npn_transistor.html"><div class="acard-top"></div><div class="acard-body"><div class="acard-icon">🔌</div><div class="acard-title">NPN Transistor</div><div class="acard-desc">The transistor as switch and amplifier — interactive parameter control</div></div><div class="acard-foot"><span class="acard-tag">Simulation</span><span class="acard-arrow">→</span></div></a>
+  </div>
+</div>
+
+<hr class="div">
+
+<!-- ═══ ETHICS ═══ -->
+<div id="ethics" class="topic-section">
+  <div class="topic-section-header">
+    <span class="topic-section-label">Week ·</span>
+    <span class="topic-section-name">Ethics</span>
+  </div>
+  <div class="artifact-grid">
+    <a class="acard" href="webpage-main/emoji_switch_moral_calculus.html"><div class="acard-top" style="background:#be123c;"></div><div class="acard-body"><div class="acard-icon">🚃</div><div class="acard-title">Switch Stop</div><div class="acard-desc">The trolley problem, animated. Pull the lever or don't — and sit with it</div></div><div class="acard-foot"><span class="acard-tag">Scenario</span><span class="acard-arrow" style="color:#be123c;">→</span></div></a>
+    <a class="acard" href="webpage-main/emoji_push_moral_calculus.html"><div class="acard-top" style="background:#be123c;"></div><div class="acard-body"><div class="acard-icon">🫷</div><div class="acard-title">Push Stop</div><div class="acard-desc">The footbridge variant — is pushing different from switching?</div></div><div class="acard-foot"><span class="acard-tag">Scenario</span><span class="acard-arrow" style="color:#be123c;">→</span></div></a>
+    <a class="acard" href="webpage-main/traige.html"><div class="acard-top" style="background:#be123c;"></div><div class="acard-body"><div class="acard-icon">🏥</div><div class="acard-title">Triage</div><div class="acard-desc">Emergency decisions with limited resources — who gets care when you can't help everyone?</div></div><div class="acard-foot"><span class="acard-tag">Scenario</span><span class="acard-arrow" style="color:#be123c;">→</span></div></a>
+    <a class="acard" href="webpage-main/collisions.html"><div class="acard-top" style="background:#be123c;"></div><div class="acard-body"><div class="acard-icon">💥</div><div class="acard-title">Diffuse Harm</div><div class="acard-desc">A particle collision study in distributed responsibility and unintended consequence</div></div><div class="acard-foot"><span class="acard-tag">Simulation</span><span class="acard-arrow" style="color:#be123c;">→</span></div></a>
+  </div>
+</div>
+
+<hr class="div">
+
+<!-- ═══ DIVERSITY ═══ -->
+<div id="diversity" class="topic-section">
+  <div class="topic-section-header">
+    <span class="topic-section-label">Week ·</span>
+    <span class="topic-section-name">Diversity</span>
+  </div>
+  <div class="artifact-grid">
+    <a class="acard" href="webpage-main/schelling.html"><div class="acard-top" style="background:#0f766e;"></div><div class="acard-body"><div class="acard-icon">🏙️</div><div class="acard-title">Schelling Segregation</div><div class="acard-desc">How small individual preferences produce large-scale social segregation</div></div><div class="acard-foot"><span class="acard-tag">Simulation</span><span class="acard-arrow" style="color:#0f766e;">→</span></div></a>
+    <a class="acard" href="webpage-main/sakoda.html"><div class="acard-top" style="background:#0f766e;"></div><div class="acard-body"><div class="acard-icon">🔵</div><div class="acard-title">Sakoda Model</div><div class="acard-desc">James Sakoda's factionalization model — social clustering and group formation</div></div><div class="acard-foot"><span class="acard-tag">Simulation</span><span class="acard-arrow" style="color:#0f766e;">→</span></div></a>
+    <a class="acard" href="webpage-main/intersectionality_context.html"><div class="acard-top" style="background:#0f766e;"></div><div class="acard-body"><div class="acard-icon">🔀</div><div class="acard-title">Intersectionality</div><div class="acard-desc">Overlapping identities and compounding disadvantage in computing contexts</div></div><div class="acard-foot"><span class="acard-tag">Visualization</span><span class="acard-arrow" style="color:#0f766e;">→</span></div></a>
+    <a class="acard" href="webpage-main/oximeter_skin_tone.html"><div class="acard-top" style="background:#0f766e;"></div><div class="acard-body"><div class="acard-icon">💉</div><div class="acard-title">Oximeter &amp; Skin Tone</div><div class="acard-desc">Pulse oximeters measure differently across skin tones — a case study in design bias</div></div><div class="acard-foot"><span class="acard-tag">Case Study</span><span class="acard-arrow" style="color:#0f766e;">→</span></div></a>
+    <a class="acard" href="webpage-main/stem_diversity.html"><div class="acard-top" style="background:#0f766e;"></div><div class="acard-body"><div class="acard-icon">🌐</div><div class="acard-title">STEM Diversity Database</div><div class="acard-desc">Underrepresented innovators and their contributions to science and engineering</div></div><div class="acard-foot"><span class="acard-tag">Database</span><span class="acard-arrow" style="color:#0f766e;">→</span></div></a>
+    <a class="acard" href="webpage-main/nsf_diversity_program_timeline.html"><div class="acard-top" style="background:#0f766e;"></div><div class="acard-body"><div class="acard-icon">📅</div><div class="acard-title">NSF Diversity Timeline</div><div class="acard-desc">Historical timeline of NSF diversity programs in STEM</div></div><div class="acard-foot"><span class="acard-tag">Timeline</span><span class="acard-arrow" style="color:#0f766e;">→</span></div></a>
+  </div>
+</div>
+
+<hr class="div">
+
+<!-- ═══ DATA ═══ -->
+<div id="data" class="topic-section">
+  <div class="topic-section-header">
+    <span class="topic-section-label">Week ·</span>
+    <span class="topic-section-name">Data</span>
+  </div>
+  <div class="artifact-grid">
+    <a class="acard" href="webpage-main/rope_length_histogram.html"><div class="acard-top"></div><div class="acard-body"><div class="acard-icon">📏</div><div class="acard-title">Rope Length Histogram</div><div class="acard-desc">Distribution analysis — reading and interpreting statistical variation</div></div><div class="acard-foot"><span class="acard-tag">Visualization</span><span class="acard-arrow">→</span></div></a>
+    <a class="acard" href="webpage-main/crash_test_simulation.html"><div class="acard-top"></div><div class="acard-body"><div class="acard-icon">🚗</div><div class="acard-title">Crash Test Parameters</div><div class="acard-desc">Combinatorial matrix generator — exploring the design space of test conditions</div></div><div class="acard-foot"><span class="acard-tag">Tool</span><span class="acard-arrow">→</span></div></a>
+    <a class="acard" href="bloombot - Data.html"><div class="acard-top"></div><div class="acard-body"><div class="acard-icon">📈</div><div class="acard-title">Spurious Correlations</div><div class="acard-desc">Correlation, causation, and the art of being misled by numbers that are technically correct</div></div><div class="acard-foot"><span class="acard-tag">Case Study</span><span class="acard-arrow">→</span></div></a>
+  </div>
+</div>
+
+<hr class="div">
+
+<!-- ═══ DESIGN ═══ -->
+<div id="design" class="topic-section">
+  <div class="topic-section-header">
+    <span class="topic-section-label">Week ·</span>
+    <span class="topic-section-name">Design</span>
+  </div>
+  <div class="artifact-grid">
+    <a class="acard" href="webpage-main/oven_clock_design.html"><div class="acard-top" style="background:#b45309;"></div><div class="acard-body"><div class="acard-icon">🕐</div><div class="acard-title">Oven Clock Reset</div><div class="acard-desc">Can you figure out how to set the time? A usability puzzle in reverse-engineering</div></div><div class="acard-foot"><span class="acard-tag">Challenge</span><span class="acard-arrow" style="color:#b45309;">→</span></div></a>
+    <a class="acard" href="webpage-main/informatics_design_cycle.html"><div class="acard-top" style="background:#b45309;"></div><div class="acard-body"><div class="acard-icon">🔄</div><div class="acard-title">Informatics Design Cycle</div><div class="acard-desc">The iterative design process made explorable — problem, data, design, implement, evaluate</div></div><div class="acard-foot"><span class="acard-tag">Interactive</span><span class="acard-arrow" style="color:#b45309;">→</span></div></a>
+    <a class="acard" href="webpage-main/PLOs.html"><div class="acard-top" style="background:#b45309;"></div><div class="acard-body"><div class="acard-icon">🎯</div><div class="acard-title">Program Learning Outcomes</div><div class="acard-desc">Informatics PLOs as a force-directed graph — where skills connect and overlap</div></div><div class="acard-foot"><span class="acard-tag">Visualization</span><span class="acard-arrow" style="color:#b45309;">→</span></div></a>
+    <a class="acard" href="webpage-main/facebook2005.html"><div class="acard-top" style="background:#b45309;"></div><div class="acard-body"><div class="acard-icon">📘</div><div class="acard-title">Facebook 2005</div><div class="acard-desc">The original interface — before the algorithm, before the feed</div></div><div class="acard-foot"><span class="acard-tag">Historical</span><span class="acard-arrow" style="color:#b45309;">→</span></div></a>
+    <a class="acard" href="webpage-main/facebook2015.html"><div class="acard-top" style="background:#b45309;"></div><div class="acard-body"><div class="acard-icon">👍</div><div class="acard-title">Facebook 2015</div><div class="acard-desc">Mid-period design — flatter UI, more engagement mechanics</div></div><div class="acard-foot"><span class="acard-tag">Historical</span><span class="acard-arrow" style="color:#b45309;">→</span></div></a>
+    <a class="acard" href="webpage-main/facebook2025.html"><div class="acard-top" style="background:#b45309;"></div><div class="acard-body"><div class="acard-icon">🌙</div><div class="acard-title">Facebook 2025</div><div class="acard-desc">Dark mode, algorithmic feed, modern components — how the platform choreographs attention now</div></div><div class="acard-foot"><span class="acard-tag">Current</span><span class="acard-arrow" style="color:#b45309;">→</span></div></a>
+    <a class="acard" href="webpage-main/instagram2015.html"><div class="acard-top" style="background:#b45309;"></div><div class="acard-body"><div class="acard-icon">📷</div><div class="acard-title">Instagram 2015</div><div class="acard-desc">Early Instagram — minimal, photo-first, before Stories</div></div><div class="acard-foot"><span class="acard-tag">Historical</span><span class="acard-arrow" style="color:#b45309;">→</span></div></a>
+    <a class="acard" href="webpage-main/instagram2025.html"><div class="acard-top" style="background:#b45309;"></div><div class="acard-body"><div class="acard-icon">🎞️</div><div class="acard-title">Instagram 2025</div><div class="acard-desc">Stories, Reels, Explore — a decade of interface drift toward video and recommendation</div></div><div class="acard-foot"><span class="acard-tag">Current</span><span class="acard-arrow" style="color:#b45309;">→</span></div></a>
+    <a class="acard" href="webpage-main/rope_walker.html"><div class="acard-top" style="background:#b45309;"></div><div class="acard-body"><div class="acard-icon">🪢</div><div class="acard-title">Rope Walker</div><div class="acard-desc">Physics simulation of a rope under tension — material behavior as design constraint</div></div><div class="acard-foot"><span class="acard-tag">Simulation</span><span class="acard-arrow" style="color:#b45309;">→</span></div></a>
+    <a class="acard" href="webpage-main/tempo.html"><div class="acard-top" style="background:#b45309;"></div><div class="acard-body"><div class="acard-icon">🥁</div><div class="acard-title">Tempo</div><div class="acard-desc">Rhythm and timing as a design system — metronome and visualization</div></div><div class="acard-foot"><span class="acard-tag">Interactive</span><span class="acard-arrow" style="color:#b45309;">→</span></div></a>
+  </div>
+</div>
+
+<hr class="div">
+
+<!-- ═══ SECURITY ═══ -->
+<div id="security" class="topic-section">
+  <div class="topic-section-header">
+    <span class="topic-section-label">Week ·</span>
+    <span class="topic-section-name">Security</span>
+  </div>
+  <div class="artifact-grid">
+    <a class="acard" href="webpage-main/digital_footprint_three.html"><div class="acard-top" style="background:#6d28d9;"></div><div class="acard-body"><div class="acard-icon">👣</div><div class="acard-title">Digital Footprint</div><div class="acard-desc">Map the data trail of everyday online life — what you leave and where it goes</div></div><div class="acard-foot"><span class="acard-tag">Visualization</span><span class="acard-arrow" style="color:#6d28d9;">→</span></div></a>
+    <a class="acard" href="webpage-main/phishing_quiz.html"><div class="acard-top" style="background:#6d28d9;"></div><div class="acard-body"><div class="acard-icon">🎣</div><div class="acard-title">Phishing Quiz</div><div class="acard-desc">Spot the attack — gamified security awareness with immediate feedback</div></div><div class="acard-foot"><span class="acard-tag">Game</span><span class="acard-arrow" style="color:#6d28d9;">→</span></div></a>
+    <a class="acard" href="webpage-main/social_engineering.html"><div class="acard-top" style="background:#6d28d9;"></div><div class="acard-body"><div class="acard-icon">🎭</div><div class="acard-title">Social Engineering</div><div class="acard-desc">The human side of security — how trust gets exploited</div></div><div class="acard-foot"><span class="acard-tag">Scenario</span><span class="acard-arrow" style="color:#6d28d9;">→</span></div></a>
+    <a class="acard" href="webpage-main/password_analyzer.html"><div class="acard-top" style="background:#6d28d9;"></div><div class="acard-body"><div class="acard-icon">🔑</div><div class="acard-title">Password Analyzer</div><div class="acard-desc">Real-time strength analysis and crack-time estimation</div></div><div class="acard-foot"><span class="acard-tag">Tool</span><span class="acard-arrow" style="color:#6d28d9;">→</span></div></a>
+    <a class="acard" href="webpage-main/simple_encryption.html"><div class="acard-top" style="background:#6d28d9;"></div><div class="acard-body"><div class="acard-icon">🔒</div><div class="acard-title">Simple Encryption</div><div class="acard-desc">Caesar and substitution ciphers — the foundations before RSA</div></div><div class="acard-foot"><span class="acard-tag">Tool</span><span class="acard-arrow" style="color:#6d28d9;">→</span></div></a>
+    <a class="acard" href="webpage-main/rsa_encryption.html"><div class="acard-top" style="background:#6d28d9;"></div><div class="acard-body"><div class="acard-icon">🔐</div><div class="acard-title">RSA Encryption</div><div class="acard-desc">Step through public-key cryptography with working code</div></div><div class="acard-foot"><span class="acard-tag">Tool</span><span class="acard-arrow" style="color:#6d28d9;">→</span></div></a>
+  </div>
+</div>
+
+<!-- SLIDES COMING -->
+<div class="slides-band">
+  <div class="slides-inner">
+    <div class="slides-text">
+      <h3>Lecture Slides</h3>
+      <p>Each artifact was built to accompany a specific lecture. Slides for FA 25 will be added here — connecting the tools to readings, discussion prompts, and the week's context.</p>
+    </div>
+    <span class="slides-badge">Coming — FA 25 slides</span>
+  </div>
+</div>
+
+<footer>
+  <div>bloombot &nbsp;·&nbsp; Matthew Francisco &nbsp;·&nbsp; Luddy School of Informatics, Computing &amp; Engineering</div>
+  <div>Indiana University &nbsp;·&nbsp; <a href="bloombot-modern.html">Home</a></div>
+</footer>
+</body>
+</html>

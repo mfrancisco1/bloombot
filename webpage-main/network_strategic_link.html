@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Network Analysis Tool</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-dsv/3.0.1/d3-dsv.min.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; color: #222; }
+    .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+    .header { background: #222; color: white; padding: 20px; text-align: center; }
+    .controls { background: #333; padding: 15px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
+    .control-group { display: flex; flex-direction: column; gap: 5px; }
+    label { color: #ccc; font-size: 12px; text-transform: uppercase; }
+    input, button, select { padding: 6px 10px; border: 1px solid #555; background: #444; color: white; border-radius: 4px; }
+    button { cursor: pointer; transition: all 0.3s; text-transform: uppercase; font-weight: 500; }
+    button:hover { background: #666; }
+    select { cursor: pointer; min-width: 150px; }
+    .main-content { display: flex; height: 600px; }
+    #network-svg { flex: 1; border-right: 1px solid #ddd; background: white; }
+    .stats-panel { width: 350px; padding: 20px; background: #fafafa; overflow-y: auto; }
+    .stats-section { margin-bottom: 25px; }
+    .stats-section h3 { margin: 0 0 10px 0; color: #333; font-size: 16px; border-bottom: 2px solid #222; padding-bottom: 5px; }
+    .stat-item { display: flex; justify-content: space-between; font-size: 14px; padding: 3px 0; }
+    .node { cursor: pointer; stroke: #222; stroke-width: 1.5; }
+    .node:hover { stroke-width: 3; }
+    .link { stroke: #999; stroke-opacity: 0.4; stroke-width: 1; }
+    .link.highlighted { stroke: #ff6b6b; stroke-opacity: 1; stroke-width: 2; }
+    .strategic-link { stroke: #ffd700; stroke-opacity: 0.8; stroke-width: 2.5; stroke-dasharray: 5,5; }
+    .strategic-link.animated { animation: dash 1s linear infinite; }
+    @keyframes dash { to { stroke-dashoffset: -10; } }
+    .node-label { font-size: 10px; fill: #333; pointer-events: none; text-anchor: middle; }
+    .tooltip { position: absolute; padding: 8px; background: rgba(0,0,0,0.9); color: white; border-radius: 4px; font-size: 12px; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Network Analysis Tool</h1>
+    </div>
+
+    <div class="controls">
+      <div class="control-group">
+        <label for="fileInput">Load Edge List (CSV)</label>
+        <input type="file" id="fileInput" accept=".csv" />
+      </div>
+      <button id="loadButton" disabled>Load Network</button>
+      <button id="layout-btn">Restart Layout</button>
+      <div class="control-group">
+        <label for="strategy-select">Link Strategy</label>
+        <select id="strategy-select">
+          <option value="betweenness">High Betweenness Bridge</option>
+          <option value="diameter">Diameter Reduction</option>
+          <option value="triadic">Triadic Closure</option>
+          <option value="component">Component Bridging</option>
+          <option value="clustering">Clustering Enhancement</option>
+        </select>
+      </div>
+      <button id="strategic-btn" disabled>Find Strategic Links</button>
+      <button id="clear-strategic-btn" disabled>Clear Suggestions</button>
+    </div>
+
+    <div class="main-content">
+      <svg id="network-svg"></svg>
+      <div class="stats-panel">
+        <div class="stats-section">
+          <h3>Network Overview</h3>
+          <div class="stat-item"><span>Nodes:</span><span id="stat-nodes">-</span></div>
+          <div class="stat-item"><span>Edges:</span><span id="stat-edges">-</span></div>
+          <div class="stat-item"><span>Density:</span><span id="stat-density">-</span></div>
+          <div class="stat-item"><span>Avg. Degree:</span><span id="stat-avg-degree">-</span></div>
+          <div class="stat-item"><span>Diameter:</span><span id="stat-diameter">-</span></div>
+        </div>
+        <div class="stats-section">
+          <h3>Centrality Measures</h3>
+          <div class="stat-item"><span>Max Degree:</span><span id="stat-max-degree">-</span></div>
+          <div class="stat-item"><span>Max Betweenness:</span><span id="stat-max-betweenness">-</span></div>
+          <div class="stat-item"><span>Max Closeness:</span><span id="stat-max-closeness">-</span></div>
+        </div>
+        <div class="stats-section">
+          <h3>Clustering</h3>
+          <div class="stat-item"><span>Global Clustering:</span><span id="stat-global-clustering">-</span></div>
+          <div class="stat-item"><span>Avg. Local Clustering:</span><span id="stat-avg-clustering">-</span></div>
+        </div>
+        <div class="stats-section" id="strategic-section" style="display:none;">
+          <h3>Strategic Links</h3>
+          <div id="strategic-details" style="font-size: 13px; line-height: 1.6;"></div>
+        </div>
+        <div class="stats-section">
+          <h3>Selected Node</h3>
+          <div id="node-details" style="color: #666;">Click on a node to see details</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tooltip"></div>
+
+  <script>
+    let nodes = [], links = [], simulation, selectedNode=null, strategicLinks = [];
+    const svg = d3.select("#network-svg");
+    const width = svg.node().getBoundingClientRect().width, height = 600;
+    svg.attr("width", width).attr("height", height);
+    const g = svg.append("g");
+    svg.call(
+      d3.zoom()
+        .scaleExtent([0.05, 10])
+        .on("zoom", e => g.attr("transform", e.transform))
+    );
+    const tooltip = d3.select(".tooltip");
+
+    document.getElementById("fileInput").addEventListener("change", e=>{
+      document.getElementById("loadButton").disabled=!e.target.files.length;
+    });
+
+    document.getElementById("loadButton").addEventListener("click", ()=>{
+      const file=document.getElementById("fileInput").files[0]; if(!file) return;
+      const reader=new FileReader();
+      reader.onload=e=>{
+        const data=d3.csvParse(e.target.result);
+        buildFromEdgeList(data);
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById("layout-btn").addEventListener("click", ()=>{
+      if(simulation) simulation.alpha(1).restart();
+    });
+
+    document.getElementById("strategic-btn").addEventListener("click", ()=>{
+      const strategy = document.getElementById("strategy-select").value;
+      findStrategicLinks(strategy);
+    });
+
+    document.getElementById("clear-strategic-btn").addEventListener("click", ()=>{
+      clearStrategicLinks();
+    });
+
+    function buildFromEdgeList(data){
+      const nodeSet=new Set();
+      data.forEach(d=>{nodeSet.add(d.Source);nodeSet.add(d.Target);});
+      nodes=Array.from(nodeSet).map((id,i)=>({id, label:id, degree:0}));
+      const nodeMap=new Map(nodes.map(n=>[n.id,n]));
+      links=data.map(d=>{
+        const s=nodeMap.get(d.Source), t=nodeMap.get(d.Target);
+        if(s) s.degree++; if(t) t.degree++;
+        return {source:d.Source, target:d.Target};
+      });
+      document.getElementById("strategic-btn").disabled = false;
+      updateNetwork();
+    }
+
+    function updateNetwork(){
+      g.selectAll("*").remove();
+      const betweenness=calculateBetweenness(nodes,links);
+      const closeness=calculateCloseness(nodes,links);
+      const clustering=calculateClustering(nodes,links);
+      nodes.forEach((n,i)=>{n.betweenness=betweenness[i];n.closeness=closeness[i];n.clustering=clustering[i];});
+      simulation=d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d=>d.id).distance(60))
+        .force("charge", d3.forceManyBody().strength(-150))
+        .force("center", d3.forceCenter(width/2,height/2))
+        .force("collision", d3.forceCollide().radius(15));
+      const link=g.append("g").selectAll("line").data(links).enter().append("line").attr("class","link");
+      
+      // Strategic links group
+      const strategicLinkGroup = g.append("g").attr("class", "strategic-links-group");
+      
+      const node=g.append("g").selectAll("circle").data(nodes).enter().append("circle")
+        .attr("class","node").attr("r",d=>5+Math.sqrt(d.degree)).attr("fill","#69b3a2")
+        .on("click",(e,d)=>{selectedNode=d;updateNodeDetails(d);highlightNode(d);})
+        .on("mouseover",(e,d)=>{tooltip.style("opacity",1).style("left",(e.pageX+10)+"px").style("top",(e.pageY-10)+"px").html(`<strong>${d.label}</strong><br>Degree:${d.degree}`);})
+        .on("mouseout",()=>tooltip.style("opacity",0))
+        .call(d3.drag().on("start",dragstarted).on("drag",dragged).on("end",dragended));
+      if(nodes.length<=30){g.append("g").selectAll("text").data(nodes).enter().append("text").attr("class","node-label").text(d=>d.label);}
+      simulation.on("tick",()=>{
+        link.attr("x1",d=>d.source.x).attr("y1",d=>d.source.y).attr("x2",d=>d.target.x).attr("y2",d=>d.target.y);
+        node.attr("cx",d=>d.x).attr("cy",d=>d.y);
+        if(nodes.length<=30){g.selectAll(".node-label").attr("x",d=>d.x).attr("y",d=>d.y-10);}
+        // Update strategic links
+        strategicLinkGroup.selectAll("line").attr("x1",d=>d.source.x).attr("y1",d=>d.source.y)
+          .attr("x2",d=>d.target.x).attr("y2",d=>d.target.y);
+      });
+      updateStatistics();
+      // Redraw strategic links if any
+      if(strategicLinks.length > 0) {
+        drawStrategicLinks();
+      }
+    }
+
+    function dragstarted(e,d){if(!e.active) simulation.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y;}
+    function dragged(e,d){d.fx=e.x;d.fy=e.y;}
+    function dragended(e,d){if(!e.active) simulation.alphaTarget(0);d.fx=null;d.fy=null;}
+
+    function highlightNode(node){
+      g.selectAll(".link").classed("highlighted",d=>d.source.id===node.id||d.target.id===node.id);
+    }
+    function updateNodeDetails(n){
+      document.getElementById("node-details").innerHTML=`
+        <div>Node: ${n.label}</div>
+        <div>Degree: ${n.degree}</div>
+        <div>Betweenness: ${n.betweenness.toFixed(4)}</div>
+        <div>Closeness: ${n.closeness.toFixed(4)}</div>
+        <div>Clustering: ${n.clustering.toFixed(4)}</div>`;
+    }
+    function updateStatistics(){
+      const density=(2*links.length)/(nodes.length*(nodes.length-1));
+      const avgDeg=nodes.reduce((s,n)=>s+n.degree,0)/nodes.length;
+      const diameter=calcDiameter(nodes,links);
+      document.getElementById("stat-nodes").textContent=nodes.length;
+      document.getElementById("stat-edges").textContent=links.length;
+      document.getElementById("stat-density").textContent=density.toFixed(4);
+      document.getElementById("stat-avg-degree").textContent=avgDeg.toFixed(2);
+      document.getElementById("stat-diameter").textContent=diameter;
+      document.getElementById("stat-max-degree").textContent=Math.max(...nodes.map(n=>n.degree));
+      document.getElementById("stat-max-betweenness").textContent=Math.max(...nodes.map(n=>n.betweenness)).toFixed(4);
+      document.getElementById("stat-max-closeness").textContent=Math.max(...nodes.map(n=>n.closeness)).toFixed(4);
+      const globalClust=nodes.reduce((s,n)=>s+n.clustering,0)/nodes.length;
+      document.getElementById("stat-global-clustering").textContent=globalClust.toFixed(4);
+      document.getElementById("stat-avg-clustering").textContent=globalClust.toFixed(4);
+    }
+
+    // --- Strategic Link Functions ---
+    function findStrategicLinks(strategy) {
+      strategicLinks = [];
+      let pairs = [];
+      
+      switch(strategy) {
+        case 'betweenness':
+          pairs = findBetweennessBridges();
+          break;
+        case 'diameter':
+          pairs = findDiameterReducingLinks();
+          break;
+        case 'triadic':
+          pairs = findTriadicClosures();
+          break;
+        case 'component':
+          pairs = findComponentBridges();
+          break;
+        case 'clustering':
+          pairs = findClusteringEnhancers();
+          break;
+      }
+      
+      strategicLinks = pairs.slice(0, 5); // Top 5 suggestions
+      drawStrategicLinks();
+      displayStrategicInfo(strategy);
+      document.getElementById("clear-strategic-btn").disabled = false;
+    }
+
+    function findBetweennessBridges() {
+      // Connect high betweenness nodes that aren't already connected
+      const sorted = [...nodes].sort((a,b) => b.betweenness - a.betweenness);
+      const pairs = [];
+      const existingEdges = new Set(links.map(l => `${l.source.id}-${l.target.id}`));
+      
+      for(let i = 0; i < Math.min(10, sorted.length); i++) {
+        for(let j = i+1; j < Math.min(20, sorted.length); j++) {
+          const key1 = `${sorted[i].id}-${sorted[j].id}`;
+          const key2 = `${sorted[j].id}-${sorted[i].id}`;
+          if(!existingEdges.has(key1) && !existingEdges.has(key2)) {
+            pairs.push({
+              source: sorted[i],
+              target: sorted[j],
+              score: sorted[i].betweenness + sorted[j].betweenness,
+              reason: `Bridges high-centrality nodes (${sorted[i].betweenness.toFixed(3)} + ${sorted[j].betweenness.toFixed(3)})`
+            });
+          }
+        }
+      }
+      return pairs.sort((a,b) => b.score - a.score);
+    }
+
+    function findDiameterReducingLinks() {
+      // Find pairs that would most reduce the diameter
+      const n = nodes.length;
+      const adj = buildAdjacencyList();
+      const pairs = [];
+      const existingEdges = new Set(links.map(l => `${l.source.id}-${l.target.id}`));
+      
+      // Calculate all-pairs shortest paths
+      const dist = Array.from({length: n}, () => Array(n).fill(Infinity));
+      for(let i = 0; i < n; i++) dist[i][i] = 0;
+      links.forEach(l => {
+        const si = nodes.findIndex(n => n.id === l.source.id || n.id === l.source);
+        const ti = nodes.findIndex(n => n.id === l.target.id || n.id === l.target);
+        dist[si][ti] = dist[ti][si] = 1;
+      });
+      
+      // Floyd-Warshall
+      for(let k = 0; k < n; k++) {
+        for(let i = 0; i < n; i++) {
+          for(let j = 0; j < n; j++) {
+            dist[i][j] = Math.min(dist[i][j], dist[i][k] + dist[k][j]);
+          }
+        }
+      }
+      
+      // Find pairs with longest distances
+      for(let i = 0; i < n; i++) {
+        for(let j = i+1; j < n; j++) {
+          const key1 = `${nodes[i].id}-${nodes[j].id}`;
+          const key2 = `${nodes[j].id}-${nodes[i].id}`;
+          if(!existingEdges.has(key1) && !existingEdges.has(key2) && dist[i][j] > 2) {
+            pairs.push({
+              source: nodes[i],
+              target: nodes[j],
+              score: dist[i][j],
+              reason: `Reduces path length from ${dist[i][j]} to 1`
+            });
+          }
+        }
+      }
+      return pairs.sort((a,b) => b.score - a.score);
+    }
+
+    function findTriadicClosures() {
+      // Find pairs with many common neighbors (triadic closure)
+      const n = nodes.length;
+      const adj = buildAdjacencyList();
+      const pairs = [];
+      const existingEdges = new Set(links.map(l => `${l.source.id}-${l.target.id}`));
+      
+      for(let i = 0; i < n; i++) {
+        for(let j = i+1; j < n; j++) {
+          const key1 = `${nodes[i].id}-${nodes[j].id}`;
+          const key2 = `${nodes[j].id}-${nodes[i].id}`;
+          if(!existingEdges.has(key1) && !existingEdges.has(key2)) {
+            const neighbors_i = new Set(adj[i]);
+            const neighbors_j = new Set(adj[j]);
+            const common = [...neighbors_i].filter(x => neighbors_j.has(x)).length;
+            if(common > 0) {
+              pairs.push({
+                source: nodes[i],
+                target: nodes[j],
+                score: common,
+                reason: `Creates ${common} new triangle${common > 1 ? 's' : ''}`
+              });
+            }
+          }
+        }
+      }
+      return pairs.sort((a,b) => b.score - a.score);
+    }
+
+    function findComponentBridges() {
+      // Find nodes in different connected components
+      const n = nodes.length;
+      const component = new Array(n).fill(-1);
+      const adj = buildAdjacencyList();
+      let numComponents = 0;
+      
+      // DFS to find components
+      function dfs(v, comp) {
+        component[v] = comp;
+        adj[v].forEach(w => {
+          if(component[w] === -1) dfs(w, comp);
+        });
+      }
+      
+      for(let i = 0; i < n; i++) {
+        if(component[i] === -1) {
+          dfs(i, numComponents++);
+        }
+      }
+      
+      const pairs = [];
+      if(numComponents === 1) {
+        // If connected, find high-betweenness nodes in different clusters
+        return findBetweennessBridges();
+      }
+      
+      // Find pairs from different components
+      for(let i = 0; i < n; i++) {
+        for(let j = i+1; j < n; j++) {
+          if(component[i] !== component[j]) {
+            pairs.push({
+              source: nodes[i],
+              target: nodes[j],
+              score: 100,
+              reason: `Bridges components ${component[i]+1} and ${component[j]+1}`
+            });
+          }
+        }
+      }
+      return pairs.slice(0, 10);
+    }
+
+    function findClusteringEnhancers() {
+      // Find pairs that would most increase global clustering
+      const n = nodes.length;
+      const adj = buildAdjacencyList();
+      const pairs = [];
+      const existingEdges = new Set(links.map(l => `${l.source.id}-${l.target.id}`));
+      
+      for(let i = 0; i < n; i++) {
+        for(let j = i+1; j < n; j++) {
+          const key1 = `${nodes[i].id}-${nodes[j].id}`;
+          const key2 = `${nodes[j].id}-${nodes[i].id}`;
+          if(!existingEdges.has(key1) && !existingEdges.has(key2)) {
+            // Count how many triangles this edge would create
+            const neighbors_i = new Set(adj[i]);
+            const neighbors_j = new Set(adj[j]);
+            const triangles = [...neighbors_i].filter(x => neighbors_j.has(x)).length;
+            
+            // Also consider the clustering improvement for both nodes
+            const clusteringGain = (1 - nodes[i].clustering) + (1 - nodes[j].clustering);
+            const score = triangles * 10 + clusteringGain;
+            
+            if(triangles > 0 || clusteringGain > 0.5) {
+              pairs.push({
+                source: nodes[i],
+                target: nodes[j],
+                score: score,
+                reason: `+${triangles} triangles, improves clustering`
+              });
+            }
+          }
+        }
+      }
+      return pairs.sort((a,b) => b.score - a.score);
+    }
+
+    function buildAdjacencyList() {
+      const n = nodes.length;
+      const adj = Array.from({length: n}, () => []);
+      links.forEach(l => {
+        const si = nodes.findIndex(n => n.id === l.source.id || n.id === l.source);
+        const ti = nodes.findIndex(n => n.id === l.target.id || n.id === l.target);
+        adj[si].push(ti);
+        adj[ti].push(si);
+      });
+      return adj;
+    }
+
+    function drawStrategicLinks() {
+      const strategicLinkGroup = g.select(".strategic-links-group");
+      
+      const strategicLinkEls = strategicLinkGroup.selectAll("line")
+        .data(strategicLinks, d => `${d.source.id}-${d.target.id}`);
+      
+      strategicLinkEls.exit().remove();
+      
+      strategicLinkEls.enter()
+        .append("line")
+        .attr("class", "strategic-link animated")
+        .merge(strategicLinkEls)
+        .attr("x1", d => d.source.x || 0)
+        .attr("y1", d => d.source.y || 0)
+        .attr("x2", d => d.target.x || 0)
+        .attr("y2", d => d.target.y || 0);
+    }
+
+    function displayStrategicInfo(strategy) {
+      const section = document.getElementById("strategic-section");
+      const details = document.getElementById("strategic-details");
+      section.style.display = "block";
+      
+      const strategyNames = {
+        'betweenness': 'High Betweenness Bridge',
+        'diameter': 'Diameter Reduction',
+        'triadic': 'Triadic Closure',
+        'component': 'Component Bridging',
+        'clustering': 'Clustering Enhancement'
+      };
+      
+      let html = `<div style="margin-bottom: 10px;"><strong>Strategy:</strong> ${strategyNames[strategy]}</div>`;
+      html += '<div style="margin-bottom: 5px;"><strong>Top Suggestions:</strong></div>';
+      
+      strategicLinks.forEach((link, i) => {
+        html += `<div style="padding: 5px 0; border-bottom: 1px solid #ddd;">
+          <div style="color: #ffd700; font-weight: bold;">${i+1}. ${link.source.label} ↔ ${link.target.label}</div>
+          <div style="font-size: 11px; color: #666;">${link.reason}</div>
+        </div>`;
+      });
+      
+      details.innerHTML = html;
+    }
+
+    function clearStrategicLinks() {
+      strategicLinks = [];
+      g.select(".strategic-links-group").selectAll("line").remove();
+      document.getElementById("strategic-section").style.display = "none";
+      document.getElementById("clear-strategic-btn").disabled = true;
+    }
+
+    // --- Metrics ---
+    function calculateBetweenness(nodes,links){const n=nodes.length,b=new Array(n).fill(0),adj=Array.from({length:n},()=>[]);
+      links.forEach(l=>{const s=nodes.findIndex(nn=>nn.id===l.source.id||nn.id===l.source),t=nodes.findIndex(nn=>nn.id===l.target.id||nn.id===l.target);adj[s].push(t);adj[t].push(s);});
+      for(let s=0;s<n;s++){const S=[],P=Array.from({length:n},()=>[]),sigma=new Array(n).fill(0),d=new Array(n).fill(-1);sigma[s]=1;d[s]=0;const Q=[s];
+        while(Q.length){const v=Q.shift();S.push(v);adj[v].forEach(w=>{if(d[w]<0){Q.push(w);d[w]=d[v]+1;}if(d[w]===d[v]+1){sigma[w]+=sigma[v];P[w].push(v);}});}
+        const delta=new Array(n).fill(0);while(S.length){const w=S.pop();P[w].forEach(v=>{delta[v]+=(sigma[v]/sigma[w])*(1+delta[w]);});if(w!==s)b[w]+=delta[w];}}
+      const norm=2/((n-1)*(n-2));return b.map(x=>x*norm);}
+    function calculateCloseness(nodes,links){const n=nodes.length,adj=Array.from({length:n},()=>[]);links.forEach(l=>{const s=nodes.findIndex(nn=>nn.id===l.source.id||nn.id===l.source),t=nodes.findIndex(nn=>nn.id===l.target.id||nn.id===l.target);adj[s].push(t);adj[t].push(s);});
+      return nodes.map((_,i)=>{const dist=new Array(n).fill(Infinity);dist[i]=0;const q=[i];while(q.length){const v=q.shift();adj[v].forEach(w=>{if(dist[w]===Infinity){dist[w]=dist[v]+1;q.push(w);}});}const sum=dist.reduce((a,d)=>a+(d===Infinity?0:d),0);return sum>0?(n-1)/sum:0;});}
+    function calculateClustering(nodes,links){const n=nodes.length,adj=Array.from({length:n},()=>new Set());links.forEach(l=>{const s=nodes.findIndex(nn=>nn.id===l.source.id||nn.id===l.source),t=nodes.findIndex(nn=>nn.id===l.target.id||nn.id===l.target);adj[s].add(t);adj[t].add(s);});
+      return nodes.map((_,i)=>{const neigh=[...adj[i]],k=neigh.length;if(k<2)return 0;let tri=0;for(let j=0;j<k;j++){for(let l=j+1;l<k;l++){if(adj[neigh[j]].has(neigh[l]))tri++;}}return (2*tri)/(k*(k-1));});}
+    function calcDiameter(nodes,links){const n=nodes.length,adj=Array.from({length:n},()=>[]);links.forEach(l=>{const s=nodes.findIndex(nn=>nn.id===l.source.id||nn.id===l.source),t=nodes.findIndex(nn=>nn.id===l.target.id||nn.id===l.target);adj[s].push(t);adj[t].push(s);});let diam=0;
+      for(let i=0;i<n;i++){const dist=new Array(n).fill(Infinity);dist[i]=0;const q=[i];while(q.length){const v=q.shift();adj[v].forEach(w=>{if(dist[w]===Infinity){dist[w]=dist[v]+1;q.push(w);}});}diam=Math.max(diam,Math.max(...dist.filter(d=>d<Infinity)));}return diam;}
+  </script>
+</body>
+</html>

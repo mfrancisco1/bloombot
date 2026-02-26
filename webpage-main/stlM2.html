@@ -1,177 +1,384 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Francisco's 3D Modeling Showcase</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Model Viewer — bloombot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    body { margin: 0; }
-    canvas { width: 100%; height: 100%; }
-    .description-box {
-      position: absolute;
-      font-family: 'Your Modern Font', sans-serif;
-      color: white;
-      top: 100px;
-      left: 10px;
-      background-color: black;
-      padding: 10px;
-      border-radius: 5px;
-      max-width: 350px;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink: #1a1612; --cream: #f5f0e8; --warm: #e8dcc8;
+      --rust: #c4541a; --amber: #d97706; --forest: #2d5a27;
+      --slate: #64748b; --border: #d1c4aa; --shadow: rgba(26,22,18,0.10);
+      --cat-i341: #d97706;
+      --cat-useful: #c4541a;
+      --cat-parts: #2d7a6a;
+      --cat-story: #7c4dbe;
     }
-    .selection-box {
-      top: 5px;
-      left: 10px;
-      padding: 10px;
-      border-radius: 5px;
-      color: white;
-      background-color: black;
-      font-family: 'Your Modern Font', sans-serif;
-      font-size: 16pt;
-    }
-}
+    html, body { height: 100%; overflow: hidden; font-family: 'Space Grotesk', sans-serif; background: var(--ink); color: #fff; }
+
+    /* ── Nav ── */
+    nav { position: relative; z-index: 100; background: var(--ink); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; height: 56px; border-bottom: 3px solid var(--rust); flex-shrink: 0; }
+    .nav-brand { font-family: 'Space Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--amber); text-decoration: none; letter-spacing: -0.03em; }
+    .nav-links { display:flex; list-style:none; overflow:visible; }
+    .nav-links li { position:relative; }
+    .nav-links li>a { display:flex; align-items:center; gap:0.3rem; height:56px; padding:0 0.9rem; color:rgba(255,255,255,0.65); text-decoration:none; font-size:0.78rem; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; white-space:nowrap; transition:color 0.2s,background 0.2s; }
+    .nav-links li>a:hover { color:#fff; background:rgba(255,255,255,0.07); }
+    .nav-links li>a.active { color:var(--amber); }
+    .caret { font-size:0.55rem; opacity:0.5; }
+    .dropdown { display:none; position:absolute; top:56px; left:0; background:#111; border:1px solid rgba(255,255,255,0.1); border-top:2px solid var(--rust); border-radius:0 0 8px 8px; min-width:200px; list-style:none; z-index:200; box-shadow:0 8px 24px rgba(0,0,0,0.4); }
+    .nav-links li:hover .dropdown { display:block; }
+    .dropdown li a { display:block; padding:0.6rem 1rem; font-size:0.78rem; color:rgba(255,255,255,0.65); border-bottom:1px solid rgba(255,255,255,0.06); white-space:nowrap; text-decoration:none; }
+    .dropdown li:last-child a { border-bottom:none; }
+    .dropdown li a:hover { color:#fff; background:rgba(255,255,255,0.07); }
+
+    /* ── Main layout ── */
+    .main { display: flex; height: calc(100vh - 56px); }
+
+    /* ── Side panel ── */
+    .side-panel { width: 290px; flex-shrink: 0; background: #111; border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; overflow: hidden; }
+
+    .panel-header { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+    .panel-header p { font-family: 'Space Mono', monospace; font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 0.2rem; }
+    .panel-header h2 { font-size: 0.95rem; font-weight: 600; color: rgba(255,255,255,0.85); }
+
+    .model-list { flex: 1; overflow-y: auto; padding: 0.75rem 0; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
+    .model-list::-webkit-scrollbar { width: 4px; }
+    .model-list::-webkit-scrollbar-track { background: transparent; }
+    .model-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+    .category { margin-bottom: 0.25rem; }
+    .category-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.25rem; cursor: pointer; user-select: none; }
+    .category-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .category-label { font-family: 'Space Mono', monospace; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+    .category-count { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: rgba(255,255,255,0.25); margin-left: auto; }
+
+    .category-items { display: flex; flex-direction: column; }
+    .model-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.55rem 1.25rem 0.55rem 2.25rem; cursor: pointer; transition: background 0.15s; border-left: 2px solid transparent; }
+    .model-item:hover { background: rgba(255,255,255,0.05); }
+    .model-item.active { background: rgba(255,255,255,0.07); border-left-color: var(--amber); }
+    .model-item.active .model-name { color: #fff; }
+    .model-name { font-size: 0.8rem; color: rgba(255,255,255,0.6); line-height: 1.3; }
+
+    .coming-soon { padding: 0.5rem 1.25rem 0.5rem 2.25rem; }
+    .coming-soon span { font-family: 'Space Mono', monospace; font-size: 0.65rem; color: rgba(255,255,255,0.2); font-style: italic; }
+
+    /* ── Description panel ── */
+    .description-panel { flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.08); padding: 1.1rem 1.25rem; min-height: 100px; max-height: 160px; overflow-y: auto; }
+    .desc-model-name { font-size: 0.82rem; font-weight: 600; color: rgba(255,255,255,0.9); margin-bottom: 0.4rem; }
+    .desc-text { font-size: 0.78rem; color: rgba(255,255,255,0.5); line-height: 1.65; }
+    .desc-placeholder { font-size: 0.78rem; color: rgba(255,255,255,0.2); font-style: italic; }
+
+    /* ── Controls hint ── */
+    .controls-hint { flex-shrink: 0; padding: 0.6rem 1.25rem; border-top: 1px solid rgba(255,255,255,0.06); display: flex; gap: 1rem; flex-wrap: wrap; }
+    .hint-item { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: rgba(255,255,255,0.2); letter-spacing: 0.05em; }
+    .hint-item span { color: rgba(255,255,255,0.4); }
+
+    /* ── Canvas area ── */
+    .canvas-area { flex: 1; position: relative; background: #0d0d0d; overflow: hidden; }
+    #canvas-container { width: 100%; height: 100%; }
+    #canvas-container canvas { width: 100% !important; height: 100% !important; display: block; }
+
+    .canvas-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; pointer-events: none; }
+    .canvas-empty .empty-icon { font-size: 3rem; opacity: 0.12; }
+    .canvas-empty p { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: rgba(255,255,255,0.15); letter-spacing: 0.1em; text-transform: uppercase; }
+
+    .loading-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(13,13,13,0.8); opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .loading-overlay.visible { opacity: 1; pointer-events: all; }
+    .loading-text { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: rgba(255,255,255,0.4); letter-spacing: 0.15em; text-transform: uppercase; }
+
+    @media (max-width: 680px) { .nav-links { display: none; } .side-panel { width: 220px; } }
   </style>
 </head>
 <body>
-  <div class="selection-box">
-  <p>Models from I341 and Research Projects</p>
-  <select id="modelSelect">
-    <!-- Add options for each model -->
-    <option value="love heart v2.stl">Love Heart Lamp</option>
-    <option value="dsservo clip4d.stl">Servo Clip Holder</option>
-    <option value="cat_tail_v2.stl">Tail for Robotic PuppyCat</option>
-    <option value="luddymodeli2.stl">Luddy Hall Shell</option>
-    <option value="finger4b.stl">Robotic C-String Extension Finger</option>
-    <option value="leftside_heli.stl">Left Side of Toy Helicopter</option>
-    <!-- Add options for all your models -->
-    <option value="9614.stl">Steering Wheel for Bat Dashboard</option>
-    <option value="Dodecahedron 1 (middle) v10.stl">Robotic Dodecahedron Snow Person (Middle)</option>=
-    <!-- <option value="model3.stl">Model 3</option> -->
-    <!-- <option value="model3.stl">Model 3</option> -->
-    <!-- <option value="model4.stl">Model 4</option> -->
-    <!-- ... -->
-  </select>
-</div>
 
-  <div class="description-box" id="modelDescription">
-    Description will appear here.
+<nav>
+  <a class="nav-brand" href="../bloombot-modern.html">bloombot</a>
+  <ul class="nav-links">
+    <li>
+      <a href="../bloombot-i101.html">I 101 <span class="caret">▼</span></a>
+      <ul class="dropdown">
+        <li><a href="../bloombot-i101.html#networks">Networks</a></li>
+        <li><a href="../bloombot-i101.html#ethics">Ethics</a></li>
+        <li><a href="../bloombot-i101.html#security">Security</a></li>
+        <li><a href="../bloombot-i101.html#diversity">Diversity</a></li>
+        <li><a href="../bloombot-i101.html#design">Design</a></li>
+        <li><a href="../bloombot-i101.html#data">Data</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="../bloombot-stories.html">Stories <span class="caret">▼</span></a>
+      <ul class="dropdown">
+        <li><a href="../bloombot - Lightning.html">Lightning</a></li>
+        <li><a href="../bloombot - Coffee.html">Coffee</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="../bloombot-prototyping.html" class="active">Prototyping <span class="caret">▼</span></a>
+      <ul class="dropdown">
+        <li><a href="../bloombot - 3D Graph Paper.html">3D Graph Paper</a></li>
+        <li><a href="../bloombot - Lattice.html">Lattice</a></li>
+        <li><a href="../bloombot - Encoder Wheel.html">Encoder Wheel</a></li>
+        <li><a href="stlM2.html">3D Model Viewer</a></li>
+      </ul>
+    </li>
+    <li><a href="../bloombot-scaffolds.html">Scaffolds</a></li>
+  </ul>
+</nav>
+
+<div class="main">
+
+  <!-- Side panel -->
+  <div class="side-panel">
+    <div class="panel-header">
+      <p>Prototyping</p>
+      <h2>3D Model Viewer</h2>
+    </div>
+
+    <div class="model-list" id="modelList">
+
+      <!-- I 341 Student Artifacts -->
+      <div class="category">
+        <div class="category-header">
+          <div class="category-dot" style="background:var(--cat-i341)"></div>
+          <span class="category-label">I 341 Student Artifacts</span>
+          <span class="category-count">4</span>
+        </div>
+        <div class="category-items">
+          <div class="model-item" data-model="love heart v2.stl" onclick="selectModel(this)">
+            <span class="model-name">Love Heart Lamp</span>
+          </div>
+          <div class="model-item" data-model="luddymodeli2.stl" onclick="selectModel(this)">
+            <span class="model-name">Luddy Hall Shell</span>
+          </div>
+          <div class="model-item" data-model="leftside_heli.stl" onclick="selectModel(this)">
+            <span class="model-name">Left Side of Toy Helicopter</span>
+          </div>
+          <div class="model-item" data-model="Dodecahedron 1 (middle) v10.stl" onclick="selectModel(this)">
+            <span class="model-name">Robotic Dodecahedron Snow Person (Middle)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Useful Designs -->
+      <div class="category">
+        <div class="category-header">
+          <div class="category-dot" style="background:var(--cat-useful)"></div>
+          <span class="category-label">Useful Designs</span>
+          <span class="category-count">2</span>
+        </div>
+        <div class="category-items">
+          <div class="model-item" data-model="dsservo clip4d.stl" onclick="selectModel(this)">
+            <span class="model-name">Servo Clip Holder</span>
+          </div>
+          <div class="model-item" data-model="life holder.stl" onclick="selectModel(this)">
+            <span class="model-name">Life Holder</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Project Parts -->
+      <div class="category">
+        <div class="category-header">
+          <div class="category-dot" style="background:var(--cat-parts)"></div>
+          <span class="category-label">Project Parts</span>
+          <span class="category-count">4</span>
+        </div>
+        <div class="category-items">
+          <div class="model-item" data-model="cat_tail_v2.stl" onclick="selectModel(this)">
+            <span class="model-name">Tail for Robotic PuppyCat</span>
+          </div>
+          <div class="model-item" data-model="finger4b.stl" onclick="selectModel(this)">
+            <span class="model-name">Robotic C-String Extension Finger</span>
+          </div>
+          <div class="model-item" data-model="ferris wheel bolt.stl" onclick="selectModel(this)">
+            <span class="model-name">Ferris Wheel Bolt</span>
+          </div>
+          <div class="model-item" data-model="finger board.stl" onclick="selectModel(this)">
+            <span class="model-name">Finger Board</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Storytelling -->
+      <div class="category">
+        <div class="category-header">
+          <div class="category-dot" style="background:var(--cat-story)"></div>
+          <span class="category-label">Storytelling</span>
+          <span class="category-count">1</span>
+        </div>
+        <div class="category-items">
+          <div class="model-item" data-model="9614.stl" onclick="selectModel(this)">
+            <span class="model-name">Steering Wheel for Bat Dashboard</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /model-list -->
+
+    <!-- Description -->
+    <div class="description-panel" id="descPanel">
+      <p class="desc-placeholder">Select a model to view its description.</p>
+    </div>
+
+    <!-- Controls hint -->
+    <div class="controls-hint">
+      <span class="hint-item"><span>Drag</span> rotate</span>
+      <span class="hint-item"><span>Scroll</span> zoom</span>
+      <span class="hint-item"><span>Right drag</span> pan</span>
+    </div>
+
+  </div><!-- /side-panel -->
+
+  <!-- 3D Canvas -->
+  <div class="canvas-area">
+    <div id="canvas-container"></div>
+    <div class="canvas-empty" id="canvasEmpty">
+      <div class="empty-icon">⬡</div>
+      <p>Select a model from the list</p>
+    </div>
+    <div class="loading-overlay" id="loadingOverlay">
+      <span class="loading-text">Loading…</span>
+    </div>
   </div>
-  <div id="camera_position"></div>
 
-  <script type="module">
-    import * as THREE from './three.module.js';
-    import { STLLoader } from './STLLoader.js';
-    import { OrbitControls } from './OrbitControls.js'; // Update the path based on OrbitControls.js location
+</div><!-- /main -->
 
-    var scene = new THREE.Scene();
-    var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+<script type="module">
+  import * as THREE from './three.module.js';
+  import { STLLoader } from './STLLoader.js';
+  import { OrbitControls } from './OrbitControls.js';
 
-    var renderer = new THREE.WebGLRenderer();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+  const container = document.getElementById('canvas-container');
+  const canvasEmpty = document.getElementById('canvasEmpty');
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  const descPanel = document.getElementById('descPanel');
 
-    var controls = new OrbitControls(camera, renderer.domElement); // Add controls
+  // Scene setup
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0d0d0d);
 
-    var directionalLight = new THREE.DirectionalLight(0xffffff, 3);
-    
-    directionalLight.position.set(250, 50, 200);
-    scene.add(directionalLight);
-    var directionalLight2 = new THREE.DirectionalLight(0x968ddf, 3);
-    directionalLight2.position.set(150, 50, -200);
-    scene.add(directionalLight2);
-    var directionalLight3 = new THREE.DirectionalLight(0xff5fbd, 2);
-    directionalLight3.position.set(-150, 50, 200);
-    scene.add(directionalLight3);
+  const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
 
-    var ambientLight = new THREE.AmbientLight(0xffffff, 1);
-    scene.add(ambientLight);
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  container.appendChild(renderer.domElement);
 
-    var models = [
-      { name: 'love heart v2.stl', 
-        description: 'A housing for a lamp for FA23 I341 final project' ,
-        cx: 1.4, cy: .7, cz: -1 },
-      { name: 'dsservo clip4d.stl', 
-        description: 'A mount for a regular sized DSServo with 35Kg of torque ',
-        cx: 4, cy: 3, cz: -.2  },
-      { name: 'cat_tail_v2.stl', 
-        description: 'Description for Tail for Robotic PuppyCat' ,
-        cx: 1, cy: 1, cz: 1 },
-      { name: 'luddymodeli2.stl', 
-        description: 'From that time when we made a Minecraft (and Minetest) world with many Luddy Halls',
-        cx: 1, cy: -.1, cz: -.4 },
-      { name: 'finger4b.stl', 
-        description: 'A robotic finger for a double bass string.',
-        cx: 1, cy: -.2, cz: -1.2 },
-      { name: 'leftside_heli.stl', 
-        description: 'This group was going for the largest possible print.',
-        cx: 1, cy: -.2, cz: -1.2 },
-      { name: '9614.stl', 
-        description: 'A steering wheel for a prototype dashboard interface for Magic Wheelchair Batmobile.',
-         cx: 1, cy: 2, cz: -1.2 },
-      { name: 'Dodecahedron 1 (middle) v10.stl', 
-        description: 'Student work from FA2022.  The middle section of a three part robotic dodecahdron light fixture.',
-         cx: 1, cy: .8, cz: 1.2 }
-      // { name: 'Dodecahedron 1 (middle) v10.stl', 
-      //   description: 'Student work from FA2022.  The middle section of a three part robotic dodecahdron light fixture.',
-      //    cx: 1, cy: -.2, cz: -1.2 }
-      // ...
-    ];
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
 
-    var modelSelect = document.getElementById('modelSelect');
-    var modelDescription = document.getElementById('modelDescription');
+  // Lights
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
+  directionalLight.position.set(250, 50, 200);
+  scene.add(directionalLight);
 
-    modelSelect.addEventListener('change', function () {
-      var selectedModel = models[modelSelect.selectedIndex];
-      loadModel(selectedModel);
+  const directionalLight2 = new THREE.DirectionalLight(0x968ddf, 3);
+  directionalLight2.position.set(150, 50, -200);
+  scene.add(directionalLight2);
+
+  const directionalLight3 = new THREE.DirectionalLight(0xff5fbd, 2);
+  directionalLight3.position.set(-150, 50, 200);
+  scene.add(directionalLight3);
+
+  const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+  scene.add(ambientLight);
+
+  // Model data
+  const models = {
+    // I 341 Student Artifacts
+    'love heart v2.stl':       { description: 'A housing for a lamp, FA23 I341 final project.', cx: 1.4, cy: .7, cz: -1 },
+    'luddymodeli2.stl':        { description: 'From that time when we made a Minecraft (and Minetest) world with many Luddy Halls.', cx: 1, cy: -.1, cz: -.4 },
+    'leftside_heli.stl':       { description: 'This group was going for the largest possible print.', cx: 1, cy: -.2, cz: -1.2 },
+    'Dodecahedron 1 (middle) v10.stl': { description: 'Student work from FA2022. The middle section of a three-part robotic dodecahedron light fixture.', cx: 1, cy: .8, cz: 1.2 },
+    // Useful Designs
+    'dsservo clip4d.stl':      { description: 'A mount for a regular-sized DSServo with 35Kg of torque.', cx: 4, cy: 3, cz: -.2 },
+    'life holder.stl':         { description: '', cx: 1, cy: 1, cz: 1 },
+    // Project Parts
+    'cat_tail_v2.stl':         { description: 'Tail component for a robotic PuppyCat build.', cx: 1, cy: 1, cz: 1 },
+    'finger4b.stl':            { description: 'A robotic finger for a double bass C-string.', cx: 1, cy: -.2, cz: -1.2 },
+    'ferris wheel bolt.stl':   { description: '', cx: 1, cy: 1, cz: 1 },
+    'finger board.stl':        { description: '', cx: 1, cy: 1, cz: 1 },
+    // Storytelling
+    '9614.stl':                { description: 'A steering wheel for a prototype dashboard interface for the Magic Wheelchair Batmobile.', cx: 1, cy: 2, cz: -1.2 },
+  };
+
+  let currentMesh = null;
+
+  function loadModel(filename) {
+    const info = models[filename];
+    if (!info) return;
+
+    loadingOverlay.classList.add('visible');
+    canvasEmpty.style.display = 'none';
+
+    const loader = new STLLoader();
+    loader.load(filename, function(geometry) {
+      // Remove previous mesh
+      if (currentMesh) {
+        scene.remove(currentMesh);
+        currentMesh.geometry.dispose();
+      }
+
+      const material = new THREE.MeshStandardMaterial({ color: 0xd4c5b0, roughness: 0.6, metalness: 0.1 });
+      const mesh = new THREE.Mesh(geometry, material);
+
+      const edges = new THREE.EdgesGeometry(geometry);
+      const lineMaterial = new THREE.LineBasicMaterial({ color: 0x555555 });
+      const lineSegments = new THREE.LineSegments(edges, lineMaterial);
+      mesh.add(lineSegments);
+
+      scene.add(mesh);
+      currentMesh = mesh;
+
+      geometry.computeBoundingSphere();
+      const center = geometry.boundingSphere.center;
+      const r = geometry.boundingSphere.radius;
+
+      camera.position.set(
+        center.x + info.cx * r,
+        center.y + info.cy * r,
+        center.z + info.cz * r
+      );
+      camera.lookAt(center);
+      controls.target.copy(center);
+      controls.update();
+
+      // Update description
+      const desc = info.description;
+      descPanel.innerHTML = `
+        <div class="desc-model-name">${filename.replace('.stl', '')}</div>
+        <div class="desc-text">${desc || '<em style="opacity:0.5">Description coming soon.</em>'}</div>
+      `;
+
+      loadingOverlay.classList.remove('visible');
     });
+  }
 
-    function loadModel(modelInfo) {
-      var loader = new STLLoader();
-      loader.load(modelInfo.name, function (geometry) {
-        var material = new THREE.MeshStandardMaterial();
-        var mesh = new THREE.Mesh(geometry, material);
+  // Expose selectModel to global scope for onclick handlers
+  window.selectModel = function(el) {
+    document.querySelectorAll('.model-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+    loadModel(el.dataset.model);
+  };
 
-        // Clear previous models from the scene
-        scene.remove.apply(scene, scene.children.filter(obj => obj.type === 'Mesh'));
+  // Handle resize
+  window.addEventListener('resize', () => {
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+  });
 
+  function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  animate();
+</script>
 
-        // Create an edges geometry and pass in your original geometry
-        var edges = new THREE.EdgesGeometry(geometry);
-
-        // Create a line material
-        var lineMaterial = new THREE.LineBasicMaterial({ color: 0x888888 }); // Black, adjust as needed
-
-        // Create a line segments geometry using the edges
-        var lineSegments = new THREE.LineSegments(edges, lineMaterial);
-
-        // Add the lines to your mesh
-        mesh.add(lineSegments);
-
-
-        scene.add(mesh);
-
-        geometry.computeBoundingSphere();
-        var center = geometry.boundingSphere.center;
-
-        camera.position.x = center.x + modelInfo.cx * geometry.boundingSphere.radius;
-        camera.position.y = center.y + modelInfo.cy * geometry.boundingSphere.radius;
-        camera.position.z = center.z + modelInfo.cz * geometry.boundingSphere.radius;
-
-        camera.lookAt(center);
-
-        controls.target = center; // Make the controls rotate around the loaded object
-
-        // Update description box
-        modelDescription.textContent = modelInfo.description;
-      });
-    }
-
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update(); // Required if controls.enableDamping or controls.autoRotate are set to true
-      renderer.render(scene, camera);
-    }
-
-
-    animate();
-  </script>
 </body>
 </html>

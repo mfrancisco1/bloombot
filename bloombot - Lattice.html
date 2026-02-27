@@ -63,6 +63,12 @@
     .ctrl-group input[type="number"]:focus{outline:none;border-color:var(--c341);}
     .ctrl-hint{font-family:'Space Mono',monospace;font-size:0.65rem;color:var(--slate);margin-top:0.2rem;}
 
+    .preset-bar{display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;padding:0.75rem 0 0.1rem;border-top:1px solid var(--border);margin-top:0.75rem;}
+    .preset-label{font-family:'Space Mono',monospace;font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--slate);margin-right:0.2rem;white-space:nowrap;}
+    .preset-btn{padding:0.3rem 0.7rem;border:1.5px solid var(--border);border-radius:20px;background:var(--cream);color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:0.75rem;font-weight:500;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+    .preset-btn:hover{border-color:var(--c341);color:var(--c341);}
+    .preset-btn.active{background:var(--c341);border-color:var(--c341);color:#fff;font-weight:600;}
+
     .btn-group{display:flex;flex-direction:column;gap:0.6rem;margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);}
     .action-btn{border:none;padding:0.6rem 1rem;border-radius:6px;font-family:'Space Grotesk',sans-serif;font-size:0.8rem;font-weight:600;cursor:pointer;letter-spacing:0.02em;transition:background 0.15s;}
     .action-btn.primary{background:var(--c341);color:#fff;}
@@ -139,7 +145,8 @@
 
     <!-- CONTROLS -->
     <div class="controls-panel">
-      <div class="ctrl-section-head">Rectangle Size</div>
+
+      <div class="ctrl-section-head" style="margin-top:0;padding-top:0;border-top:none;">Rectangle Size</div>
 
       <div class="ctrl-group">
         <label for="width">Width</label>
@@ -181,7 +188,15 @@
       <div class="canvas-wrap">
         <canvas id="canvas" width="800" height="500"></canvas>
       </div>
-      <p class="canvas-hint">Adjust parameters and hit Generate. Download as SVG to use with a laser cutter, Cricut, or CNC router.</p>
+      <div class="preset-bar" id="presetGrid">
+        <span class="preset-label">Presets</span>
+        <button class="preset-btn" data-idx="0" onclick="applyPreset(0)">Standard</button>
+        <button class="preset-btn" data-idx="1" onclick="applyPreset(1)">Scatter</button>
+        <button class="preset-btn" data-idx="2" onclick="applyPreset(2)">Reeds</button>
+        <button class="preset-btn" data-idx="3" onclick="applyPreset(3)">Grain</button>
+        <button class="preset-btn" data-idx="4" onclick="applyPreset(4)">Slats</button>
+        <button class="preset-btn" data-idx="5" onclick="applyPreset(5)">Windows</button>
+      </div>
     </div>
 
   </div>
@@ -193,6 +208,29 @@
 </footer>
 
 <script>
+  // ── Presets ──
+  const PRESETS = [
+    { name: 'Standard', width: 10, height: 10, spacing: 2, variation: 10,  count: 1000 },
+    { name: 'Scatter',  width: 27, height: 27, spacing: 2, variation: 40,  count: 115  },
+    { name: 'Reeds',    width: 15, height: 3,  spacing: 2, variation: 25,  count: 4400 },
+    { name: 'Grain',    width: 4,  height: 4,  spacing: 1, variation: 30,  count: 3500 },
+    { name: 'Slats',    width: 3,  height: 25, spacing: 2, variation: 60,  count: 1400 },
+    { name: 'Windows',  width: 50, height: 40, spacing: 2, variation: 20,  count: 80   },
+  ];
+
+  function applyPreset(idx) {
+    const p = PRESETS[idx];
+    document.getElementById('width').value     = p.width;
+    document.getElementById('height').value    = p.height;
+    document.getElementById('spacing').value   = p.spacing;
+    document.getElementById('variation').value = p.variation;
+    document.getElementById('count').value     = p.count;
+    document.querySelectorAll('.preset-btn').forEach((btn, i) => {
+      btn.classList.toggle('active', i === idx);
+    });
+    drawRectangles();
+  }
+
   function getRandomInt(max) { return Math.floor(Math.random() * max); }
   function paintBlack() { return '#b45309'; }
 
@@ -268,8 +306,8 @@
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
   }
 
-  // Draw on load
-  drawRectangles();
+  // Load a random preset on arrival
+  applyPreset(Math.floor(Math.random() * PRESETS.length));
 </script>
 </body>
 </html>

@@ -420,18 +420,26 @@
       }
     }
     svg.setAttribute('viewBox', `0 0 ${widthA + 2*margin} ${widthB + 2*margin}`);
-    function addText(txt, x, y) {
+    function addText(txt, x, y, opts={}) {
       const t = document.createElementNS('http://www.w3.org/2000/svg','text');
       t.setAttribute('x', x); t.setAttribute('y', y);
       t.setAttribute('font-size','12'); t.setAttribute('fill','#1a1612');
       t.setAttribute('font-family','Space Mono, monospace');
+      if (opts.anchor) t.setAttribute('text-anchor', opts.anchor);
+      if (opts.transform) t.setAttribute('transform', opts.transform);
       t.textContent = txt;
       svg.appendChild(t);
     }
-    addText(`A: ${widthAMm.toFixed(1)} mm`, margin + widthA/2 - 30, margin - 10);
-    addText(`B: ${widthBMm.toFixed(1)} mm`, margin + widthA + 8, margin + widthB/2);
-    if (numNotchesA > 1) addText(`Bay A: ${((widthAMm - 2*offsetAMm - notchWidthMm)/(numNotchesA-1)).toFixed(2)} mm`, margin + widthA/2 - 40, margin + widthB + 20);
-    if (numNotchesB > 1) addText(`Bay B: ${((widthBMm - 2*offsetBMm - notchWidthMm)/(numNotchesB-1)).toFixed(2)} mm`, margin - 95, margin + widthB/2);
+    // A label: centred above top edge
+    addText(`A: ${widthAMm.toFixed(1)} mm`, margin + widthA/2, margin - 10, { anchor: 'middle' });
+    // B label: rotated on right side
+    addText(`B: ${widthBMm.toFixed(1)} mm`, margin + widthA + 14, margin + widthB/2,
+      { anchor: 'middle', transform: `rotate(-90, ${margin + widthA + 14}, ${margin + widthB/2})` });
+    // Bay A label: centred below bottom edge
+    if (numNotchesA > 1) addText(`Bay A: ${((widthAMm - 2*offsetAMm - notchWidthMm)/(numNotchesA-1)).toFixed(2)} mm`, margin + widthA/2, margin + widthB + 20, { anchor: 'middle' });
+    // Bay B label: rotated on left side
+    if (numNotchesB > 1) addText(`Bay B: ${((widthBMm - 2*offsetBMm - notchWidthMm)/(numNotchesB-1)).toFixed(2)} mm`, margin - 14, margin + widthB/2,
+      { anchor: 'middle', transform: `rotate(-90, ${margin - 14}, ${margin + widthB/2})` });
   }
 
   const oldGenerateShape = generateShape;

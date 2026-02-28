@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLO–PLO Mapper — bloombot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        :root {
+            --ink:     #1a1612;
+            --cream:   #f5f0e8;
+            --warm:    #e8dcc8;
+            --rust:    #c4541a;
+            --amber:   #d97706;
+            --forest:  #2d5a27;
+            --slate:   #64748b;
+            --border:  #d1c4aa;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--ink);
+            min-height: 100vh;
+            overflow: hidden;
+            color: var(--cream);
+        }
+
+        #container { width: 100vw; height: 100vh; position: relative; }
+
+        /* ── HEADER ── */
+        #header {
+            position: absolute; top: 0; left: 0; right: 0;
+            background: var(--ink);
+            padding: 0 20px; height: 48px;
+            border-bottom: 3px solid var(--rust);
+            z-index: 200;
+            display: flex; align-items: center; gap: 16px;
+        }
+        #header h1 {
+            font-family: 'Space Mono', monospace;
+            font-size: 16px; color: var(--amber);
+            font-weight: 700; letter-spacing: -0.03em;
+        }
+        #subtitle {
+            font-size: 12px; color: rgba(245,240,232,0.45);
+            font-weight: 400; flex: 1;
+        }
+        .header-btn {
+            padding: 5px 14px;
+            border: 1px solid rgba(245,240,232,0.2);
+            background: transparent;
+            color: var(--cream); border-radius: 5px;
+            cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+            font-size: 11px; font-weight: 500;
+            letter-spacing: 0.03em; text-transform: uppercase;
+            transition: all 0.2s;
+        }
+        .header-btn:hover { background: var(--rust); border-color: var(--rust); color: #fff; }
+        .header-btn.active { background: var(--rust); border-color: var(--rust); color: #fff; }
+
+        /* ── SVG ── */
+        svg { width: 100%; height: 100%; cursor: grab; }
+
+        /* ── LINKS ── */
+        .link { stroke: rgba(245,240,232,0.12); stroke-width: 1.5; fill: none; }
+        .link.cross { stroke-dasharray: 4 3; stroke: rgba(217,119,6,0.25); stroke-width: 1; }
+        .link.highlight { stroke: var(--amber); stroke-width: 2.5; stroke-opacity: 1; stroke-dasharray: none; }
+
+        /* ── NODES ── */
+        .node {
+            cursor: pointer;
+            stroke: rgba(26,22,18,0.5); stroke-width: 2;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+            transition: filter 0.3s ease;
+        }
+        .node:hover { filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45)); }
+        .node.pinned { stroke: var(--amber); stroke-width: 3; }
+        .node.expanded { stroke: var(--rust); stroke-width: 3; }
+
+        .node-text {
+            fill: #fff; font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600; font-size: 11px;
+            text-anchor: middle; dominant-baseline: middle;
+            pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .plo-node { stroke-width: 1.5; }
+        .plo-text {
+            fill: var(--cream); font-family: 'Space Grotesk', sans-serif;
+            font-weight: 500; font-size: 9px;
+            text-anchor: middle; dominant-baseline: middle;
+            pointer-events: none;
+        }
+
+        .clo-node {
+            rx: 5; ry: 5; stroke-width: 1;
+            filter: drop-shadow(0 1px 3px rgba(0,0,0,0.25));
+        }
+        .clo-text {
+            fill: #fff; font-family: 'Space Grotesk', sans-serif;
+            font-weight: 400; font-size: 9px;
+            text-anchor: middle; dominant-baseline: middle;
+            pointer-events: none;
+        }
+
+        .course-node {
+            rx: 6; ry: 6; stroke-width: 2;
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
+        }
+        .course-text {
+            fill: #fff; font-family: 'Space Mono', monospace;
+            font-weight: 700; font-size: 10px;
+            text-anchor: middle; dominant-baseline: middle;
+            pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+        }
+
+        .expand-indicator {
+            fill: #fff; font-family: 'Space Mono', monospace;
+            font-size: 11px; font-weight: bold;
+            text-anchor: middle; dominant-baseline: middle;
+            pointer-events: none;
+        }
+
+        /* ── TOOLTIP ── */
+        #tooltip {
+            position: absolute;
+            background: var(--cream); color: var(--ink);
+            padding: 10px 14px; border-radius: 6px;
+            border: 1px solid var(--border);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 12px; pointer-events: none;
+            opacity: 0; transition: opacity 0.2s;
+            max-width: 340px; z-index: 1000;
+            line-height: 1.5;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        }
+        #tooltip.show { opacity: 1; }
+        #tooltip strong { color: var(--rust); display: block; margin-bottom: 4px; font-size: 13px; font-weight: 600; }
+        #tooltip .tip-course-num { font-family: 'Space Mono', monospace; color: var(--amber); font-size: 11px; margin-bottom: 2px; }
+        #tooltip .tip-desc { color: var(--slate); font-size: 11px; line-height: 1.45; margin-top: 6px; }
+
+        /* ── CONTROLS ── */
+        .controls {
+            position: absolute; bottom: 20px; right: 20px;
+            display: flex; flex-direction: column; gap: 5px; z-index: 150;
+        }
+        .control-btn {
+            padding: 5px 12px;
+            border: 1px solid rgba(245,240,232,0.18);
+            background: rgba(26,22,18,0.8);
+            color: var(--cream); border-radius: 5px;
+            cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+            font-size: 10px; font-weight: 500;
+            transition: all 0.2s; backdrop-filter: blur(8px);
+        }
+        .control-btn:hover { background: var(--rust); border-color: var(--rust); color: #fff; }
+
+        /* ── LEGEND ── */
+        .legend {
+            position: absolute; bottom: 20px; left: 20px;
+            background: rgba(26,22,18,0.85);
+            border: 1px solid rgba(245,240,232,0.1);
+            padding: 10px 14px; border-radius: 8px;
+            font-size: 10px; z-index: 150;
+            backdrop-filter: blur(8px);
+        }
+        .legend-item { display: flex; align-items: center; margin-bottom: 5px; color: rgba(245,240,232,0.65); }
+        .legend-item:last-child { margin-bottom: 0; }
+        .legend-color { width: 12px; height: 12px; border-radius: 50%; margin-right: 7px; border: 1px solid rgba(0,0,0,0.25); }
+        .legend-color.rect { border-radius: 3px; }
+
+        /* ── INSTRUCTIONS ── */
+        .instructions {
+            position: absolute; top: 60px; left: 20px;
+            background: rgba(26,22,18,0.85);
+            border: 1px solid rgba(245,240,232,0.1);
+            padding: 10px 14px; border-radius: 8px;
+            font-size: 10px; z-index: 150; max-width: 200px;
+            backdrop-filter: blur(8px);
+        }
+        .instructions h3 {
+            margin-bottom: 6px; color: var(--amber);
+            font-family: 'Space Mono', monospace;
+            font-size: 10px; font-weight: 700;
+            letter-spacing: 0.06em; text-transform: uppercase;
+        }
+        .instructions ul { list-style: none; }
+        .instructions li { margin-bottom: 3px; color: rgba(245,240,232,0.5); line-height: 1.35; }
+
+        /* ── SIDEBAR ── */
+        #sidebar {
+            position: fixed; top: 51px; right: 0;
+            width: 380px; height: calc(100vh - 51px);
+            background: rgba(22,19,15,0.97);
+            border-left: 1px solid rgba(245,240,232,0.1);
+            z-index: 180;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+            display: flex; flex-direction: column;
+            backdrop-filter: blur(12px);
+        }
+        #sidebar.open { transform: translateX(0); }
+
+        .sidebar-tabs {
+            display: flex; border-bottom: 1px solid rgba(245,240,232,0.1);
+            flex-shrink: 0;
+        }
+        .sidebar-tab {
+            flex: 1; padding: 10px 0; text-align: center;
+            background: transparent; border: none; color: rgba(245,240,232,0.45);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 11px; font-weight: 500; cursor: pointer;
+            transition: all 0.2s; letter-spacing: 0.03em;
+            text-transform: uppercase;
+            border-bottom: 2px solid transparent;
+        }
+        .sidebar-tab:hover { color: var(--cream); }
+        .sidebar-tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+
+        .sidebar-content { flex: 1; overflow-y: auto; padding: 16px; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        .sidebar-label {
+            font-size: 10px; font-weight: 600; color: rgba(245,240,232,0.5);
+            text-transform: uppercase; letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+
+        #json-input {
+            width: 100%; height: 200px;
+            background: rgba(245,240,232,0.04);
+            border: 1px solid rgba(245,240,232,0.12);
+            border-radius: 6px; color: var(--cream);
+            font-family: 'Space Mono', monospace;
+            font-size: 11px; padding: 10px;
+            resize: vertical; line-height: 1.5;
+        }
+        #json-input:focus { outline: none; border-color: var(--amber); }
+        #json-input::placeholder { color: rgba(245,240,232,0.25); }
+
+        .sidebar-btn {
+            width: 100%; padding: 8px 0; margin-top: 10px;
+            background: var(--rust); border: none;
+            color: #fff; border-radius: 5px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .sidebar-btn:hover { background: #a8431a; }
+        .sidebar-btn.secondary {
+            background: transparent;
+            border: 1px solid rgba(245,240,232,0.18);
+            color: var(--cream);
+        }
+        .sidebar-btn.secondary:hover { background: rgba(245,240,232,0.06); }
+
+        #file-upload {
+            display: none;
+        }
+        .file-label {
+            display: block; width: 100%; padding: 24px 16px;
+            border: 2px dashed rgba(245,240,232,0.15);
+            border-radius: 8px; text-align: center;
+            color: rgba(245,240,232,0.4); font-size: 12px;
+            cursor: pointer; transition: all 0.2s;
+            margin-top: 10px;
+        }
+        .file-label:hover { border-color: var(--amber); color: var(--amber); }
+
+        #validation-msg {
+            margin-top: 8px; padding: 8px 10px;
+            border-radius: 5px; font-size: 11px;
+            line-height: 1.4; display: none;
+        }
+        #validation-msg.error { display: block; background: rgba(196,84,26,0.15); color: #f87171; border: 1px solid rgba(196,84,26,0.3); }
+        #validation-msg.success { display: block; background: rgba(45,90,39,0.15); color: #4ade80; border: 1px solid rgba(45,90,39,0.3); }
+
+        .example-toggle {
+            margin-top: 12px; font-size: 11px;
+            color: rgba(245,240,232,0.4); cursor: pointer;
+            text-decoration: underline; border: none;
+            background: none; font-family: 'Space Grotesk', sans-serif;
+        }
+        .example-toggle:hover { color: var(--amber); }
+        #example-json {
+            display: none; margin-top: 8px;
+            background: rgba(245,240,232,0.03);
+            border: 1px solid rgba(245,240,232,0.08);
+            border-radius: 6px; padding: 10px;
+            font-family: 'Space Mono', monospace;
+            font-size: 10px; color: rgba(245,240,232,0.55);
+            line-height: 1.5; white-space: pre-wrap;
+        }
+
+        .course-list { list-style: none; }
+        .course-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px; margin-bottom: 6px;
+            background: rgba(245,240,232,0.04);
+            border: 1px solid rgba(245,240,232,0.08);
+            border-radius: 6px;
+        }
+        .course-item-color {
+            width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+        }
+        .course-item-info { flex: 1; min-width: 0; }
+        .course-item-num {
+            font-family: 'Space Mono', monospace; font-size: 11px;
+            color: var(--amber); font-weight: 700;
+        }
+        .course-item-title {
+            font-size: 11px; color: rgba(245,240,232,0.6);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .course-item-clos {
+            font-size: 10px; color: rgba(245,240,232,0.35); margin-top: 2px;
+        }
+        .course-remove {
+            background: none; border: none; color: rgba(245,240,232,0.3);
+            cursor: pointer; font-size: 14px; padding: 2px 6px;
+            border-radius: 3px; transition: all 0.2s;
+        }
+        .course-remove:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+        .no-courses { color: rgba(245,240,232,0.3); font-size: 12px; text-align: center; padding: 30px 0; }
+        .course-count {
+            font-size: 10px; color: rgba(245,240,232,0.35);
+            text-align: center; margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="header">
+            <h1>CLO–PLO Mapper</h1>
+            <div id="subtitle">Map Course Learning Outcomes to Programmatic Learning Outcomes</div>
+            <button class="header-btn" id="sidebar-toggle" onclick="toggleSidebar()">+ Add Courses</button>
+        </div>
+
+        <div class="instructions">
+            <h3>Controls</h3>
+            <ul>
+                <li>Click nodes to expand/collapse</li>
+                <li>Drag nodes to reposition</li>
+                <li>Right-click to pin/unpin</li>
+                <li>Hover for details</li>
+            </ul>
+        </div>
+
+        <svg id="svg"></svg>
+
+        <div class="controls">
+            <button class="control-btn" onclick="resetSimulation()">Reset</button>
+            <button class="control-btn" onclick="unpinAll()">Unpin All</button>
+            <button class="control-btn" onclick="expandAll()">Expand All</button>
+            <button class="control-btn" onclick="collapseAll()">Collapse All</button>
+            <button class="control-btn" id="hide-unlinked-btn" onclick="toggleUnlinked()" style="display:none">Show Linked Only</button>
+        </div>
+
+        <div class="legend" id="legend">
+            <div class="legend-item"><div class="legend-color" style="background: var(--amber);"></div><span>Core</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--rust);"></div><span>Computational</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--forest);"></div><span>Sociotechnical</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: #1d4ed8;"></div><span>Design</span></div>
+        </div>
+
+        <div id="tooltip"></div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+        <div class="sidebar-tabs">
+            <button class="sidebar-tab active" data-tab="input" onclick="switchTab('input')">Input</button>
+            <button class="sidebar-tab" data-tab="courses" onclick="switchTab('courses')">Courses <span id="course-badge"></span></button>
+        </div>
+        <div class="sidebar-content">
+            <!-- INPUT TAB -->
+            <div class="tab-panel active" id="tab-input">
+                <div class="sidebar-label">Paste JSON from GPT</div>
+                <textarea id="json-input" placeholder='{"courses": [{"courseNumber": "INFO-I 101", ...}]}'></textarea>
+                <button class="sidebar-btn" onclick="loadFromPaste()">Load Course(s)</button>
+
+                <div style="margin: 16px 0 6px; text-align: center; color: rgba(245,240,232,0.25); font-size: 11px;">— or —</div>
+
+                <div class="sidebar-label">Upload JSON File</div>
+                <label class="file-label" for="file-upload">
+                    Drop or click to select .json file
+                </label>
+                <input type="file" id="file-upload" accept=".json" onchange="loadFromFile(event)">
+
+                <div id="validation-msg"></div>
+
+                <button class="example-toggle" onclick="toggleExample()">Show expected JSON format</button>
+                <div id="example-json">{
+  "courses": [
+    {
+      "courseNumber": "INFO-I 101",
+      "courseTitle": "Introduction to Informatics",
+      "description": "Explores the role of information technology...",
+      "clos": [
+        {
+          "text": "Translate real-world problems into computational terms",
+          "ploMappings": ["comp-reason-0", "comp-algo-1"]
+        },
+        {
+          "text": "Evaluate data quality in context",
+          "ploMappings": ["comp-data-3"]
+        }
+      ]
+    }
+  ]
+}</div>
+            </div>
+
+            <!-- COURSES TAB -->
+            <div class="tab-panel" id="tab-courses">
+                <ul class="course-list" id="course-list"></ul>
+                <div class="no-courses" id="no-courses">No courses loaded yet.<br>Use the Input tab to add courses.</div>
+                <div class="course-count" id="course-count"></div>
+                <button class="sidebar-btn secondary" id="clear-all-btn" onclick="clearAllCourses()" style="display:none; margin-top: 12px;">Clear All</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ═══════════════════════════════════════════════════════════
+    // STATIC PLO DATA (baked in)
+    // ═══════════════════════════════════════════════════════════
+    const ploData = {
+        id: 'root',
+        name: "Informatics Core",
+        type: 'root',
+        color: "#d97706",
+        children: [
+            {
+                id: 'comp',
+                name: "Computational\nThinking",
+                shortName: "Computational",
+                color: "#c4541a",
+                type: 'pillar',
+                description: "Construct network-based, distributed information systems",
+                children: [
+                    {
+                        id: 'comp-reason', name: "Reason Logically", color: "#d97706", type: 'category',
+                        plos: [
+                            "Translate arguments into formal language",
+                            "Manipulate mathematical objects",
+                            "Recognize equivalence between structures",
+                            "Decompose problems into simpler structures",
+                            "Apply data-driven approaches"
+                        ]
+                    },
+                    {
+                        id: 'comp-data', name: "Curate Data", color: "#d97706", type: 'category',
+                        plos: [
+                            "Apply visual methods for complex structures",
+                            "Recognize and use basic data structures",
+                            "Construct data models of systems",
+                            "Evaluate data quality",
+                            "Convert data into knowledge",
+                            "Manage data securely"
+                        ]
+                    },
+                    {
+                        id: 'comp-algo', name: "Apply Algorithms", color: "#d97706", type: 'category',
+                        plos: [
+                            "Translate strategies into algorithms",
+                            "Apply graph theory to solve problems",
+                            "Integrate algorithms into complex ones",
+                            "Research new problem-solving strategies",
+                            "Address security concerns"
+                        ]
+                    },
+                    {
+                        id: 'comp-impl', name: "Effectively\nImplement", color: "#d97706", type: 'category',
+                        plos: [
+                            "Apply basic programming structures",
+                            "Translate algorithms into code",
+                            "Construct distributed systems",
+                            "Research new software tools",
+                            "Implement security solutions",
+                            "Evaluate solution effectiveness"
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'socio',
+                name: "Sociotechnical\nThinking",
+                shortName: "Sociotechnical",
+                color: "#2d5a27",
+                type: 'pillar',
+                description: "Evaluate and construct solutions from a human(e) perspective",
+                children: [
+                    {
+                        id: 'socio-ethics', name: "Ethical\nSensibility", color: "#4a9e3f", type: 'category',
+                        plos: [
+                            "Formulate and articulate ideas",
+                            "Recognize assumptions and biases",
+                            "Weigh connections between actors",
+                            "Consider diversity and responsibility",
+                            "Contribute to human well-being"
+                        ]
+                    },
+                    {
+                        id: 'socio-analyze', name: "Analyze\nSolutions", color: "#4a9e3f", type: 'category',
+                        plos: [
+                            "Identify stakeholders",
+                            "Identify values at stake",
+                            "Discuss diverse perspectives",
+                            "Explain technical and social processes",
+                            "Assess technological affordances",
+                            "Evaluate power dynamics"
+                        ]
+                    },
+                    {
+                        id: 'socio-create', name: "Create\nSolutions", color: "#4a9e3f", type: 'category',
+                        plos: [
+                            "Engage imagination for possibilities",
+                            "Collaborate with diverse teams",
+                            "Propose harm-reducing solutions",
+                            "Communicate with stakeholders",
+                            "Make values-based decisions",
+                            "Assess policy and governance"
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'design',
+                name: "Design\nThinking",
+                shortName: "Design",
+                color: "#1d4ed8",
+                type: 'pillar',
+                description: "Complete interaction design projects independently",
+                children: [
+                    {
+                        id: 'design-research', name: "Research", color: "#3b82f6", type: 'category',
+                        plos: [
+                            "Classify HCI research methods",
+                            "Execute ethical research",
+                            "Deconstruct and reframe problems",
+                            "Identify design opportunities",
+                            "Use design thinking process",
+                            "Translate research to prototypes"
+                        ]
+                    },
+                    {
+                        id: 'design-design', name: "Design", color: "#3b82f6", type: 'category',
+                        plos: [
+                            "Select appropriate methods",
+                            "Design with HCI techniques",
+                            "Generate user personas",
+                            "Develop proof-of-concept",
+                            "Produce interactive prototypes"
+                        ]
+                    },
+                    {
+                        id: 'design-eval', name: "Evaluate", color: "#3b82f6", type: 'category',
+                        plos: [
+                            "Evaluate with feedback",
+                            "Critique designs",
+                            "Summarize research insights",
+                            "Generate recommendations",
+                            "Create improved designs"
+                        ]
+                    },
+                    {
+                        id: 'design-dissem', name: "Disseminate", color: "#3b82f6", type: 'category',
+                        plos: [
+                            "Create design portfolio",
+                            "Generate documentation",
+                            "Design presentations",
+                            "Present research posters"
+                        ]
+                    },
+                    {
+                        id: 'design-collab', name: "Collaborate", color: "#3b82f6", type: 'category',
+                        plos: [
+                            "Work in peer teams",
+                            "Understand project roles",
+                            "Judge contributions"
+                        ]
+                    }
+                ]
+            }
+        ]
+    };
+
+    // Build a lookup of all valid PLO IDs
+    const validPloIds = new Set();
+    const ploLookup = {};
+    ploData.children.forEach(pillar => {
+        pillar.children.forEach(cat => {
+            cat.plos.forEach((plo, i) => {
+                const id = `${cat.id}-${i}`;
+                validPloIds.add(id);
+                ploLookup[id] = { name: plo, category: cat.name, pillar: pillar.shortName, color: cat.color };
+            });
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    // COURSE COLOR PALETTE
+    // ═══════════════════════════════════════════════════════════
+    const coursePalette = [
+        "#0d9488", // teal
+        "#e11d48", // rose
+        "#7c3aed", // violet
+        "#ea580c", // orange
+        "#06b6d4", // cyan
+        "#c026d3", // fuchsia
+        "#84cc16", // lime
+        "#f59e0b", // amber-bright
+    ];
+
+    // ═══════════════════════════════════════════════════════════
+    // STATE
+    // ═══════════════════════════════════════════════════════════
+    let courseData = [];
+    let nodes = [];
+    let links = [];
+    let simulation;
+    let expandedNodes = new Set(['root', 'comp', 'socio', 'design']);
+    let pinnedNodes = new Set();
+    let highlightedLinks = new Set();
+    let highlightedNodes = new Set();
+
+    const svg = d3.select("#svg");
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const tooltip = d3.select("#tooltip");
+
+    const zoomGroup = svg.append("g");
+    const linkGroup = zoomGroup.append("g").attr("class", "links");
+    const nodeGroup = zoomGroup.append("g").attr("class", "nodes");
+
+    svg.call(
+        d3.zoom()
+            .scaleExtent([0.2, 4])
+            .on("zoom", (event) => zoomGroup.attr("transform", event.transform))
+    );
+
+    // ═══════════════════════════════════════════════════════════
+    // DATA FLATTENING (6 levels + cross-links)
+    // ═══════════════════════════════════════════════════════════
+    function flattenData() {
+        const result = { nodes: [], links: [] };
+        const nodeMap = new Map();
+
+        // Helper: add node
+        function addNode(n) {
+            if (!nodeMap.has(n.id)) {
+                nodeMap.set(n.id, n);
+                result.nodes.push(n);
+            }
+        }
+
+        // Level 0: Root
+        const rootNode = {
+            id: 'root', name: "Informatics\nCore", type: 'root',
+            color: '#d97706', level: 0,
+            expanded: expandedNodes.has('root')
+        };
+        addNode(rootNode);
+
+        if (!expandedNodes.has('root')) return result;
+
+        // Level 1: Pillars
+        ploData.children.forEach(pillar => {
+            const pillarNode = {
+                id: pillar.id, name: pillar.name, type: 'pillar',
+                color: pillar.color, level: 1, description: pillar.description,
+                parentId: 'root', expanded: expandedNodes.has(pillar.id),
+                hasChildren: true
+            };
+            addNode(pillarNode);
+            result.links.push({ source: 'root', target: pillar.id, type: 'hierarchy' });
+
+            if (!expandedNodes.has(pillar.id)) return;
+
+            // Level 2: Categories
+            pillar.children.forEach(cat => {
+                // In linked-only mode, skip categories with no linked PLOs
+                if (unlinkedHidden) {
+                    const catHasLinks = cat.plos.some((_, i) =>
+                        courseData.some(c => c.clos.some(clo => clo.ploMappings.includes(`${cat.id}-${i}`)))
+                    );
+                    if (!catHasLinks) return;
+                }
+
+                const catNode = {
+                    id: cat.id, name: cat.name, type: 'category',
+                    color: cat.color, level: 2,
+                    parentId: pillar.id, expanded: expandedNodes.has(cat.id),
+                    hasChildren: true, ploCount: cat.plos.length
+                };
+                addNode(catNode);
+                result.links.push({ source: pillar.id, target: cat.id, type: 'hierarchy' });
+
+                if (!expandedNodes.has(cat.id)) return;
+
+                // Level 3: Individual PLOs
+                cat.plos.forEach((ploText, i) => {
+                    const ploId = `${cat.id}-${i}`;
+                    // Check if any CLO maps to this PLO
+                    const hasCloLinks = courseData.some(c =>
+                        c.clos.some(clo => clo.ploMappings.includes(ploId))
+                    );
+
+                    // Skip unlinked PLOs when in "linked only" mode
+                    if (unlinkedHidden && !hasCloLinks) return;
+
+                    const ploNode = {
+                        id: ploId, name: ploText, type: 'plo',
+                        color: d3.color(cat.color).brighter(0.4).formatHex(),
+                        level: 3, parentId: cat.id,
+                        expanded: expandedNodes.has(ploId),
+                        hasChildren: hasCloLinks
+                    };
+                    addNode(ploNode);
+                    result.links.push({ source: cat.id, target: ploId, type: 'hierarchy' });
+
+                    // If PLO is expanded, show linked CLOs
+                    if (expandedNodes.has(ploId) && hasCloLinks) {
+                        courseData.forEach((course, ci) => {
+                            course.clos.forEach((clo, cli) => {
+                                if (clo.ploMappings.includes(ploId)) {
+                                    const cloId = `clo-${ci}-${cli}`;
+                                    const cloNode = {
+                                        id: cloId, name: clo.text, type: 'clo',
+                                        color: course._color, level: 4,
+                                        parentId: ploId,
+                                        courseIndex: ci, cloIndex: cli,
+                                        courseNumber: course.courseNumber,
+                                        expanded: expandedNodes.has(cloId),
+                                        hasChildren: true
+                                    };
+                                    addNode(cloNode);
+                                    // Cross-link from CLO to PLO
+                                    result.links.push({ source: ploId, target: cloId, type: 'cross' });
+
+                                    // Also add cross-links to OTHER mapped PLOs
+                                    clo.ploMappings.forEach(otherPloId => {
+                                        if (otherPloId !== ploId && nodeMap.has(otherPloId)) {
+                                            result.links.push({ source: otherPloId, target: cloId, type: 'cross' });
+                                        }
+                                    });
+
+                                    // If CLO expanded, show course node
+                                    if (expandedNodes.has(cloId)) {
+                                        const courseId = `course-${ci}`;
+                                        const courseNode = {
+                                            id: courseId,
+                                            name: course.courseNumber,
+                                            fullTitle: course.courseTitle,
+                                            description: course.description,
+                                            type: 'course', color: course._color,
+                                            level: 5, parentId: cloId,
+                                            courseIndex: ci, hasChildren: false
+                                        };
+                                        addNode(courseNode);
+                                        result.links.push({ source: cloId, target: courseId, type: 'hierarchy' });
+                                    }
+                                }
+                            });
+                        });
+                    }
+                });
+            });
+        });
+
+        return result;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // SIMULATION
+    // ═══════════════════════════════════════════════════════════
+    function initSimulation() {
+        const data = flattenData();
+        nodes = data.nodes;
+        links = data.links;
+
+        simulation = d3.forceSimulation(nodes)
+            .velocityDecay(0.4)
+            .alphaDecay(0.028)
+            .force("link", d3.forceLink(links)
+                .id(d => d.id)
+                .distance(d => {
+                    if (d.type === 'cross') return 100;
+                    const src = typeof d.source === 'object' ? d.source : nodes.find(n => n.id === d.source);
+                    if (!src) return 100;
+                    if (src.level === 0) return 160;
+                    if (src.level === 1) return 130;
+                    if (src.level === 2) return 100;
+                    if (src.level === 3) return 85;
+                    return 70;
+                })
+                .strength(d => d.type === 'cross' ? 0.3 : 0.5)
+            )
+            .force("charge", d3.forceManyBody()
+                .strength(d => {
+                    if (d.type === 'root') return -900;
+                    if (d.type === 'pillar') return -650;
+                    if (d.type === 'category') return -400;
+                    if (d.type === 'plo') return -200;
+                    if (d.type === 'clo') return -150;
+                    return -120;
+                })
+            )
+            .force("center", d3.forceCenter(width / 2, height / 2).strength(0.04))
+            .force("collision", d3.forceCollide()
+                .radius(d => {
+                    if (d.type === 'root') return 58;
+                    if (d.type === 'pillar') return 48;
+                    if (d.type === 'category') return 40;
+                    if (d.type === 'plo') return 32;
+                    if (d.type === 'clo') return 28;
+                    return 35;
+                })
+                .strength(0.7)
+            )
+            .on("tick", tick);
+    }
+
+    function updateVisualization() {
+        const data = flattenData();
+        const oldNodeMap = new Map(nodes.map(d => [d.id, d]));
+
+        data.nodes.forEach(d => {
+            const existing = oldNodeMap.get(d.id);
+            if (existing) {
+                d.x = existing.x;
+                d.y = existing.y;
+                d.vx = (existing.vx || 0) * 0.3;
+                d.vy = (existing.vy || 0) * 0.3;
+                if (pinnedNodes.has(d.id)) {
+                    d.fx = existing.fx;
+                    d.fy = existing.fy;
+                }
+            } else if (d.parentId) {
+                const parent = oldNodeMap.get(d.parentId);
+                if (parent) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const spread = 15 + Math.random() * 20;
+                    d.x = parent.x + Math.cos(angle) * spread;
+                    d.y = parent.y + Math.sin(angle) * spread;
+                }
+                d.vx = 0; d.vy = 0;
+            }
+        });
+
+        nodes = data.nodes;
+        links = data.links;
+
+        simulation.nodes(nodes);
+        simulation.force("link").links(links);
+        simulation.alpha(0.35).restart();
+        renderVisualization();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // RENDERING
+    // ═══════════════════════════════════════════════════════════
+    function getNodeRadius(d) {
+        if (d.type === 'root') return 46;
+        if (d.type === 'pillar') return 38;
+        if (d.type === 'category') return 30;
+        if (d.type === 'plo') return 22;
+        return 20;
+    }
+
+    function getRectWidth(d) {
+        const textLen = d.name ? d.name.length : 10;
+        if (d.type === 'clo') return Math.min(Math.max(textLen * 5.5, 70), 180);
+        if (d.type === 'course') return Math.min(Math.max(textLen * 7, 90), 140);
+        return 80;
+    }
+
+    function truncate(str, max) {
+        if (!str) return '';
+        return str.length > max ? str.substring(0, max - 2) + '…' : str;
+    }
+
+    function renderVisualization() {
+        // Links
+        const link = linkGroup.selectAll(".link")
+            .data(links, d => `${typeof d.source === 'object' ? d.source.id : d.source}-${typeof d.target === 'object' ? d.target.id : d.target}-${d.type}`);
+
+        link.exit().transition().duration(250).style("opacity", 0).remove();
+
+        const linkEnter = link.enter().append("line")
+            .attr("class", d => `link ${d.type}`)
+            .style("opacity", 0);
+        linkEnter.transition().duration(300).style("opacity", 1);
+
+        // Nodes
+        const node = nodeGroup.selectAll(".node-group")
+            .data(nodes, d => d.id);
+
+        node.exit().transition().duration(250).ease(d3.easeCubicIn)
+            .style("opacity", 0).remove();
+
+        const nodeEnter = node.enter().append("g")
+            .attr("class", "node-group")
+            .style("opacity", 0)
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended)
+            );
+
+        nodeEnter.transition().duration(350).ease(d3.easeCubicOut)
+            .style("opacity", 1);
+
+        // Circle nodes (root, pillar, category, plo)
+        nodeEnter.filter(d => ['root','pillar','category','plo'].includes(d.type))
+            .append("circle")
+            .attr("class", d => `node ${d.type === 'plo' ? 'plo-node' : ''}`)
+            .attr("r", d => getNodeRadius(d))
+            .attr("fill", d => d.color);
+
+        // CLO rectangles
+        nodeEnter.filter(d => d.type === 'clo')
+            .append("rect")
+            .attr("class", "node clo-node")
+            .attr("width", d => getRectWidth(d))
+            .attr("height", 22)
+            .attr("x", d => -getRectWidth(d) / 2)
+            .attr("y", -11)
+            .attr("fill", d => d3.color(d.color).copy({opacity: 0.2}).formatRgb())
+            .attr("stroke", d => d.color);
+
+        // Course rectangles
+        nodeEnter.filter(d => d.type === 'course')
+            .append("rect")
+            .attr("class", "node course-node")
+            .attr("width", d => getRectWidth(d))
+            .attr("height", 26)
+            .attr("x", d => -getRectWidth(d) / 2)
+            .attr("y", -13)
+            .attr("fill", d => d.color)
+            .attr("stroke", d => d3.color(d.color).darker(0.6).formatHex());
+
+        // Text labels
+        nodeEnter.filter(d => ['root','pillar','category'].includes(d.type))
+            .each(function(d) {
+                const g = d3.select(this);
+                const lines = d.name.split('\n');
+                lines.forEach((line, i) => {
+                    g.append("text")
+                        .attr("class", "node-text")
+                        .attr("dy", `${(i - (lines.length - 1) / 2) * 1.15}em`)
+                        .text(line);
+                });
+            });
+
+        nodeEnter.filter(d => d.type === 'plo')
+            .append("text")
+            .attr("class", "plo-text")
+            .attr("dy", ".35em")
+            .text(d => truncate(d.name, 28));
+
+        nodeEnter.filter(d => d.type === 'clo')
+            .append("text")
+            .attr("class", "clo-text")
+            .attr("dy", ".35em")
+            .text(d => truncate(d.name, 32));
+
+        nodeEnter.filter(d => d.type === 'course')
+            .append("text")
+            .attr("class", "course-text")
+            .attr("dy", ".35em")
+            .text(d => truncate(d.name, 18));
+
+        // Expand indicators
+        nodeEnter.filter(d => d.hasChildren)
+            .append("text")
+            .attr("class", "expand-indicator")
+            .attr("x", d => {
+                if (['clo','course'].includes(d.type)) return getRectWidth(d) / 2 - 4;
+                return getNodeRadius(d) * 0.7;
+            })
+            .attr("y", d => {
+                if (['clo','course'].includes(d.type)) return -11;
+                return -getNodeRadius(d) * 0.7;
+            })
+            .text(d => expandedNodes.has(d.id) ? '−' : '+');
+
+        // ── EVENT HANDLERS ──
+        const allNodes = nodeEnter.merge(node);
+
+        allNodes
+            .on("click", function(event, d) {
+                if (!d.hasChildren && d.type !== 'root' && d.type !== 'pillar' && d.type !== 'category' && d.type !== 'plo') return;
+                event.stopPropagation();
+                if (expandedNodes.has(d.id)) {
+                    // Collapse this and all descendants
+                    collapseDescendants(d.id);
+                } else {
+                    expandedNodes.add(d.id);
+                }
+                updateVisualization();
+            })
+            .on("contextmenu", function(event, d) {
+                event.preventDefault();
+                if (pinnedNodes.has(d.id)) {
+                    d.fx = null; d.fy = null;
+                    pinnedNodes.delete(d.id);
+                } else {
+                    d.fx = d.x; d.fy = d.y;
+                    pinnedNodes.add(d.id);
+                }
+                renderVisualization();
+            })
+            .on("mouseenter", function(event, d) {
+                // Build tooltip
+                let content = '';
+                if (d.type === 'course') {
+                    content = `<div class="tip-course-num">${d.name}</div><strong>${d.fullTitle || ''}</strong>`;
+                    if (d.description) content += `<div class="tip-desc">${d.description}</div>`;
+                } else if (d.type === 'clo') {
+                    content = `<div class="tip-course-num">${d.courseNumber || ''}</div><strong>Course Learning Outcome</strong>${d.name}`;
+                } else if (d.type === 'plo') {
+                    content = `<strong>Programmatic Learning Outcome</strong>${d.name}`;
+                    if (d.hasChildren) content += `<div class="tip-desc">Click to show linked CLOs</div>`;
+                } else if (d.description) {
+                    content = `<strong>${d.name.replace(/\n/g, ' ')}</strong>${d.description}`;
+                } else if (d.type === 'category') {
+                    content = `<strong>${d.name.replace(/\n/g, ' ')}</strong>${d.ploCount || 0} learning outcomes`;
+                } else {
+                    return; // root: no tooltip
+                }
+
+                tooltip.html(content);
+                clearTimeout(window._tooltipTimer);
+                window._tooltipTimer = setTimeout(() => tooltip.classed("show", true), 400);
+
+                // Highlight cross-links
+                if (d.type === 'plo' || d.type === 'clo') {
+                    highlightConnections(d.id);
+                }
+            })
+            .on("mousemove", function(event) {
+                tooltip.style("left", Math.min(event.pageX + 15, window.innerWidth - 360) + "px")
+                       .style("top", (event.pageY - 40) + "px");
+            })
+            .on("mouseleave", () => {
+                clearTimeout(window._tooltipTimer);
+                tooltip.classed("show", false);
+                clearHighlights();
+            });
+
+        // Update expand indicators on existing nodes
+        allNodes.select(".expand-indicator")
+            .text(d => {
+                if (!d.hasChildren) return '';
+                return expandedNodes.has(d.id) ? '−' : '+';
+            });
+
+        // Update node classes
+        allNodes.select(".node")
+            .attr("class", d => {
+                let cls = "node";
+                if (d.type === 'plo') cls += " plo-node";
+                if (d.type === 'clo') cls += " clo-node";
+                if (d.type === 'course') cls += " course-node";
+                if (pinnedNodes.has(d.id)) cls += " pinned";
+                if (expandedNodes.has(d.id)) cls += " expanded";
+                return cls;
+            });
+    }
+
+    function tick() {
+        linkGroup.selectAll(".link")
+            .attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
+
+        nodeGroup.selectAll(".node-group")
+            .attr("transform", d => `translate(${d.x},${d.y})`);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // HIGHLIGHT CONNECTIONS
+    // ═══════════════════════════════════════════════════════════
+    function highlightConnections(nodeId) {
+        linkGroup.selectAll(".link").each(function(d) {
+            const srcId = typeof d.source === 'object' ? d.source.id : d.source;
+            const tgtId = typeof d.target === 'object' ? d.target.id : d.target;
+            if (srcId === nodeId || tgtId === nodeId) {
+                d3.select(this).classed("highlight", true);
+            }
+        });
+    }
+
+    function clearHighlights() {
+        linkGroup.selectAll(".link.highlight").classed("highlight", false);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // COLLAPSE DESCENDANTS
+    // ═══════════════════════════════════════════════════════════
+    function collapseDescendants(nodeId) {
+        expandedNodes.delete(nodeId);
+        // Remove all nodes that are descendants of this node
+        nodes.forEach(n => {
+            if (isDescendant(n.id, nodeId)) {
+                expandedNodes.delete(n.id);
+            }
+        });
+    }
+
+    function isDescendant(nodeId, ancestorId) {
+        const node = nodes.find(n => n.id === nodeId);
+        if (!node || !node.parentId) return false;
+        if (node.parentId === ancestorId) return true;
+        return isDescendant(node.parentId, ancestorId);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // DRAG
+    // ═══════════════════════════════════════════════════════════
+    function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.15).restart();
+        d.fx = d.x; d.fy = d.y;
+    }
+    function dragged(event, d) {
+        d.fx = event.x; d.fy = event.y;
+    }
+    function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // CONTROLS
+    // ═══════════════════════════════════════════════════════════
+    function expandAll() {
+        function recurse(node) {
+            expandedNodes.add(node.id);
+            if (node.children) node.children.forEach(c => recurse(c));
+            if (node.plos) {
+                node.plos.forEach((_, i) => expandedNodes.add(`${node.id}-${i}`));
+            }
+        }
+        recurse(ploData);
+        // Also expand CLOs and courses
+        courseData.forEach((c, ci) => {
+            c.clos.forEach((_, cli) => {
+                expandedNodes.add(`clo-${ci}-${cli}`);
+            });
+        });
+        updateVisualization();
+    }
+
+    function collapseAll() {
+        expandedNodes.clear();
+        expandedNodes.add('root');
+        expandedNodes.add('comp');
+        expandedNodes.add('socio');
+        expandedNodes.add('design');
+        updateVisualization();
+    }
+
+    function unpinAll() {
+        nodes.forEach(d => { d.fx = null; d.fy = null; });
+        pinnedNodes.clear();
+        simulation.alpha(0.3).restart();
+        renderVisualization();
+    }
+
+    function resetSimulation() {
+        expandedNodes.clear();
+        expandedNodes.add('root');
+        expandedNodes.add('comp');
+        expandedNodes.add('socio');
+        expandedNodes.add('design');
+        pinnedNodes.clear();
+        nodes.forEach(d => { d.fx = null; d.fy = null; });
+        updateVisualization();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // SHOW LINKED ONLY (collapse unlinked PLOs)
+    // ═══════════════════════════════════════════════════════════
+    let unlinkedHidden = false;
+
+    function getLinkedPloIds() {
+        const linked = new Set();
+        courseData.forEach(course => {
+            course.clos.forEach(clo => {
+                clo.ploMappings.forEach(id => linked.add(id));
+            });
+        });
+        return linked;
+    }
+
+    function getLinkedCategoryIds() {
+        const linked = getLinkedPloIds();
+        const cats = new Set();
+        ploData.children.forEach(pillar => {
+            pillar.children.forEach(cat => {
+                cat.plos.forEach((_, i) => {
+                    if (linked.has(`${cat.id}-${i}`)) cats.add(cat.id);
+                });
+            });
+        });
+        return cats;
+    }
+
+    function toggleUnlinked() {
+        const btn = document.getElementById('hide-unlinked-btn');
+        if (!unlinkedHidden) {
+            // Collapse unlinked: expand all linked paths, collapse everything else
+            const linkedPlos = getLinkedPloIds();
+            const linkedCats = getLinkedCategoryIds();
+
+            // Start fresh: keep root + pillars
+            expandedNodes.clear();
+            expandedNodes.add('root');
+            expandedNodes.add('comp');
+            expandedNodes.add('socio');
+            expandedNodes.add('design');
+
+            // Expand only categories that contain linked PLOs
+            linkedCats.forEach(catId => expandedNodes.add(catId));
+
+            // Expand only linked PLOs
+            linkedPlos.forEach(ploId => expandedNodes.add(ploId));
+
+            // Expand CLOs too
+            courseData.forEach((c, ci) => {
+                c.clos.forEach((_, cli) => expandedNodes.add(`clo-${ci}-${cli}`));
+            });
+
+            unlinkedHidden = true;
+            btn.textContent = 'Show All PLOs';
+        } else {
+            // Restore: expand all categories (but keep PLOs collapsed for cleanliness)
+            expandedNodes.clear();
+            expandedNodes.add('root');
+            expandedNodes.add('comp');
+            expandedNodes.add('socio');
+            expandedNodes.add('design');
+            ploData.children.forEach(pillar => {
+                pillar.children.forEach(cat => expandedNodes.add(cat.id));
+            });
+
+            unlinkedHidden = false;
+            btn.textContent = 'Show Linked Only';
+        }
+        updateVisualization();
+    }
+
+    function updateUnlinkedButton() {
+        const btn = document.getElementById('hide-unlinked-btn');
+        btn.style.display = courseData.length > 0 ? 'block' : 'none';
+        if (courseData.length === 0) {
+            unlinkedHidden = false;
+            btn.textContent = 'Show Linked Only';
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // SIDEBAR
+    // ═══════════════════════════════════════════════════════════
+    function toggleSidebar() {
+        const sb = document.getElementById('sidebar');
+        const btn = document.getElementById('sidebar-toggle');
+        sb.classList.toggle('open');
+        btn.classList.toggle('active');
+        btn.textContent = sb.classList.contains('open') ? 'Close' : '+ Add Courses';
+    }
+
+    function switchTab(tab) {
+        document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+        document.getElementById(`tab-${tab}`).classList.add('active');
+    }
+
+    function toggleExample() {
+        const el = document.getElementById('example-json');
+        const btn = document.querySelector('.example-toggle');
+        if (el.style.display === 'block') {
+            el.style.display = 'none';
+            btn.textContent = 'Show expected JSON format';
+        } else {
+            el.style.display = 'block';
+            btn.textContent = 'Hide example';
+        }
+    }
+
+    function showValidation(msg, type) {
+        const el = document.getElementById('validation-msg');
+        el.textContent = msg;
+        el.className = type; // 'error' or 'success'
+    }
+
+    function clearValidation() {
+        const el = document.getElementById('validation-msg');
+        el.className = '';
+        el.style.display = 'none';
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // COURSE LOADING & VALIDATION
+    // ═══════════════════════════════════════════════════════════
+    function validateAndLoad(jsonStr) {
+        clearValidation();
+        let parsed;
+        try {
+            parsed = JSON.parse(jsonStr);
+        } catch (e) {
+            showValidation(`Invalid JSON: ${e.message}`, 'error');
+            return;
+        }
+
+        if (!parsed.courses || !Array.isArray(parsed.courses) || parsed.courses.length === 0) {
+            showValidation('JSON must contain a "courses" array with at least one course.', 'error');
+            return;
+        }
+
+        const warnings = [];
+        const newCourses = [];
+
+        parsed.courses.forEach((course, i) => {
+            if (!course.courseNumber || !course.courseTitle) {
+                warnings.push(`Course ${i + 1}: missing courseNumber or courseTitle`);
+                return;
+            }
+            if (!course.clos || !Array.isArray(course.clos) || course.clos.length === 0) {
+                warnings.push(`${course.courseNumber}: no CLOs found`);
+                return;
+            }
+
+            // Validate CLOs
+            const validClos = [];
+            course.clos.forEach((clo, j) => {
+                if (!clo.text || !clo.ploMappings || !Array.isArray(clo.ploMappings)) {
+                    warnings.push(`${course.courseNumber} CLO ${j + 1}: missing text or ploMappings`);
+                    return;
+                }
+                const validMappings = clo.ploMappings.filter(id => {
+                    if (!validPloIds.has(id)) {
+                        warnings.push(`${course.courseNumber} CLO ${j + 1}: unknown PLO ID "${id}"`);
+                        return false;
+                    }
+                    return true;
+                });
+                if (validMappings.length > 0) {
+                    validClos.push({ text: clo.text, ploMappings: validMappings });
+                }
+            });
+
+            if (validClos.length > 0) {
+                newCourses.push({
+                    courseNumber: course.courseNumber,
+                    courseTitle: course.courseTitle,
+                    description: course.description || '',
+                    clos: validClos,
+                    _color: coursePalette[(courseData.length + newCourses.length) % coursePalette.length]
+                });
+            }
+        });
+
+        if (newCourses.length === 0) {
+            showValidation('No valid courses found. ' + (warnings.length > 0 ? warnings[0] : ''), 'error');
+            return;
+        }
+
+        courseData.push(...newCourses);
+        const msg = `Loaded ${newCourses.length} course(s).` + (warnings.length > 0 ? ` ${warnings.length} warning(s).` : '');
+        showValidation(msg, 'success');
+
+        document.getElementById('json-input').value = '';
+        updateCourseList();
+        updateVisualization();
+        updateLegend();
+        updateUnlinkedButton();
+    }
+
+    function loadFromPaste() {
+        const json = document.getElementById('json-input').value.trim();
+        if (!json) {
+            showValidation('Please paste JSON first.', 'error');
+            return;
+        }
+        validateAndLoad(json);
+    }
+
+    function loadFromFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            validateAndLoad(e.target.result);
+            event.target.value = ''; // reset file input
+        };
+        reader.readAsText(file);
+    }
+
+    function removeCourse(index) {
+        courseData.splice(index, 1);
+        // Reassign colors
+        courseData.forEach((c, i) => { c._color = coursePalette[i % coursePalette.length]; });
+        // Clean up expanded nodes for removed course
+        const toRemove = [];
+        expandedNodes.forEach(id => {
+            if (id.startsWith(`clo-${index}-`) || id === `course-${index}`) toRemove.push(id);
+        });
+        toRemove.forEach(id => expandedNodes.delete(id));
+
+        updateCourseList();
+        updateVisualization();
+        updateLegend();
+        updateUnlinkedButton();
+    }
+
+    function clearAllCourses() {
+        courseData = [];
+        // Clean expanded state
+        const toRemove = [];
+        expandedNodes.forEach(id => {
+            if (id.startsWith('clo-') || id.startsWith('course-')) toRemove.push(id);
+        });
+        toRemove.forEach(id => expandedNodes.delete(id));
+
+        updateCourseList();
+        updateVisualization();
+        updateLegend();
+        updateUnlinkedButton();
+    }
+
+    function updateCourseList() {
+        const list = document.getElementById('course-list');
+        const noCourses = document.getElementById('no-courses');
+        const count = document.getElementById('course-count');
+        const clearBtn = document.getElementById('clear-all-btn');
+        const badge = document.getElementById('course-badge');
+
+        list.innerHTML = '';
+
+        if (courseData.length === 0) {
+            noCourses.style.display = 'block';
+            clearBtn.style.display = 'none';
+            count.textContent = '';
+            badge.textContent = '';
+            return;
+        }
+
+        noCourses.style.display = 'none';
+        clearBtn.style.display = 'block';
+        count.textContent = `${courseData.length} course(s) loaded`;
+        badge.textContent = `(${courseData.length})`;
+
+        courseData.forEach((course, i) => {
+            const li = document.createElement('li');
+            li.className = 'course-item';
+            li.innerHTML = `
+                <div class="course-item-color" style="background:${course._color}"></div>
+                <div class="course-item-info">
+                    <div class="course-item-num">${course.courseNumber}</div>
+                    <div class="course-item-title">${course.courseTitle}</div>
+                    <div class="course-item-clos">${course.clos.length} CLO(s)</div>
+                </div>
+                <button class="course-remove" onclick="removeCourse(${i})" title="Remove">&times;</button>
+            `;
+            list.appendChild(li);
+        });
+    }
+
+    function updateLegend() {
+        const legend = document.getElementById('legend');
+        let html = `
+            <div class="legend-item"><div class="legend-color" style="background: var(--amber);"></div><span>Core</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--rust);"></div><span>Computational</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--forest);"></div><span>Sociotechnical</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: #1d4ed8;"></div><span>Design</span></div>
+        `;
+        courseData.forEach(c => {
+            html += `<div class="legend-item"><div class="legend-color rect" style="background: ${c._color};"></div><span>${c.courseNumber}</span></div>`;
+        });
+        legend.innerHTML = html;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // INIT
+    // ═══════════════════════════════════════════════════════════
+    initSimulation();
+    renderVisualization();
+    </script>
+</body>
+</html>

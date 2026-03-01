@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security Audit — bloombot.com — March 1, 2026</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f8f9fa; --card: #fff; --ink: #1a1a2e;
+      --border: #e2e8f0; --muted: #64748b;
+      --critical: #dc2626; --high: #ea580c; --medium: #d97706;
+      --low: #2563eb; --info: #6b7280; --pass: #16a34a;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.6; }
+    .container { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    /* Header */
+    .header { background: var(--ink); color: #fff; padding: 3rem 2rem; border-radius: 12px; margin-bottom: 2rem; }
+    .header h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .header p { color: rgba(255,255,255,0.65); font-size: 0.9rem; }
+    .header .meta { display: flex; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap; }
+    .header .meta-item { font-size: 0.8rem; }
+    .header .meta-item strong { color: #facc15; display: block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.2rem; }
+
+    /* Summary bar */
+    .summary-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 2rem; }
+    .summary-card { background: var(--card); border: 1.5px solid var(--border); border-radius: 10px; padding: 1rem 1.2rem; text-align: center; }
+    .summary-card .count { font-size: 2rem; font-weight: 800; line-height: 1; }
+    .summary-card .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-top: 0.3rem; }
+
+    /* Findings */
+    .finding { background: var(--card); border: 1.5px solid var(--border); border-radius: 10px; margin-bottom: 1rem; overflow: hidden; }
+    .finding-header { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.25rem; cursor: pointer; }
+    .finding-header:hover { background: #f1f5f9; }
+    .severity { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.25rem 0.6rem; border-radius: 4px; color: #fff; white-space: nowrap; }
+    .severity.critical { background: var(--critical); }
+    .severity.high { background: var(--high); }
+    .severity.medium { background: var(--medium); }
+    .severity.low { background: var(--low); }
+    .severity.info { background: var(--info); }
+    .severity.pass { background: var(--pass); }
+    .finding-title { font-weight: 600; font-size: 0.95rem; flex: 1; }
+    .chevron { color: var(--muted); font-size: 0.8rem; transition: transform 0.2s; }
+    .finding.open .chevron { transform: rotate(90deg); }
+    .finding-body { display: none; padding: 0 1.25rem 1.25rem; font-size: 0.88rem; color: #334155; }
+    .finding.open .finding-body { display: block; }
+    .finding-body p { margin-bottom: 0.75rem; }
+    .finding-body code { background: #f1f5f9; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.82rem; }
+    .finding-body pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.8rem; margin: 0.75rem 0; }
+    .finding-body ul { margin: 0.5rem 0 0.75rem 1.5rem; }
+    .finding-body li { margin-bottom: 0.3rem; }
+    .finding-body .file-ref { font-family: monospace; font-size: 0.82rem; color: var(--muted); }
+
+    /* Section headings */
+    .section-title { font-size: 1.15rem; font-weight: 700; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--border); }
+
+    /* Scope */
+    .scope { background: var(--card); border: 1.5px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 2rem; font-size: 0.88rem; }
+    .scope h3 { font-size: 0.95rem; margin-bottom: 0.5rem; }
+    .scope ul { margin-left: 1.5rem; }
+    .scope li { margin-bottom: 0.25rem; }
+
+    /* Footer */
+    .footer { text-align: center; color: var(--muted); font-size: 0.78rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+
+    @media print { .container { max-width: 100%; } .finding.open .finding-body { display: block; } }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>Security Audit Report</h1>
+    <p>bloombot.com &mdash; Static website hosted on GitHub Pages</p>
+    <div class="meta">
+      <div class="meta-item"><strong>Date</strong>March 1, 2026</div>
+      <div class="meta-item"><strong>Target</strong>bloombot.com</div>
+      <div class="meta-item"><strong>Repository</strong>github.com/mfrancisco1/bloombot</div>
+      <div class="meta-item"><strong>Hosting</strong>GitHub Pages (static)</div>
+      <div class="meta-item"><strong>Files Audited</strong>277 tracked files</div>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-bar">
+    <div class="summary-card"><div class="count" style="color:var(--critical)">1</div><div class="label">Critical</div></div>
+    <div class="summary-card"><div class="count" style="color:var(--high)">2</div><div class="label">High</div></div>
+    <div class="summary-card"><div class="count" style="color:var(--medium)">3</div><div class="label">Medium</div></div>
+    <div class="summary-card"><div class="count" style="color:var(--low)">4</div><div class="label">Low</div></div>
+    <div class="summary-card"><div class="count" style="color:var(--pass)">3</div><div class="label">Pass</div></div>
+  </div>
+
+  <!-- Scope -->
+  <div class="scope">
+    <h3>Audit Scope</h3>
+    <p>This audit covers source code review, dependency analysis, and hosting configuration of the bloombot.com website. Live HTTP header analysis was not possible due to network restrictions, so findings focus on the codebase and what is publicly served via GitHub Pages.</p>
+    <ul>
+      <li>Source code analysis of all HTML, JS, CSS, and Python files</li>
+      <li>Git history and tracked-file review</li>
+      <li>Third-party dependency and CDN inventory</li>
+      <li>Credential and secret scanning</li>
+      <li>XSS and input validation review</li>
+    </ul>
+  </div>
+
+  <!-- ── CRITICAL ── -->
+  <div class="section-title">Critical Findings</div>
+
+  <div class="finding open">
+    <div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="severity critical">Critical</span>
+      <span class="finding-title">Google API Key in Local File (Risk of Accidental Exposure)</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Location:</strong> <code>bloombot.html</code> (original Google Sites export)</p>
+      <p>The file contains an embedded Google API key (<code>AIzaSyC...cDI</code>). While the file is correctly listed in <code>.gitignore</code> and is <strong>not currently tracked by git</strong>, the key exists on disk and could be accidentally committed in the future.</p>
+      <p><strong>Risk:</strong> If committed, the key would be publicly visible on GitHub, potentially allowing unauthorized Google API usage and charges on your account.</p>
+      <p><strong>Recommended Actions:</strong></p>
+      <ul>
+        <li>Rotate/regenerate this API key in the Google Cloud Console and restrict it to specific referrers</li>
+        <li>Install a <code>pre-commit</code> hook (e.g., <a href="https://github.com/awslabs/git-secrets">git-secrets</a>) that blocks commits containing <code>AIza</code> patterns</li>
+        <li>Consider deleting <code>bloombot.html</code> from the working directory entirely if it's no longer needed</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── HIGH ── -->
+  <div class="section-title">High Findings</div>
+
+  <div class="finding">
+    <div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="severity high">High</span>
+      <span class="finding-title">DOM-Based XSS via Unsafe innerHTML Usage (22+ Files)</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="finding-body">
+      <p>Over 22 HTML files in <code>webpage-main/</code> use <code>innerHTML</code> with template literals to render dynamic content. While most files use internally generated data, several accept user input (file uploads, form fields) and render it without sanitization.</p>
+      <p><strong>Most Affected:</strong></p>
+      <ul>
+        <li><code>webpage-main/CLO_PLO_mapper.html</code> &mdash; accepts JSON file uploads and renders course titles/descriptions directly via innerHTML</li>
+        <li><code>webpage-main/class_simulation_iteration_A.html</code></li>
+        <li><code>webpage-main/digital_footprint_three.html</code></li>
+        <li><code>webpage-main/crash_test_simulation.html</code></li>
+      </ul>
+      <p><strong>Example vulnerable pattern:</strong></p>
+      <pre>li.innerHTML = `
+  &lt;div class="course-item-title"&gt;${course.courseTitle}&lt;/div&gt;
+`;</pre>
+      <p>If <code>courseTitle</code> contains <code>&lt;img src=x onerror=alert(1)&gt;</code>, it would execute arbitrary JavaScript.</p>
+      <p><strong>Recommended Actions:</strong></p>
+      <ul>
+        <li>Replace <code>innerHTML</code> with <code>textContent</code> for text data, or use <code>createElement</code>/<code>appendChild</code></li>
+        <li>If innerHTML is necessary, sanitize input with <a href="https://github.com/cure53/DOMPurify">DOMPurify</a></li>
+        <li>Add a Content Security Policy that disables <code>unsafe-inline</code> scripts</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="severity high">High</span>
+      <span class="finding-title">.gitignore Bypass &mdash; Google API Scripts Publicly Tracked</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="finding-body">
+      <p>The <code>.gitignore</code> attempts to exclude <code>bloombot_files/*.js</code> and <code>bloombot_files/*.css</code>, but <strong>18 files from <code>bloombot_files/</code> are tracked in git</strong> and publicly exposed on GitHub Pages, including:</p>
+      <ul>
+        <li><code>bloombot_files/cb=gapi.js</code> (325 KB) &mdash; minified Google GAPI client library</li>
+        <li><code>bloombot_files/m=view.js</code> (503 KB) &mdash; Google Sites view handler with auth token logic</li>
+        <li><code>bloombot_files/lazy.min.js</code> (127 KB)</li>
+        <li><code>bloombot_files/client.js</code> (14.5 KB)</li>
+        <li>Multiple CSS and image files</li>
+      </ul>
+      <p><strong>Why this happened:</strong> Files that were added to git <em>before</em> the .gitignore rule was created remain tracked. The .gitignore only prevents new files from being added.</p>
+      <p><strong>Recommended Actions:</strong></p>
+      <pre>git rm -r --cached bloombot_files/
+git commit -m "Remove tracked Google Sites export files"</pre>
+      <p>This removes them from git tracking without deleting them locally.</p>
+    </div>
+  </div>
+
+  <!-- ── MEDIUM ── -->
+  <div class="section-title">Medium Findings</div>
+
+  <div class="finding">
+    <div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="severity medium">Medium</span>
+      <span class="finding-title">Local Dev Server Binds to All Interfaces (0.0.0.0)</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Location:</strong> <code>app.py</code></p>
+      <p>The Python development server uses <code>socketserver.TCPServer(("", PORT), Handler)</code> which binds to all network interfaces. Anyone on the same network can access the entire project directory.</p>
+      <p><code>SimpleHTTPRequestHandler</code> also has no protection against directory traversal on older Python versions.</p>
+      <p><strong>Fix:</strong></p>
+      <pre>socketserver.TCPServer(("127.0.0.1", PORT), Handler)</pre>
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="severity medium">Medium</span>
+      <span class="finding-title">No Content Security Policy (CSP)</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="finding-body">
+      <p>None of the HTML files include a Content-Security-Policy header or meta tag. This makes XSS exploitation easier because inline scripts and arbitrary external scripts are unrestricted.</p>
+      <p><strong>Recommended:</strong> Add a CSP meta tag to each page's <code>&lt;head&gt;</code>:</p>
+      <pre>&lt;meta http-equiv="Content-Security-Policy"
+  content="default-src 'self';
+    script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://d3js.org;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src https://fonts.gstatic.com;
+    img-src 'self' data:;"&gt;</pre>
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="severity medium">Medium</span>
+      <span class="finding-title">Multiple D3.js Versions (Including Outdated 5.x)</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="finding-body">
+      <p>Some pages load D3.js v5.16.0 (released 2020) while others use v7.8.5. Running two major versions increases attack surface and maintenance burden.</p>
+      <p><strong>Recommended:</strong> Standardize on D3.js v7.x across all pages and update CDN links accordingly.</p>
+    </div>
+  </div>
+
+  <!-- ── LOW ── -->
+  <div class="section-title">Low Findings</div>
+
+  <div class="finding">
+    <div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="severity low">Low</span>
+      <span class="finding-title">External CDN Scripts Lack Subresource Integrity (SRI)</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="finding-body">
+      <p>Scripts loaded from cdnjs.cloudflare.com and cdn.jsdelivr.net do not use SRI hashes. If a CDN is compromised, malicious code could be injected into your pages.</p>
+      <p><strong>Fix:</strong> Add <code>integrity</code> and <code>crossorigin</code> attributes:</p>
+      <pre>&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"
+  integrity="sha384-..." crossorigin="anonymous"&gt;&lt;/script&gt;</pre>
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="severity low">Low</span>
+      <span class="finding-title">Missing X-Frame-Options / Referrer Policy</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="finding-body">
+      <p>No <code>X-Frame-Options</code> or <code>Referrer-Policy</code> meta tags are set. Pages could be embedded in iframes on other sites (clickjacking), and full URLs may leak in referrer headers.</p>
+      <p><strong>Add to each page:</strong></p>
+      <pre>&lt;meta name="referrer" content="strict-origin-when-cross-origin"&gt;</pre>
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="severity low">Low</span>
+      <span class="finding-title">Password Analyzer Lacks Input Length Limits</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Location:</strong> <code>webpage-main/password_analyzer.html</code></p>
+      <p>The educational password analyzer performs entropy calculations on user-supplied passwords without input length restrictions. Extremely long input could cause performance issues.</p>
+      <p><strong>Fix:</strong> Add <code>maxlength="256"</code> to the input field and validate length in JavaScript before processing.</p>
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="severity low">Low</span>
+      <span class="finding-title">Three.js r158 — Consider Updating</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="finding-body">
+      <p>The bundled Three.js (revision 158, from 2023) in <code>webpage-main/</code> is a couple of years old. While no critical CVEs are known for this version, keeping dependencies current is a best practice.</p>
+    </div>
+  </div>
+
+  <!-- ── PASS ── -->
+  <div class="section-title">Passed Checks</div>
+
+  <div class="finding">
+    <div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="severity pass">Pass</span>
+      <span class="finding-title">Git History Contains No Previously Committed Secrets</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="finding-body">
+      <p>Review of the 9 commits in the repository shows no previously committed API keys, passwords, or credentials. The <code>bloombot.html</code> file (containing the API key) was never committed.</p>
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="severity pass">Pass</span>
+      <span class="finding-title">.git Directory Not Exposed on GitHub Pages</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="finding-body">
+      <p>GitHub Pages automatically blocks access to the <code>.git</code> directory, so repository internals are not exposed to the public.</p>
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="severity pass">Pass</span>
+      <span class="finding-title">No Server-Side Code Running in Production</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="finding-body">
+      <p>The site is purely static on GitHub Pages. <code>app.py</code> is only used for local development. No backend attack surface exists in production.</p>
+    </div>
+  </div>
+
+  <!-- Priority Actions -->
+  <div class="section-title">Priority Remediation Checklist</div>
+  <div class="scope">
+    <ol style="margin-left: 1.5rem;">
+      <li style="margin-bottom:0.5rem"><strong style="color:var(--critical)">Critical:</strong> Rotate the Google API key in Google Cloud Console and restrict it by HTTP referrer</li>
+      <li style="margin-bottom:0.5rem"><strong style="color:var(--high)">High:</strong> Run <code>git rm -r --cached bloombot_files/</code> to untrack the Google Sites export files</li>
+      <li style="margin-bottom:0.5rem"><strong style="color:var(--high)">High:</strong> Replace <code>innerHTML</code> with <code>textContent</code> or add DOMPurify in files that accept user input (especially CLO_PLO_mapper.html)</li>
+      <li style="margin-bottom:0.5rem"><strong style="color:var(--medium)">Medium:</strong> Add a Content Security Policy meta tag to all HTML files</li>
+      <li style="margin-bottom:0.5rem"><strong style="color:var(--medium)">Medium:</strong> Fix <code>app.py</code> to bind to <code>127.0.0.1</code> instead of all interfaces</li>
+      <li style="margin-bottom:0.5rem"><strong style="color:var(--low)">Low:</strong> Add SRI hashes to all external CDN script tags</li>
+      <li style="margin-bottom:0.5rem"><strong style="color:var(--low)">Low:</strong> Install <code>git-secrets</code> or a pre-commit hook to prevent accidental credential commits</li>
+    </ol>
+  </div>
+
+  <div class="footer">
+    Security Audit &mdash; bloombot.com &mdash; March 1, 2026<br>
+    Automated source-code review. Live HTTP header analysis was not performed due to network restrictions.
+  </div>
+
+</div>
+<script>
+// Allow click-to-expand on all findings
+document.querySelectorAll('.finding-header').forEach(h => {
+  h.addEventListener('click', () => h.parentElement.classList.toggle('open'));
+});
+</script>
+</body>
+</html>

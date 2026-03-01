@@ -58,6 +58,7 @@
             font-size: 11px; font-weight: 500;
             letter-spacing: 0.03em; text-transform: uppercase;
             transition: all 0.2s;
+            text-decoration: none; display: inline-flex; align-items: center;
         }
         .header-btn:hover { background: var(--rust); border-color: var(--rust); color: #fff; }
         .header-btn.active { background: var(--rust); border-color: var(--rust); color: #fff; }
@@ -338,6 +339,7 @@
         <div id="header">
             <h1>CLO–PLO Mapper</h1>
             <div id="subtitle">Map Course Learning Outcomes to Programmatic Learning Outcomes</div>
+            <a class="header-btn" href="CLO_PLO_mapper_GPT_prompt.md" target="_blank" title="Open GPT setup guide in a new tab">GPT Prompt ↗</a>
             <button class="header-btn" id="sidebar-toggle" onclick="toggleSidebar()">+ Add Courses</button>
         </div>
 

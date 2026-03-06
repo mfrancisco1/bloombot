@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Water Analogy — Voltage, Current &amp; Resistance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:     #1a1612;
+      --cream:   #f5f0e8;
+      --warm:    #e8dcc8;
+      --rust:    #c4541a;
+      --amber:   #d97706;
+      --forest:  #2d5a27;
+      --slate:   #64748b;
+      --border:  #d1c4aa;
+      --card-bg: #ffffff;
+      --shadow:  rgba(26,22,18,0.10);
+      --blue:    #1d4ed8;
+      --sky:     #38bdf8;
+      --water:   #3b82f6;
+      --water-light: #93c5fd;
+      --water-dark:  #1e40af;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--ink);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem; height: 56px;
+      border-bottom: 3px solid var(--rust);
+    }
+    .nav-brand {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.2rem; font-weight: 700;
+      color: var(--amber); text-decoration: none;
+      letter-spacing: -0.03em;
+    }
+    .nav-links { display:flex; list-style:none; }
+    .nav-links li>a { display:flex; align-items:center; height:56px; padding:0 0.9rem; color:rgba(255,255,255,0.65); text-decoration:none; font-size:0.78rem; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; transition:color 0.2s,background 0.2s; }
+    .nav-links li>a:hover { color:#fff; background:rgba(255,255,255,0.07); }
+
+    /* ── HERO ── */
+    .hero-banner {
+      background: var(--ink); color: #fff;
+      padding: 3.5rem 2rem 3rem;
+      position: relative; overflow: hidden;
+    }
+    .hero-banner::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background:
+        repeating-linear-gradient(0deg, transparent, transparent 39px,
+          rgba(255,255,255,0.035) 39px, rgba(255,255,255,0.035) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px,
+          rgba(255,255,255,0.035) 39px, rgba(255,255,255,0.035) 40px);
+    }
+    .hero-inner { max-width: 1100px; margin: 0 auto; position: relative; }
+    .hero-eyebrow {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.68rem; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--amber);
+      margin-bottom: 0.75rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .hero-eyebrow::after { content:''; flex:1; height:1px; background:rgba(255,255,255,0.12); max-width:80px; }
+    .hero-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 700; line-height: 1.1;
+      letter-spacing: -0.03em; margin-bottom: 1rem;
+    }
+    .hero-title span { color: var(--amber); }
+    .hero-desc { font-size: 1rem; color: rgba(255,255,255,0.65); max-width: 640px; line-height: 1.7; }
+
+    /* ── SECTIONS ── */
+    .section { max-width: 1100px; margin: 0 auto; padding: 3rem 2rem; }
+    .section-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.68rem; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--slate);
+      margin-bottom: 0.4rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .section-label::after { content:''; flex:1; height:1px; background:var(--border); max-width:60px; }
+    .section-heading {
+      font-size: clamp(1.4rem, 3vw, 1.8rem);
+      font-weight: 700; letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+    }
+    .section-sub { font-size: 0.92rem; color: var(--slate); max-width: 620px; margin-bottom: 2rem; line-height: 1.6; }
+
+    /* ── SIMULATION LAYOUT ── */
+    .sim-layout {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    @media (max-width: 860px) {
+      .sim-layout { grid-template-columns: 1fr; }
+    }
+
+    .canvas-wrap {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* ── CONTROLS PANEL ── */
+    .controls-panel {
+      display: flex; flex-direction: column; gap: 1rem;
+    }
+    .ctrl-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem 1.3rem;
+      border-top: 4px solid transparent;
+    }
+    .ctrl-card h3 {
+      font-size: 0.82rem; font-weight: 700;
+      margin-bottom: 0.15rem;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .ctrl-card h3 .dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .ctrl-card .desc {
+      font-size: 0.76rem; color: var(--slate); line-height: 1.5;
+      margin-bottom: 0.8rem;
+    }
+    .ctrl-card .analogy {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem; color: var(--slate);
+      background: var(--warm); padding: 0.3rem 0.6rem;
+      border-radius: 4px; display: inline-block;
+      margin-bottom: 0.7rem;
+    }
+
+    .slider-row {
+      display: flex; align-items: center; gap: 0.7rem;
+    }
+    .slider-row input[type=range] {
+      flex: 1; height: 6px;
+      -webkit-appearance: none; appearance: none;
+      background: var(--warm); border-radius: 3px; outline: none;
+    }
+    .slider-row input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--ink); border: 2px solid var(--amber);
+      cursor: pointer;
+    }
+    .slider-val {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.82rem; font-weight: 700;
+      min-width: 52px; text-align: right;
+    }
+
+    /* ── READOUTS ── */
+    .readout-strip {
+      background: var(--ink); border-radius: 10px;
+      padding: 1rem 1.3rem;
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.5rem;
+    }
+    .readout {
+      text-align: center;
+    }
+    .readout-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.58rem; letter-spacing: 0.12em;
+      text-transform: uppercase; color: rgba(255,255,255,0.4);
+    }
+    .readout-value {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.1rem; font-weight: 700;
+      color: var(--amber);
+    }
+    .readout-unit {
+      font-size: 0.65rem; color: rgba(255,255,255,0.5);
+      font-weight: 400;
+    }
+
+    /* ── EQUATION BANNER ── */
+    .equation-banner {
+      background: var(--ink); border-radius: 10px;
+      padding: 1.2rem;
+      text-align: center;
+    }
+    .equation {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.3rem; font-weight: 700;
+      color: #fff; letter-spacing: 0.02em;
+    }
+    .equation .eq-v { color: var(--sky); }
+    .equation .eq-i { color: #fbbf24; }
+    .equation .eq-r { color: #f87171; }
+    .eq-note {
+      font-size: 0.72rem; color: rgba(255,255,255,0.4);
+      margin-top: 0.4rem;
+    }
+
+    /* ── INFO BAND ── */
+    .info-band {
+      background: var(--warm);
+      border-top: 1.5px solid var(--border);
+      border-bottom: 1.5px solid var(--border);
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+    .info-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.5rem;
+      border-left: 4px solid transparent;
+    }
+    .info-card h3 { font-size: 0.92rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .info-card .water-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem; color: var(--water);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 0.2rem;
+    }
+    .info-card .elec-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem; color: var(--amber);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 0.3rem;
+    }
+    .info-card p { font-size: 0.84rem; color: var(--slate); line-height: 1.6; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--ink);
+      color: rgba(255,255,255,0.4);
+      text-align: center; padding: 2.5rem 2rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72rem; letter-spacing: 0.06em; line-height: 2;
+    }
+    footer a { color: var(--amber); text-decoration: none; }
+
+    @media (max-width: 680px) {
+      .nav-links { display: none; }
+      .readout-strip { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="../bloombot-modern.html">bloombot</a>
+  <ul class="nav-links">
+    <li><a href="../bloombot-modern.html">← Home</a></li>
+    <li><a href="conductivity.html">Conductivity</a></li>
+    <li><a href="semiconductor.html">Semiconductors</a></li>
+  </ul>
+</nav>
+
+<header class="hero-banner">
+  <div class="hero-inner">
+    <p class="hero-eyebrow">I 341 · Interactive Electronics Prototyping</p>
+    <h1 class="hero-title">The Water <span>Analogy</span></h1>
+    <p class="hero-desc">
+      Voltage, current, and resistance are invisible. But water in a tank with a hole, flowing over a wheel, isn't. Adjust the water level and the hole size and watch how the three quantities relate — then read the electrical equivalents in real time.
+    </p>
+  </div>
+</header>
+
+<div class="section">
+  <p class="section-label">Interactive Simulation</p>
+  <h2 class="section-heading">Adjust &amp; Observe</h2>
+  <p class="section-sub">Drag the sliders to change water height (voltage) and hole diameter (inverse of resistance). The flow rate, wheel speed, and bulb brightness all respond.</p>
+
+  <div class="sim-layout">
+    <!-- Canvas -->
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="sim" width="720" height="520"></canvas>
+      </div>
+      <div style="height:1rem;"></div>
+      <!-- Readouts -->
+      <div class="readout-strip">
+        <div class="readout">
+          <div class="readout-label">Voltage</div>
+          <div class="readout-value" id="rVolt">6.0 <span class="readout-unit">V</span></div>
+        </div>
+        <div class="readout">
+          <div class="readout-label">Current</div>
+          <div class="readout-value" id="rCur">0.60 <span class="readout-unit">A</span></div>
+        </div>
+        <div class="readout">
+          <div class="readout-label">Resistance</div>
+          <div class="readout-value" id="rRes">10.0 <span class="readout-unit">Ω</span></div>
+        </div>
+      </div>
+      <div style="height:1rem;"></div>
+      <div class="equation-banner">
+        <div class="equation"><span class="eq-v">V</span> = <span class="eq-i">I</span> × <span class="eq-r">R</span></div>
+        <div class="eq-note">Ohm's Law — the relationship you're seeing</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-panel">
+      <div class="ctrl-card" style="border-top-color: var(--sky);">
+        <h3><span class="dot" style="background:var(--sky);"></span> Water Level</h3>
+        <div class="analogy">Water height → Voltage</div>
+        <div class="desc">Higher water means more pressure at the hole — more force pushing water out. This is voltage: the potential difference that drives current.</div>
+        <div class="slider-row">
+          <input type="range" id="sliderVoltage" min="0" max="100" value="60">
+          <span class="slider-val" id="valVoltage" style="color:var(--blue);">6.0 V</span>
+        </div>
+      </div>
+
+      <div class="ctrl-card" style="border-top-color: #f87171;">
+        <h3><span class="dot" style="background:#f87171;"></span> Hole Size</h3>
+        <div class="analogy">Smaller hole → More resistance</div>
+        <div class="desc">A narrow opening restricts flow — that's resistance. A wide-open hole lets water rush through. In a circuit, thin wires or resistors serve the same role.</div>
+        <div class="slider-row">
+          <input type="range" id="sliderHole" min="5" max="100" value="50">
+          <span class="slider-val" id="valHole" style="color:#ef4444;">Med</span>
+        </div>
+      </div>
+
+      <div class="ctrl-card" style="border-top-color: #fbbf24;">
+        <h3><span class="dot" style="background:#fbbf24;"></span> Current (result)</h3>
+        <div class="analogy">Flow rate → Current</div>
+        <div class="desc">You don't set current directly — it's the <em>result</em> of voltage and resistance. More pressure + bigger hole = more flow. Watch the wheel spin faster and the bulb glow brighter.</div>
+      </div>
+
+      <div class="ctrl-card" style="border-top-color: var(--forest); background: var(--warm);">
+        <h3><span class="dot" style="background:var(--forest);"></span> Try This</h3>
+        <div class="desc" style="margin-bottom:0;">
+          <strong>Double the voltage</strong> — current doubles.<br>
+          <strong>Halve the hole</strong> — current halves.<br>
+          That's Ohm's law in action: I = V / R.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ EXPLANATION CARDS ═══ -->
+<div class="info-band">
+  <div class="section">
+    <p class="section-label">The Analogy Explained</p>
+    <h2 class="section-heading">Water → Electricity</h2>
+    <p class="section-sub">Every part of the water system maps to an electrical concept. Here's the translation.</p>
+
+    <div class="info-grid">
+      <div class="info-card" style="border-left-color: var(--sky);">
+        <div class="water-label">Water Pressure / Height</div>
+        <div class="elec-label">= Voltage (V)</div>
+        <h3>The Push</h3>
+        <p>Voltage is electrical pressure — the force that pushes charges through a circuit. A taller column of water exerts more pressure at the bottom, just as a higher voltage pushes more current through a wire. A battery is like a pump that lifts water back to the top.</p>
+      </div>
+      <div class="info-card" style="border-left-color: #fbbf24;">
+        <div class="water-label">Flow Rate (liters/sec)</div>
+        <div class="elec-label">= Current (I, in Amps)</div>
+        <h3>The Flow</h3>
+        <p>Current is the amount of charge passing a point per second. In the analogy, it's how much water flows through the hole each second. You don't "set" flow directly — it depends on pressure and restriction. More voltage, less resistance → more current.</p>
+      </div>
+      <div class="info-card" style="border-left-color: #f87171;">
+        <div class="water-label">Narrow Pipe / Small Hole</div>
+        <div class="elec-label">= Resistance (R, in Ohms)</div>
+        <h3>The Restriction</h3>
+        <p>Resistance opposes current, just as a narrow pipe slows water flow. Thin wires, long wires, and resistor components all increase resistance. The hole in the bucket acts as a variable resistor — make it smaller, and less water gets through for the same pressure.</p>
+      </div>
+    </div>
+
+    <div style="height: 2rem;"></div>
+
+    <div class="info-grid">
+      <div class="info-card" style="border-left-color: var(--forest);">
+        <div class="water-label">Water Wheel</div>
+        <div class="elec-label">= Load (Motor, Bulb, etc.)</div>
+        <h3>Doing Work</h3>
+        <p>The water wheel converts water flow into mechanical motion — that's the "load" in a circuit. A light bulb, motor, or speaker converts electrical current into light, motion, or sound. More current through the load means more work done.</p>
+      </div>
+      <div class="info-card" style="border-left-color: var(--amber);">
+        <div class="water-label">Bulb Brightness</div>
+        <div class="elec-label">= Power (P = V × I)</div>
+        <h3>Energy Conversion</h3>
+        <p>Power is how fast energy is converted. The bulb's brightness shows power: more voltage × more current = brighter glow. In watts, P = V × I. Double the current at the same voltage, and you double the power delivered to the load.</p>
+      </div>
+      <div class="info-card" style="border-left-color: var(--slate);">
+        <div class="water-label">Pump (lifts water back up)</div>
+        <div class="elec-label">= Battery / Power Supply</div>
+        <h3>The Source</h3>
+        <p>A battery does chemical work to push electrons from low potential to high, just as a pump lifts water back to the top of the tank. Without it, the tank drains and flow stops — the circuit goes dead.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div>bloombot &nbsp;·&nbsp; Matthew Francisco &nbsp;·&nbsp; Luddy School of Informatics, Computing &amp; Engineering</div>
+  <div>Indiana University &nbsp;·&nbsp; <a href="../bloombot-modern.html">Home</a></div>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  WATER CIRCUIT SIMULATION
+// ══════════════════════════════════════════════════════
+
+const canvas = document.getElementById('sim');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+const sliderV = document.getElementById('sliderVoltage');
+const sliderH = document.getElementById('sliderHole');
+
+// ── State ──
+let waterLevel = 0.6;   // 0..1
+let holeSize   = 0.5;   // 0..1
+let wheelAngle = 0;
+let particles  = [];
+let splashParticles = [];
+let time = 0;
+
+// ── Geometry constants ──
+const TANK = { x: 80, y: 60, w: 200, h: 340, wallThick: 6 };
+const HOLE_Y = TANK.y + TANK.h - 40;
+const HOLE_X = TANK.x + TANK.w;
+const WHEEL = { cx: 430, cy: 340, r: 55 };
+const BULB = { cx: 610, cy: 160, r: 38 };
+const BASIN = { x: 340, y: 410, w: 200, h: 60 };
+
+// ── Colors ──
+const COL = {
+  tank:      '#374151',
+  tankInner: '#1f2937',
+  water:     '#3b82f6',
+  waterTop:  '#60a5fa',
+  waterDark: '#1e40af',
+  hole:      '#111827',
+  wheel:     '#78716c',
+  wheelHub:  '#44403c',
+  spoke:     '#a8a29e',
+  bulbOff:   '#44403c',
+  bulbGlass: '#fef3c7',
+  bulbGlow:  '#fbbf24',
+  wire:      '#6b7280',
+  ground:    '#d1c4aa',
+  label:     '#64748b',
+  bg:        '#f5f0e8',
+  pipe:      '#4b5563',
+};
+
+// ── Particle class ──
+class WaterParticle {
+  constructor(x, y, vx, vy) {
+    this.x = x; this.y = y;
+    this.vx = vx; this.vy = vy;
+    this.life = 1;
+    this.size = 2 + Math.random() * 3;
+  }
+  update(dt) {
+    this.vy += 600 * dt; // gravity
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.life -= dt * 0.8;
+  }
+}
+
+class SplashDrop {
+  constructor(x, y) {
+    const angle = -Math.PI/2 + (Math.random() - 0.5) * Math.PI * 0.8;
+    const speed = 40 + Math.random() * 80;
+    this.x = x; this.y = y;
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+    this.life = 1;
+    this.size = 1 + Math.random() * 2;
+  }
+  update(dt) {
+    this.vy += 400 * dt;
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.life -= dt * 2.5;
+  }
+}
+
+// ── Drawing helpers ──
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+function drawTank() {
+  const t = TANK;
+
+  // Tank body (back)
+  ctx.fillStyle = COL.tankInner;
+  roundRect(t.x, t.y, t.w, t.h, 6);
+  ctx.fill();
+
+  // Water
+  const waterH = waterLevel * (t.h - 20);
+  const waterY = t.y + t.h - waterH;
+  if (waterH > 0) {
+    // water body
+    const grad = ctx.createLinearGradient(t.x, waterY, t.x, t.y + t.h);
+    grad.addColorStop(0, COL.waterTop);
+    grad.addColorStop(1, COL.waterDark);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.rect(t.x + 4, waterY, t.w - 8, waterH - 4);
+    ctx.fill();
+
+    // water surface wave
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let px = t.x + 6; px < t.x + t.w - 6; px++) {
+      const wave = Math.sin(px * 0.06 + time * 3) * 2 + Math.sin(px * 0.1 + time * 5) * 1;
+      if (px === t.x + 6) ctx.moveTo(px, waterY + wave);
+      else ctx.lineTo(px, waterY + wave);
+    }
+    ctx.stroke();
+  }
+
+  // Tank walls (foreground frame)
+  ctx.strokeStyle = COL.tank;
+  ctx.lineWidth = t.wallThick;
+  roundRect(t.x, t.y, t.w, t.h, 6);
+  ctx.stroke();
+
+  // Water level marking
+  ctx.fillStyle = COL.label;
+  ctx.font = '600 11px "Space Mono", monospace';
+  ctx.textAlign = 'right';
+  const lvlPct = Math.round(waterLevel * 100);
+  ctx.fillText(lvlPct + '%', t.x - 10, waterY + 5);
+
+  // Small ticks
+  for (let i = 0; i <= 10; i++) {
+    const ty = t.y + t.h - (i / 10) * (t.h - 20);
+    ctx.strokeStyle = 'rgba(100,116,139,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(t.x - 4, ty);
+    ctx.lineTo(t.x, ty);
+    ctx.stroke();
+  }
+
+  // Label
+  ctx.fillStyle = COL.label;
+  ctx.font = '700 11px "Space Grotesk", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('WATER TANK', t.x + t.w / 2, t.y - 12);
+  ctx.font = '500 10px "Space Mono", monospace';
+  ctx.fillStyle = '#3b82f6';
+  ctx.fillText('= Battery', t.x + t.w / 2, t.y - 0);
+}
+
+function drawHole() {
+  const holeH = 6 + holeSize * 24;
+  const hy = HOLE_Y - holeH / 2;
+
+  // Pipe from tank to right
+  ctx.fillStyle = COL.pipe;
+  ctx.fillRect(HOLE_X - 4, hy - 4, 60, holeH + 8);
+
+  // Hole opening
+  ctx.fillStyle = COL.hole;
+  ctx.fillRect(HOLE_X, hy, 50, holeH);
+
+  // Flow stream
+  const current = getCurrent();
+  if (current > 0.01) {
+    const streamW = holeH * 0.7;
+    const streamX = HOLE_X + 50;
+
+    // Horizontal stream
+    const grad = ctx.createLinearGradient(streamX, 0, streamX + 80, 0);
+    grad.addColorStop(0, `rgba(59,130,246,${0.4 + current * 0.6})`);
+    grad.addColorStop(1, `rgba(59,130,246,${0.1 + current * 0.3})`);
+    ctx.fillStyle = grad;
+
+    // Arcing stream path
+    ctx.beginPath();
+    const streamTop = HOLE_Y - streamW / 2;
+    const streamBot = HOLE_Y + streamW / 2;
+    ctx.moveTo(streamX, streamTop);
+
+    // Top edge of stream (slight arc down)
+    for (let dx = 0; dx <= 100; dx += 5) {
+      const t2 = dx / 100;
+      const dropY = t2 * t2 * 80;
+      const narrowing = 1 - t2 * 0.4;
+      ctx.lineTo(streamX + dx, streamTop + dropY);
+    }
+    // Bottom edge back
+    for (let dx = 100; dx >= 0; dx -= 5) {
+      const t2 = dx / 100;
+      const dropY = t2 * t2 * 80;
+      ctx.lineTo(streamX + dx, streamBot + dropY);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Spawn stream particles
+    if (Math.random() < current * 3) {
+      const speed = 80 + current * 250;
+      particles.push(new WaterParticle(
+        streamX, HOLE_Y + (Math.random() - 0.5) * streamW,
+        speed, -20 + Math.random() * 40
+      ));
+    }
+  }
+
+  // Label
+  ctx.fillStyle = COL.label;
+  ctx.font = '700 10px "Space Grotesk", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('HOLE', HOLE_X + 25, hy - 14);
+  ctx.font = '500 9px "Space Mono", monospace';
+  ctx.fillStyle = '#ef4444';
+  ctx.fillText('= Resistor', HOLE_X + 25, hy - 4);
+}
+
+function drawWheel() {
+  const { cx, cy, r } = WHEEL;
+  const current = getCurrent();
+  const spokes = 8;
+
+  // Wheel housing (background)
+  ctx.fillStyle = 'rgba(120,113,108,0.15)';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r + 14, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Wheel rim
+  ctx.strokeStyle = COL.wheel;
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Spokes + paddles
+  for (let i = 0; i < spokes; i++) {
+    const angle = wheelAngle + (i / spokes) * Math.PI * 2;
+    const x1 = cx + Math.cos(angle) * 12;
+    const y1 = cy + Math.sin(angle) * 12;
+    const x2 = cx + Math.cos(angle) * (r - 2);
+    const y2 = cy + Math.sin(angle) * (r - 2);
+
+    // Spoke
+    ctx.strokeStyle = COL.spoke;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    // Paddle
+    const px = cx + Math.cos(angle) * (r - 5);
+    const py = cy + Math.sin(angle) * (r - 5);
+    const perpAngle = angle + Math.PI / 2;
+    ctx.fillStyle = COL.wheel;
+    ctx.beginPath();
+    ctx.moveTo(px + Math.cos(perpAngle) * 10, py + Math.sin(perpAngle) * 10);
+    ctx.lineTo(px - Math.cos(perpAngle) * 10, py - Math.sin(perpAngle) * 10);
+    ctx.lineTo(px - Math.cos(perpAngle) * 10 - Math.cos(angle) * 8,
+               py - Math.sin(perpAngle) * 10 - Math.sin(angle) * 8);
+    ctx.lineTo(px + Math.cos(perpAngle) * 10 - Math.cos(angle) * 8,
+               py + Math.sin(perpAngle) * 10 - Math.sin(angle) * 8);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Hub
+  ctx.fillStyle = COL.wheelHub;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = COL.spoke;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Direction arrow (when spinning)
+  if (current > 0.05) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(current * 1.5, 0.7);
+    ctx.fillStyle = COL.label;
+    ctx.font = '500 10px "Space Grotesk", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('↺', cx, cy - r - 18);
+    ctx.restore();
+  }
+
+  // Label
+  ctx.fillStyle = COL.label;
+  ctx.font = '700 10px "Space Grotesk", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('WATER WHEEL', cx, cy + r + 28);
+  ctx.font = '500 9px "Space Mono", monospace';
+  ctx.fillStyle = '#fbbf24';
+  ctx.fillText('= Load / Motor', cx, cy + r + 40);
+
+  // Splash at wheel
+  if (current > 0.05 && Math.random() < current * 2) {
+    splashParticles.push(new SplashDrop(cx - r + 10, cy - 10));
+  }
+}
+
+function drawBulb() {
+  const { cx, cy, r } = BULB;
+  const current = getCurrent();
+  const brightness = Math.min(current / 0.8, 1);
+
+  // Wire from wheel to bulb
+  ctx.strokeStyle = COL.wire;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(WHEEL.cx, WHEEL.cy - WHEEL.r - 10);
+  ctx.lineTo(WHEEL.cx, 180);
+  ctx.lineTo(BULB.cx - 15, 180);
+  ctx.lineTo(BULB.cx - 15, cy + r + 5);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(BULB.cx + 15, cy + r + 5);
+  ctx.lineTo(BULB.cx + 15, 200);
+  ctx.lineTo(680, 200);
+  ctx.lineTo(680, 430);
+  ctx.lineTo(TANK.x + TANK.w / 2, 430);
+  ctx.lineTo(TANK.x + TANK.w / 2, TANK.y + TANK.h + 2);
+  ctx.stroke();
+
+  // Glow
+  if (brightness > 0.05) {
+    const glowR = r + 20 + brightness * 30;
+    const glow = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, glowR);
+    glow.addColorStop(0, `rgba(251,191,36,${brightness * 0.5})`);
+    glow.addColorStop(0.5, `rgba(251,191,36,${brightness * 0.2})`);
+    glow.addColorStop(1, 'rgba(251,191,36,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Bulb glass
+  ctx.fillStyle = brightness > 0.05
+    ? `rgba(254,243,199,${0.5 + brightness * 0.5})`
+    : 'rgba(68,64,60,0.3)';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = brightness > 0.1 ? COL.bulbGlow : COL.wire;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Filament
+  ctx.strokeStyle = brightness > 0.05
+    ? `rgba(251,191,36,${0.5 + brightness * 0.5})`
+    : 'rgba(100,100,100,0.5)';
+  ctx.lineWidth = brightness > 0.1 ? 2.5 : 1.5;
+  ctx.beginPath();
+  const filW = 12;
+  const segs = 6;
+  ctx.moveTo(cx - filW, cy + 8);
+  for (let i = 0; i <= segs; i++) {
+    const fx = cx - filW + (i / segs) * filW * 2;
+    const fy = cy + (i % 2 === 0 ? 8 : -8);
+    ctx.lineTo(fx, fy);
+  }
+  ctx.stroke();
+
+  // Base
+  ctx.fillStyle = COL.wire;
+  roundRect(cx - 15, cy + r, 30, 14, 3);
+  ctx.fill();
+  ctx.fillStyle = '#9ca3af';
+  ctx.fillRect(cx - 12, cy + r + 2, 24, 2);
+  ctx.fillRect(cx - 12, cy + r + 6, 24, 2);
+  ctx.fillRect(cx - 12, cy + r + 10, 24, 2);
+
+  // Label
+  ctx.fillStyle = COL.label;
+  ctx.font = '700 10px "Space Grotesk", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('LIGHT BULB', cx, cy - r - 18);
+  ctx.font = '500 9px "Space Mono", monospace';
+  ctx.fillStyle = '#fbbf24';
+  ctx.fillText('= Power output', cx, cy - r - 7);
+
+  // Brightness percentage
+  if (brightness > 0.02) {
+    ctx.fillStyle = COL.ink;
+    ctx.font = '700 12px "Space Mono", monospace';
+    ctx.fillText(Math.round(brightness * 100) + '%', cx, cy + r + 38);
+  }
+}
+
+function drawBasin() {
+  // Collection basin
+  ctx.fillStyle = 'rgba(59,130,246,0.12)';
+  roundRect(BASIN.x, BASIN.y, BASIN.w, BASIN.h, 8);
+  ctx.fill();
+  ctx.strokeStyle = COL.pipe;
+  ctx.lineWidth = 3;
+  roundRect(BASIN.x, BASIN.y, BASIN.w, BASIN.h, 8);
+  ctx.stroke();
+
+  // Ripple in basin
+  const current = getCurrent();
+  if (current > 0.05) {
+    ctx.strokeStyle = `rgba(59,130,246,${current * 0.4})`;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      const rippleR = 8 + i * 12 + Math.sin(time * 4 + i) * 3;
+      ctx.beginPath();
+      ctx.ellipse(WHEEL.cx, BASIN.y + 15, rippleR, rippleR * 0.3, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  ctx.fillStyle = COL.label;
+  ctx.font = '500 9px "Space Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('drain basin', BASIN.x + BASIN.w / 2, BASIN.y + BASIN.h + 14);
+}
+
+function drawParticles(dt) {
+  // Water stream particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.update(dt);
+    if (p.life <= 0 || p.y > BASIN.y + 20) {
+      particles.splice(i, 1);
+      continue;
+    }
+    ctx.globalAlpha = p.life * 0.7;
+    ctx.fillStyle = COL.water;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Splash particles
+  for (let i = splashParticles.length - 1; i >= 0; i--) {
+    const p = splashParticles[i];
+    p.update(dt);
+    if (p.life <= 0) {
+      splashParticles.splice(i, 1);
+      continue;
+    }
+    ctx.globalAlpha = p.life * 0.5;
+    ctx.fillStyle = COL.waterTop;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ── Physics ──
+function getCurrent() {
+  // I = V / R;  V = waterLevel * 10,  R = (1 - holeSize) * 19 + 1
+  const v = waterLevel * 10;
+  const r = (1 - holeSize) * 19 + 1;
+  return v / r;
+}
+
+function getVoltage() { return waterLevel * 10; }
+function getResistance() { return (1 - holeSize) * 19 + 1; }
+
+// ── Update readouts ──
+function updateReadouts() {
+  const v = getVoltage();
+  const r = getResistance();
+  const i = getCurrent();
+  document.getElementById('rVolt').innerHTML = v.toFixed(1) + ' <span class="readout-unit">V</span>';
+  document.getElementById('rCur').innerHTML = i.toFixed(2) + ' <span class="readout-unit">A</span>';
+  document.getElementById('rRes').innerHTML = r.toFixed(1) + ' <span class="readout-unit">Ω</span>';
+  document.getElementById('valVoltage').textContent = v.toFixed(1) + ' V';
+
+  const hPct = Math.round(holeSize * 100);
+  let hLabel = 'Tiny';
+  if (hPct > 75) hLabel = 'Wide';
+  else if (hPct > 50) hLabel = 'Large';
+  else if (hPct > 25) hLabel = 'Med';
+  else if (hPct > 10) hLabel = 'Small';
+  document.getElementById('valHole').textContent = hLabel;
+}
+
+// ── Main loop ──
+let lastTime = 0;
+function frame(ts) {
+  const dt = Math.min((ts - lastTime) / 1000, 0.05);
+  lastTime = ts;
+  time += dt;
+
+  waterLevel = sliderV.value / 100;
+  holeSize = sliderH.value / 100;
+
+  const current = getCurrent();
+  wheelAngle -= current * 4 * dt;  // counter-clockwise: water hits top-left paddles
+
+  // Clear
+  ctx.fillStyle = COL.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Draw scene
+  drawBasin();
+  drawTank();
+  drawHole();
+  drawWheel();
+  drawBulb();
+  drawParticles(dt);
+
+  // Title in canvas
+  ctx.fillStyle = 'rgba(100,116,139,0.25)';
+  ctx.font = '600 10px "Space Mono", monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('V = I × R', W - 16, H - 12);
+
+  updateReadouts();
+  requestAnimationFrame(frame);
+}
+
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

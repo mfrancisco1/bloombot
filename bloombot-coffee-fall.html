@@ -40,7 +40,7 @@
 
     .brand {
       position: absolute;
-      bottom: 4%;
+      bottom: 15%;
       left: 50%;
       transform: translateX(-50%);
       z-index: 10;
@@ -158,7 +158,7 @@ const RAMP_ANGLE = 15 * Math.PI / 180; // 15 degrees
 let surfaces = {};
 
 function computeSurfaces() {
-  const cy = H * 0.78; // base height for the ramps/cup
+  const cy = H * 0.68; // base height for the ramps/cup
   const rampLen = W * 0.40; // each ramp is 30% of width
   const cupW = W * 0.10; // cup opening width
   const cupH = H * 0.06; // cup depth
@@ -268,13 +268,13 @@ function drawSurfaces() {
   ctx.stroke();
 
   // Saucer line under the cup — wider
-  ctx.strokeStyle = 'rgba(111,78,55,0.25)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  const saucerExtend = s.cupW * 1.2;
-  ctx.moveTo(cupL - saucerExtend, cupB + 4);
-  ctx.lineTo(cupR + saucerExtend, cupB + 4);
-  ctx.stroke();
+  // ctx.strokeStyle = 'rgba(111,78,55,0.25)';
+  // ctx.lineWidth = 1.5;
+  // ctx.beginPath();
+  // const saucerExtend = s.cupW * 1.2;
+  // ctx.moveTo(cupL - saucerExtend, cupB + 4);
+  // ctx.lineTo(cupR + saucerExtend, cupB + 4);
+  // ctx.stroke();
 
   ctx.restore();
 }

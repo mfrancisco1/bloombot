@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>bloombot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink: #1a1612;
+      --rust: #c4541a;
+      --amber: #d97706;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--ink);
+      color: #fff;
+      transition: background 0.5s ease;
+    }
+    body.light-mode { background: #fff; }
+
+    .opening {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #latticeCanvas {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    /* Soft radial shadow that carves out the centre */
+    .vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      background: radial-gradient(ellipse 44% 38% at 50% 50%,
+        rgba(26,22,18,0.92) 0%,
+        rgba(26,22,18,0.55) 55%,
+        transparent 100%);
+      transition: background 0.5s ease;
+    }
+    body.light-mode .vignette {
+      background: radial-gradient(ellipse 44% 38% at 50% 50%,
+        rgba(255,255,255,0.96) 0%,
+        rgba(255,255,255,0.60) 55%,
+        transparent 100%);
+    }
+
+    /* ── Centre UI cluster ── */
+    .center-zone {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.3rem;
+      padding: 2.5rem 3rem;
+    }
+
+    /* Brand */
+    .brand h1 {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(1.5rem, 3vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      opacity: 0;
+      animation: fadeUp 0.9s ease-out 0.35s forwards;
+    }
+
+    /* Palette picker */
+    .palette-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      opacity: 0;
+      animation: fadeUp 0.9s ease-out 0.65s forwards;
+    }
+    .palette-row label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+    }
+    body.light-mode .palette-row label { color: rgba(0,0,0,0.38); }
+
+    .palette-row select {
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.65);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 4px;
+      padding: 0.35rem 0.6rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      transition: border-color 0.2s;
+    }
+    .palette-row select:focus { outline: none; border-color: var(--amber); }
+    .palette-row select option { background: #1a1612; color: #fff; }
+    body.light-mode .palette-row select {
+      background: rgba(0,0,0,0.06);
+      color: rgba(0,0,0,0.55);
+      border-color: rgba(0,0,0,0.14);
+    }
+
+    /* Enter link */
+    .enter-btn {
+      opacity: 0;
+      animation: fadeUp 0.9s ease-out 1.0s forwards;
+    }
+    .enter-btn a {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.38);
+      text-decoration: none;
+      padding: 0.6rem 1.6rem;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 4px;
+      transition: all 0.3s ease;
+      display: inline-block;
+    }
+    .enter-btn a:hover {
+      color: var(--amber);
+      border-color: var(--amber);
+      box-shadow: 0 0 24px rgba(217,119,6,0.18);
+    }
+    body.light-mode .enter-btn a {
+      color: rgba(0,0,0,0.35);
+      border-color: rgba(0,0,0,0.14);
+    }
+    body.light-mode .enter-btn a:hover {
+      color: var(--rust);
+      border-color: var(--rust);
+    }
+
+    /* Theme toggle — invisible hit zone bottom-left */
+    .theme-toggle-zone {
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 20%; height: 20%;
+      z-index: 25;
+      cursor: pointer;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="opening">
+  <canvas id="latticeCanvas"></canvas>
+  <div class="vignette"></div>
+
+  <div class="center-zone" id="centerZone">
+    <div class="brand">
+      <h1 id="brandTitle">bloombot</h1>
+    </div>
+    <div class="palette-row">
+      <label>Palette</label>
+      <select id="paletteSelect">
+        <option value="sunrise" selected>Sunrise</option>
+        <option value="blues">Blues</option>
+        <option value="pinks">Pinks</option>
+        <option value="greens">Greens</option>
+        <option value="greys">Greys</option>
+        <option value="purples">Purples</option>
+        <option value="sunset">Sunset</option>
+      </select>
+    </div>
+    <div class="enter-btn">
+      <a href="bloombot-modern.html">Enter</a>
+    </div>
+  </div>
+
+  <div class="theme-toggle-zone" id="themeToggle"></div>
+</div>
+
+<script>
+// ─── Colour palettes (shared with other openings) ─────────────────────────
+const colorPalettes = {
+  sunrise:  ['#fff9f5','#fff5eb','#fff0e0','#ffebd6','#ffe5cc','#ffdfc2','#ffd9b8','#ffd3ae','#ffcda4','#ffc79a','#ffc190','#ffbb86','#ffb57c','#ffaf72','#ffa968','#ffa35e','#ff9d54','#ff974a','#ff9140','#ff8b36','#ff852c'],
+  blues:    ['#ffc0cb','#f8b7ce','#f2afd1','#eba6d4','#e49dd7','#dd95da','#d58cdd','#ce84e0','#c67be2','#bd73e5','#b56ae8','#ab61ea','#a259ed','#9850ef','#8d47f1','#813ef4','#7435f6','#642bf8','#5220fb','#3a13fd','#0000ff'],
+  pinks:    ['#ffe0eb','#ffdbe9','#ffd6e7','#ffd2e5','#ffcde3','#ffc8e1','#ffc3e0','#ffbfde','#ffbadc','#ffb5da','#ffb0d8','#ffabd6','#ffa6d4','#ffa1d2','#ff9bd1','#ff96cf','#ff91cd','#ff8bcb','#ff85c9','#ff80c7','#ff7ac5','#ff73c3','#ff6dc1','#ff66bf','#ff5fbd','#ff57bb'],
+  greens:   ['#ffe0eb','#f6dbe2','#edd5da','#e4d0d2','#dbcbc9','#d2c6c1','#c9c0b9','#c1bbb0','#b8b6a8','#afb1a0','#a6ab98','#9ea690','#95a188','#8d9c81','#849779','#7c9171','#738c6a','#6b8762','#62825b','#5a7d53','#51784c'],
+  greys:    ['#c6a9b3','#bfa4ae','#b89fa8','#b19aa2','#aa959d','#a49097','#9d8c92','#96878c','#8f8287','#897e81','#82797c','#7c7477','#757072','#6f6b6c','#686767','#9dadb5','#9aa5a9','#969d9e','#919593','#8c8e89','#868680','#817f77','#7b786e','#757066','#6f695d','#686356','#625c4e','#5c5546','#554e3f','#4f4838'],
+  purples:  ['#b89ff5','#bd98ea','#c190e0','#c489d6','#c781cc','#c97ac2','#cb72b9','#cd6aaf','#ce62a5','#cf599c','#cf5092','#cf4689','#cf3b80','#cf2f77','#cf1f6e','#2d6c94','#416e96','#507098','#5d739b','#68759e','#7278a2','#7b7aa8','#827dae','#8980b5','#8f83bd','#9386c7','#9689d2','#968ddf','#9491ee','#8e96ff'],
+  sunset:   ['#ffd653','#fece4f','#fdc64a','#fcbe46','#fbb642','#faae3e','#f9a639','#f79e35','#f59531','#f48d2d','#f28428','#f07c24','#ee7320','#ec6a1c','#ea6017','#e75613','#e54c0f','#e2400a','#e03306','#dd2203','#da0000'],
+};
+
+// ─── Lattice settings (as specified) ─────────────────────────────────────
+const BASE_W    = 12;   // rect base width
+const BASE_H    = 10;   // rect base height
+const SPACING   = 2;    // gap between rects
+const VARIATION = 99;   // size variation %
+const COUNT     = 700;  // number of rectangles
+const CLEAR_PAD = 48;   // extra breathing room around centre UI
+
+let lightMode    = false;
+let animInterval = null;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
+function hexBrightness(hex) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return 0.299*r + 0.587*g + 0.114*b;
+}
+
+function updateBrandColor() {
+  const colors    = colorPalettes[document.getElementById('paletteSelect').value];
+  const brandEl   = document.getElementById('brandTitle');
+  const pick      = lightMode
+    ? colors.reduce((a,b) => hexBrightness(a) < hexBrightness(b) ? a : b)
+    : colors.reduce((a,b) => hexBrightness(a) > hexBrightness(b) ? a : b);
+  brandEl.style.color      = pick;
+  brandEl.style.textShadow = `0 0 40px ${pick}55, 0 0 80px ${pick}22`;
+}
+
+// Fast AABB overlap test
+function aabbOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
+  return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
+}
+
+// ─── Core draw ────────────────────────────────────────────────────────────
+function drawLattice() {
+  const canvas = document.getElementById('latticeCanvas');
+  const ctx    = canvas.getContext('2d');
+  const vw     = canvas.width;
+  const vh     = canvas.height;
+
+  // Background fill
+  ctx.fillStyle = lightMode ? '#ffffff' : '#1a1612';
+  ctx.fillRect(0, 0, vw, vh);
+
+  // Measure the centre UI zone from the live DOM element
+  const czRect = document.getElementById('centerZone').getBoundingClientRect();
+  const czX = czRect.left   - CLEAR_PAD;
+  const czY = czRect.top    - CLEAR_PAD;
+  const czW = czRect.width  + CLEAR_PAD * 2;
+  const czH = czRect.height + CLEAR_PAD * 2;
+
+  const colors = colorPalettes[document.getElementById('paletteSelect').value];
+
+  // ── Spatial hash grid for fast overlap detection ──
+  const CELL = 32;
+  const gcols = Math.ceil(vw / CELL);
+  const grows = Math.ceil(vh / CELL);
+  const grid  = new Array(gcols * grows).fill(null).map(() => []);
+
+  function cellsFor(x, y, w, h, pad) {
+    const c0 = Math.max(0, Math.floor((x - pad) / CELL));
+    const c1 = Math.min(gcols-1, Math.floor((x + w + pad) / CELL));
+    const r0 = Math.max(0, Math.floor((y - pad) / CELL));
+    const r1 = Math.min(grows-1, Math.floor((y + h + pad) / CELL));
+    return { c0, c1, r0, r1 };
+  }
+
+  function registerRect(r) {
+    const { c0, c1, r0, r1 } = cellsFor(r.x, r.y, r.w, r.h, 0);
+    for (let rr = r0; rr <= r1; rr++)
+      for (let cc = c0; cc <= c1; cc++)
+        grid[rr * gcols + cc].push(r);
+  }
+
+  function collidesWithPlaced(x, y, w, h) {
+    const { c0, c1, r0, r1 } = cellsFor(x, y, w, h, SPACING);
+    for (let rr = r0; rr <= r1; rr++) {
+      for (let cc = c0; cc <= c1; cc++) {
+        for (const r of grid[rr * gcols + cc]) {
+          if (aabbOverlap(x - SPACING, y - SPACING, w + SPACING*2, h + SPACING*2,
+                          r.x, r.y, r.w, r.h)) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  // ── Place rectangles ──
+  for (let i = 0; i < COUNT; i++) {
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const varF = Math.random() * VARIATION / 100;
+      const w    = BASE_W * (1 + varF);
+      const h    = BASE_H * (1 + varF);
+      const x    = Math.random() * (vw - w);
+      const y    = Math.random() * (vh - h);
+
+      // Reject if it touches the clear zone
+      if (aabbOverlap(x, y, w, h, czX, czY, czW, czH)) continue;
+
+      // Reject if it overlaps an already-placed rect (with gap)
+      if (collidesWithPlaced(x, y, w, h)) continue;
+
+      // Place it
+      ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+      ctx.fillRect(x, y, w, h);
+      registerRect({ x, y, w, h });
+      break;
+    }
+  }
+}
+
+// ─── Resize ───────────────────────────────────────────────────────────────
+function resizeCanvas() {
+  const canvas    = document.getElementById('latticeCanvas');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+// ─── Animation loop ───────────────────────────────────────────────────────
+function startLoop() {
+  resizeCanvas();
+  drawLattice();
+  updateBrandColor();
+
+  if (animInterval) clearInterval(animInterval);
+
+  animInterval = setInterval(() => {
+    const canvas = document.getElementById('latticeCanvas');
+    // Quick dimming flash, then new frame
+    canvas.style.transition = 'opacity 0.06s ease';
+    canvas.style.opacity    = '0.12';
+    setTimeout(() => {
+      drawLattice();
+      canvas.style.opacity = '1';
+    }, 65);
+  }, 400);
+}
+
+// ─── Events ───────────────────────────────────────────────────────────────
+document.getElementById('themeToggle').addEventListener('click', () => {
+  lightMode = !lightMode;
+  document.body.classList.toggle('light-mode', lightMode);
+  updateBrandColor();
+  drawLattice();
+});
+
+document.getElementById('paletteSelect').addEventListener('change', () => {
+  updateBrandColor();
+});
+
+window.addEventListener('load',   startLoop);
+window.addEventListener('resize', startLoop);
+</script>
+
+</body>
+</html>

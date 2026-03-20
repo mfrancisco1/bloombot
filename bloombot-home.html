@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>bloombot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink:    #1a1612;
+      --cream:  #f5f0e8;
+      --warm:   #e8dcc8;
+      --rust:   #c4541a;
+      --amber:  #d97706;
+      --dim:    rgba(255,255,255,0.38);
+      --dimmer: rgba(255,255,255,0.18);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--ink);
+      color: #fff;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 52px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      background: rgba(26,22,18,0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .nav-brand {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--amber);
+      text-decoration: none;
+      letter-spacing: -0.03em;
+    }
+    .nav-links {
+      display: flex;
+      gap: 0.25rem;
+      list-style: none;
+    }
+    .nav-links a {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--dim);
+      text-decoration: none;
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .nav-links a:hover { color: #fff; background: rgba(255,255,255,0.07); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      padding: 52px 0 0;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: end;
+      padding: 4rem 2.5rem 3rem;
+      gap: 2rem;
+      position: relative;
+    }
+
+    /* Big stacked wordmark */
+    .wordmark {
+      grid-column: 2;
+      text-align: right;
+      position: relative;
+    }
+    .wordmark-line {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(4.5rem, 11vw, 10rem);
+      font-weight: 700;
+      letter-spacing: -0.06em;
+      line-height: 0.88;
+      color: #fff;
+      display: block;
+    }
+    .wordmark-line.dim { color: rgba(255,255,255,0.12); }
+    .wordmark-dot {
+      color: var(--amber);
+      font-size: 0.7em;
+    }
+
+    /* Left side: index + descriptor */
+    .hero-left {
+      grid-column: 1;
+      grid-row: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 2rem;
+      padding-bottom: 0.5rem;
+    }
+    .hero-index {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--amber);
+    }
+    .hero-descriptor {
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      font-weight: 300;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.6;
+      max-width: 34ch;
+    }
+    .hero-descriptor strong {
+      font-weight: 500;
+      color: rgba(255,255,255,0.82);
+    }
+
+    /* Rotated type tag */
+    .rotated-tag {
+      position: absolute;
+      bottom: 3.5rem;
+      left: -1.5rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+      transform: rotate(-90deg);
+      transform-origin: bottom left;
+      white-space: nowrap;
+    }
+
+    /* ── MARQUEE ── */
+    .marquee-wrap {
+      border-top: 1px solid rgba(255,255,255,0.07);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      overflow: hidden;
+      padding: 0.6rem 0;
+      white-space: nowrap;
+    }
+    .marquee-track {
+      display: inline-block;
+      animation: marquee 26s linear infinite;
+    }
+    .marquee-track span {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.22);
+      padding: 0 2.5rem;
+    }
+    .marquee-track span b {
+      color: var(--amber);
+      font-weight: 400;
+    }
+    @keyframes marquee {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* ── STUDIO STATEMENT ── */
+    .statement {
+      padding: 5rem 2.5rem;
+      max-width: 900px;
+    }
+    .statement-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 1.5rem;
+    }
+    .statement p {
+      font-size: clamp(1.25rem, 2.8vw, 1.75rem);
+      font-weight: 300;
+      line-height: 1.55;
+      color: rgba(255,255,255,0.7);
+    }
+    .statement p em {
+      font-style: normal;
+      color: #fff;
+      font-weight: 500;
+    }
+
+    /* ── PROJECTS ── */
+    .projects-section {
+      padding: 0 2.5rem 6rem;
+    }
+    .projects-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+      margin-bottom: 4rem;
+    }
+
+    /* Offset grid: two cards at different heights */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+    .project-card {
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 2px;
+      padding: 2rem 2rem 2.5rem;
+      cursor: default;
+      transition: border-color 0.3s ease, background 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .project-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--amber);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s ease;
+    }
+    .project-card:hover {
+      border-color: rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.025);
+    }
+    .project-card:hover::before { transform: scaleX(1); }
+
+    /* Stagger the two cards vertically */
+    .project-card:nth-child(2) { margin-top: 6rem; }
+
+    .project-idx {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.18em;
+      color: var(--amber);
+      margin-bottom: 2rem;
+    }
+    .project-name {
+      font-size: clamp(1.4rem, 2.5vw, 2rem);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      color: #fff;
+      margin-bottom: 1rem;
+    }
+    .project-one-liner {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.65;
+      font-weight: 300;
+      margin-bottom: 1.75rem;
+      max-width: 28ch;
+    }
+    .project-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .tag {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 2px;
+      padding: 0.2rem 0.55rem;
+    }
+    .tag.active { color: var(--amber); border-color: rgba(217,119,6,0.3); }
+
+    /* ── OTHER WORK ── */
+    .other-work {
+      padding: 4rem 2.5rem 7rem;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+    .other-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.18);
+      margin-bottom: 3rem;
+    }
+    .other-intro {
+      font-size: 1rem;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 2.5rem;
+      font-weight: 300;
+    }
+    .redacted-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-width: 420px;
+    }
+    .redacted-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .redacted-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      flex-shrink: 0;
+    }
+    .redacted-bar {
+      height: 10px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 1px;
+      flex: 1;
+      max-width: var(--bar-w, 180px);
+    }
+    .redacted-note {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.14em;
+      color: rgba(255,255,255,0.15);
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 2rem 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .footer-brand {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.2);
+      font-weight: 700;
+    }
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+    .footer-links a {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.22);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--amber); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 720px) {
+      .hero-body { grid-template-columns: 1fr; }
+      .wordmark { grid-column: 1; text-align: left; }
+      .hero-left { grid-row: 2; }
+      .projects-grid { grid-template-columns: 1fr; }
+      .project-card:nth-child(2) { margin-top: 0; }
+      .rotated-tag { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <a class="nav-brand" href="index.html">bloombot</a>
+  <ul class="nav-links">
+    <li><a href="#work">Work</a></li>
+    <li><a href="bloombot-modern.html">Teaching</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-body">
+
+    <div class="hero-left">
+      <div class="hero-index">Studio · Est. now</div>
+      <p class="hero-descriptor">
+        <strong>Simple systems for learning and making.</strong> Tools built for a world where machines can already hold a conversation.
+      </p>
+    </div>
+
+    <div class="wordmark">
+      <span class="wordmark-line">bloombot</span>
+      <span class="wordmark-line dim">bots<span class="wordmark-dot">.</span></span>
+    </div>
+
+    <div class="rotated-tag">design studio · learning · machines · presence</div>
+
+  </div>
+
+  <!-- Scrolling disciplines marquee -->
+  <div class="marquee-wrap">
+    <div class="marquee-track">
+      <span>Educational Technology</span>
+      <span><b>·</b></span>
+      <span>Simple Systems</span>
+      <span><b>·</b></span>
+      <span>Robotic Machines</span>
+      <span><b>·</b></span>
+      <span>Social Machines</span>
+      <span><b>·</b></span>
+      <span>Conversational AI</span>
+      <span><b>·</b></span>
+      <span>Electromechanical Design</span>
+      <span><b>·</b></span>
+      <span>Learning Tools</span>
+      <span><b>·</b></span>
+      <span>Educational Technology</span>
+      <span><b>·</b></span>
+      <span>Simple Systems</span>
+      <span><b>·</b></span>
+      <span>Robotic Machines</span>
+      <span><b>·</b></span>
+      <span>Social Machines</span>
+      <span><b>·</b></span>
+      <span>Conversational AI</span>
+      <span><b>·</b></span>
+      <span>Electromechanical Design</span>
+      <span><b>·</b></span>
+      <span>Learning Tools</span>
+      <span><b>·</b></span>
+    </div>
+  </div>
+</section>
+
+<!-- ── STATEMENT ── -->
+<section class="statement">
+  <div class="statement-label">Studio</div>
+  <p>
+    bloombot is a design studio working at the edge of <em>learning and making</em>.
+    We build simple systems — tools for teaching, machines that sense and respond,
+    environments where a question has somewhere to go.
+    In an age when AI can hold a conversation, we're interested in
+    what that changes for <em>practice, pedagogy, and building things together</em>.
+  </p>
+</section>
+
+<!-- ── PROJECTS ── -->
+<section class="projects-section" id="work">
+  <div class="projects-label">Current Work · Jacobs School of Music · Indiana University</div>
+
+  <div class="projects-grid">
+
+    <!-- Project 01 -->
+    <div class="project-card">
+      <div class="project-idx">01</div>
+      <h2 class="project-name">Double Bass<br>C-Extension</h2>
+      <p class="project-one-liner">
+        An electromechanical system that augments the C-extension for the double bass —
+        fast and precise actuation for the most demanding excerpts.
+      </p>
+      <div class="project-tags">
+        <span class="tag active">Active</span>
+        <span class="tag">Electromechanical</span>
+        <span class="tag">Jacobs School</span>
+      </div>
+    </div>
+
+    <!-- Project 02 -->
+    <div class="project-card">
+      <div class="project-idx">02</div>
+      <h2 class="project-name">Finger<br>Placement System</h2>
+      <p class="project-one-liner">
+        A tactile feedback system for learning finger positions on the
+        the violin and cello. 
+      </p>
+      <div class="project-tags">
+        <span class="tag active">Active</span>
+        <span class="tag">Educational Technology</span>
+        <span class="tag">Jacobs School</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── OTHER WORK ── -->
+<section class="other-work">
+  <div class="other-label">Other Work</div>
+  <p class="other-intro">Several other projects are in development.<br>Not yet.</p>
+
+  <div class="redacted-list">
+    <div class="redacted-item">
+      <div class="redacted-dot"></div>
+      <div class="redacted-bar" style="--bar-w: 210px"></div>
+      <span class="redacted-note">not ready</span>
+    </div>
+    <div class="redacted-item">
+      <div class="redacted-dot"></div>
+      <div class="redacted-bar" style="--bar-w: 155px"></div>
+      <span class="redacted-note">not yet</span>
+    </div>
+    <div class="redacted-item">
+      <div class="redacted-dot"></div>
+      <div class="redacted-bar" style="--bar-w: 240px"></div>
+      <span class="redacted-note">nope</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <span class="footer-brand">bloombot</span>
+  <div class="footer-links">
+    <a href="bloombot-modern.html">Teaching</a>
+    <a href="mailto:matthew.francisco@gmail.com">Contact</a>
+  </div>
+</footer>
+
+</body>
+</html>

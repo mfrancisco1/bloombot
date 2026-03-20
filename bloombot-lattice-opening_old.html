@@ -8,7 +8,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root { --ink: #1a1612; --rust: #c4541a; --amber: #d97706; }
+    :root {
+      --ink: #1a1612;
+      --rust: #c4541a;
+      --amber: #d97706;
+    }
 
     html, body {
       height: 100%;
@@ -22,7 +26,8 @@
 
     .opening {
       position: relative;
-      width: 100vw; height: 100vh;
+      width: 100vw;
+      height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -35,6 +40,7 @@
       z-index: 1;
     }
 
+    /* Edge vignette — dark at corners, transparent at centre */
     .vignette {
       position: absolute;
       inset: 0;
@@ -47,7 +53,7 @@
       background: radial-gradient(ellipse at center, transparent 30%, rgba(255,255,255,0.72) 100%);
     }
 
-    /* ── Centre UI ── */
+    /* ── Centre UI cluster ── */
     .center-zone {
       position: relative;
       z-index: 10;
@@ -59,6 +65,7 @@
       padding: 2.5rem 3rem;
     }
 
+    /* Brand */
     .brand h1 {
       font-family: 'Space Mono', monospace;
       font-size: clamp(1.5rem, 3vw, 2.5rem);
@@ -69,6 +76,7 @@
       animation: fadeUp 0.9s ease-out 0.35s forwards;
     }
 
+    /* Palette picker */
     .palette-row {
       display: flex;
       align-items: center;
@@ -106,6 +114,7 @@
       border-color: rgba(0,0,0,0.14);
     }
 
+    /* Enter link */
     .enter-btn {
       opacity: 0;
       animation: fadeUp 0.9s ease-out 1.0s forwards;
@@ -128,9 +137,16 @@
       border-color: var(--amber);
       box-shadow: 0 0 24px rgba(217,119,6,0.18);
     }
-    body.light-mode .enter-btn a { color: rgba(0,0,0,0.35); border-color: rgba(0,0,0,0.14); }
-    body.light-mode .enter-btn a:hover { color: var(--rust); border-color: var(--rust); }
+    body.light-mode .enter-btn a {
+      color: rgba(0,0,0,0.35);
+      border-color: rgba(0,0,0,0.14);
+    }
+    body.light-mode .enter-btn a:hover {
+      color: var(--rust);
+      border-color: var(--rust);
+    }
 
+    /* Theme toggle — invisible hit zone bottom-left */
     .theme-toggle-zone {
       position: absolute;
       bottom: 0; left: 0;
@@ -168,7 +184,7 @@
       </select>
     </div>
     <div class="enter-btn">
-      <a href="bloombot-home.html">Enter</a>
+      <a href="bloombot-modern.html">Enter</a>
     </div>
   </div>
 
@@ -176,7 +192,7 @@
 </div>
 
 <script>
-// ─── Palettes ─────────────────────────────────────────────────────────────
+// ─── Colour palettes (shared with other openings) ─────────────────────────
 const colorPalettes = {
   sunrise:  ['#fff9f5','#fff5eb','#fff0e0','#ffebd6','#ffe5cc','#ffdfc2','#ffd9b8','#ffd3ae','#ffcda4','#ffc79a','#ffc190','#ffbb86','#ffb57c','#ffaf72','#ffa968','#ffa35e','#ff9d54','#ff974a','#ff9140','#ff8b36','#ff852c'],
   blues:    ['#ffc0cb','#f8b7ce','#f2afd1','#eba6d4','#e49dd7','#dd95da','#d58cdd','#ce84e0','#c67be2','#bd73e5','#b56ae8','#ab61ea','#a259ed','#9850ef','#8d47f1','#813ef4','#7435f6','#642bf8','#5220fb','#3a13fd','#0000ff'],
@@ -187,40 +203,28 @@ const colorPalettes = {
   sunset:   ['#ffd653','#fece4f','#fdc64a','#fcbe46','#fbb642','#faae3e','#f9a639','#f79e35','#f59531','#f48d2d','#f28428','#f07c24','#ee7320','#ec6a1c','#ea6017','#e75613','#e54c0f','#e2400a','#e03306','#dd2203','#da0000'],
 };
 
-// ─── Settings ─────────────────────────────────────────────────────────────
-const BASE_W      = 12;   // rect base width
-const BASE_H      = 10;   // rect base height
-const SPACING     = 2;    // gap between rects
-const VARIATION   = 99;   // size variation %
-const COUNT       = 1000; // number of rects
-const CLEAR_PAD   = 12;   // clear zone breathing room (a little extra for sway)
+// ─── Lattice settings ─────────────────────────────────────────────────────
+const BASE_W    = 12;    // rect base width  (px)
+const BASE_H    = 10;    // rect base height (px)
+const SPACING   = 2;     // gap between rects
+const VARIATION = 99;    // size variation %
+const COUNT     = 1000;  // number of rectangles
+const CLEAR_PAD = 12;    // breathing room around centre UI
+const FADE_MS   = 300;  // crossfade duration (ms)
+const HOLD_MS   = 1200;  // pause at full opacity before next build starts (ms)
+const CHUNK     = 200;   // rects placed per event-loop tick — keeps each tick <5 ms
 
-// Wind shimmer parameters
-const WAVE_SPREAD = 0.006; // phase shift per px of x — controls wave wavelength
-const SHIMMER_W   = 0.08;  // width oscillation amplitude (fraction of base width)
-const SHIMMER_H   = 0.05;  // height oscillation amplitude
-const SWAY_Y      = 2.8;   // max vertical sway in px
-const ROT_AMP     = 0.038; // max rotation in radians (~2.2°)
-const OPACITY_MIN = 0.55;  // dimmest a rect gets during shimmer
-const OPACITY_MAX = 0.95;  // brightest a rect gets (non-sparkle)
-
-// Sparkle parameters
-const SPARKLE_DUR_MIN = 700;   // ms — shortest sparkle
-const SPARKLE_DUR_MAX = 1200;  // ms — longest sparkle
-const SPARKLE_INTERVAL_MIN = 900;   // ms between sparkles
-const SPARKLE_INTERVAL_MAX = 2800;
-
-let lightMode       = false;
-let rects           = [];   // built once per init
-let frameId         = null;
-let sparkleTimeout  = null;
-let sparkle         = null; // { idx, t0, dur }
+let lightMode  = false;
+let frameId    = null;   // rAF handle (crossfade loop)
+let cycleId    = null;   // setTimeout handle (hold / chunk scheduling)
+let buildToken = null;   // { alive: bool } — cancels an in-progress chunked build
+let prevOff    = null;   // offscreen canvas currently displayed
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 function hexBrightness(hex) {
-  const r = parseInt(hex.slice(1,3),16);
-  const g = parseInt(hex.slice(3,5),16);
-  const b = parseInt(hex.slice(5,7),16);
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
   return 0.299*r + 0.587*g + 0.114*b;
 }
 
@@ -234,23 +238,26 @@ function updateBrandColor() {
   brandEl.style.textShadow = `0 0 40px ${pick}55, 0 0 80px ${pick}22`;
 }
 
-// Blend a hex colour toward white by amount 0–1
-function lightenHex(hex, amt) {
-  const r = parseInt(hex.slice(1,3),16);
-  const g = parseInt(hex.slice(3,5),16);
-  const b = parseInt(hex.slice(5,7),16);
-  const lr = Math.round(r + (255-r)*amt);
-  const lg = Math.round(g + (255-g)*amt);
-  const lb = Math.round(b + (255-b)*amt);
-  return `rgb(${lr},${lg},${lb})`;
-}
-
-function aabbOverlap(ax,ay,aw,ah, bx,by,bw,bh) {
+// Fast AABB overlap test
+function aabbOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
   return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
 }
 
-// ─── Build rects (one-time, synchronous) ──────────────────────────────────
-function buildRects(vw, vh) {
+// ─── Async chunked build ──────────────────────────────────────────────────
+// Spreads rectangle placement across multiple event-loop ticks (CHUNK rects
+// per tick) so the main thread never blocks long enough to drop a frame.
+// Returns a cancellation token; set token.alive = false to abort.
+function buildAsync(vw, vh, onDone) {
+  const token = { alive: true };
+
+  const off = document.createElement('canvas');
+  off.width  = vw;
+  off.height = vh;
+  const ctx  = off.getContext('2d');
+
+  ctx.fillStyle = lightMode ? '#ffffff' : '#1a1612';
+  ctx.fillRect(0, 0, vw, vh);
+
   const czRect = document.getElementById('centerZone').getBoundingClientRect();
   const czX = czRect.left   - CLEAR_PAD;
   const czY = czRect.top    - CLEAR_PAD;
@@ -259,167 +266,140 @@ function buildRects(vw, vh) {
 
   const colors = colorPalettes[document.getElementById('paletteSelect').value];
 
-  // Spatial hash for collision detection
   const CELL  = 32;
   const gcols = Math.ceil(vw / CELL);
   const grows = Math.ceil(vh / CELL);
   const grid  = new Array(gcols * grows).fill(null).map(() => []);
 
-  function cellsFor(x,y,w,h,pad) {
+  function cellsFor(x, y, w, h, pad) {
     return {
-      c0: Math.max(0,       Math.floor((x-pad)/CELL)),
-      c1: Math.min(gcols-1, Math.floor((x+w+pad)/CELL)),
-      r0: Math.max(0,       Math.floor((y-pad)/CELL)),
-      r1: Math.min(grows-1, Math.floor((y+h+pad)/CELL)),
+      c0: Math.max(0,       Math.floor((x - pad)     / CELL)),
+      c1: Math.min(gcols-1, Math.floor((x + w + pad) / CELL)),
+      r0: Math.max(0,       Math.floor((y - pad)     / CELL)),
+      r1: Math.min(grows-1, Math.floor((y + h + pad) / CELL)),
     };
   }
   function register(r) {
-    const {c0,c1,r0,r1} = cellsFor(r.x,r.y,r.w,r.h,0);
-    for (let rr=r0;rr<=r1;rr++) for (let cc=c0;cc<=c1;cc++) grid[rr*gcols+cc].push(r);
+    const { c0, c1, r0, r1 } = cellsFor(r.x, r.y, r.w, r.h, 0);
+    for (let rr = r0; rr <= r1; rr++)
+      for (let cc = c0; cc <= c1; cc++)
+        grid[rr * gcols + cc].push(r);
   }
-  function collides(x,y,w,h) {
-    const {c0,c1,r0,r1} = cellsFor(x,y,w,h,SPACING);
-    for (let rr=r0;rr<=r1;rr++)
-      for (let cc=c0;cc<=c1;cc++)
-        for (const r of grid[rr*gcols+cc])
-          if (aabbOverlap(x-SPACING,y-SPACING,w+SPACING*2,h+SPACING*2,r.x,r.y,r.w,r.h))
+  function collides(x, y, w, h) {
+    const { c0, c1, r0, r1 } = cellsFor(x, y, w, h, SPACING);
+    for (let rr = r0; rr <= r1; rr++)
+      for (let cc = c0; cc <= c1; cc++)
+        for (const r of grid[rr * gcols + cc])
+          if (aabbOverlap(x-SPACING, y-SPACING, w+SPACING*2, h+SPACING*2, r.x, r.y, r.w, r.h))
             return true;
     return false;
   }
 
-  rects = [];
-  for (let i = 0; i < COUNT; i++) {
-    for (let a = 0; a < 60; a++) {
-      const vf = Math.random() * VARIATION / 100;
-      const w  = BASE_W * (1 + vf);
-      const h  = BASE_H * (1 + vf);
-      const x  = Math.random() * (vw - w);
-      const y  = Math.random() * (vh - h);
-      if (aabbOverlap(x,y,w,h, czX,czY,czW,czH)) continue;
-      if (collides(x,y,w,h)) continue;
-
-      rects.push({
-        x, y, w, h,
-        cx: x + w/2,     // centre — we rotate around this
-        cy: y + h/2,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        // Each rect has its own oscillation character
-        phase:  Math.random() * Math.PI * 2,
-        freq:   0.55 + Math.random() * 0.7,   // oscillation speed
-        freq2:  0.30 + Math.random() * 0.45,  // secondary (slower) wave
-      });
-      register({ x, y, w, h });
-      break;
+  let i = 0;
+  function tick() {
+    if (!token.alive) return;             // cancelled — stop quietly
+    const end = Math.min(i + CHUNK, COUNT);
+    for (; i < end; i++) {
+      for (let a = 0; a < 60; a++) {
+        const vf = Math.random() * VARIATION / 100;
+        const w  = BASE_W * (1 + vf);
+        const h  = BASE_H * (1 + vf);
+        const x  = Math.random() * (vw - w);
+        const y  = Math.random() * (vh - h);
+        if (aabbOverlap(x, y, w, h, czX, czY, czW, czH)) continue;
+        if (collides(x, y, w, h)) continue;
+        ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+        ctx.fillRect(x, y, w, h);
+        register({ x, y, w, h });
+        break;
+      }
+    }
+    if (i < COUNT) {
+      cycleId = setTimeout(tick, 0);      // yield to browser, resume next tick
+    } else {
+      onDone(off);                        // hand off the finished canvas
     }
   }
+
+  cycleId = setTimeout(tick, 0);
+  return token;
 }
 
-// ─── Animation loop ───────────────────────────────────────────────────────
-function drawFrame(now) {
-  const t      = now * 0.001;  // seconds
+// ─── Crossfade ────────────────────────────────────────────────────────────
+function easeInOut(t) {
+  return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+}
+
+function startFade(outgoing, incoming) {
   const canvas = document.getElementById('latticeCanvas');
   const ctx    = canvas.getContext('2d');
   const vw     = canvas.width;
   const vh     = canvas.height;
+  const t0     = performance.now();
 
-  ctx.fillStyle = lightMode ? '#ffffff' : '#1a1612';
-  ctx.fillRect(0, 0, vw, vh);
+  if (frameId) cancelAnimationFrame(frameId);
 
-  // Resolve current sparkle progress (0–1, bell-shaped)
-  let sparkleIdx = -1;
-  let sparkleBoost = 0;
-  if (sparkle) {
-    const age = (now - sparkle.t0) / sparkle.dur;
-    if (age >= 1) {
-      sparkle = null;
+  function step(now) {
+    const raw   = Math.min(1, (now - t0) / FADE_MS);
+    const alpha = easeInOut(raw);
+
+    if (outgoing) {
+      // Outgoing fully covers the canvas — no clearRect, never a blank frame
+      ctx.globalAlpha = 1;
+      ctx.drawImage(outgoing, 0, 0);
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(incoming, 0, 0);
+      ctx.globalAlpha = 1;
     } else {
-      sparkleIdx   = sparkle.idx;
-      sparkleBoost = Math.sin(age * Math.PI);   // 0 → 1 → 0 over lifetime
+      // Very first cycle: fade in from solid background
+      ctx.clearRect(0, 0, vw, vh);
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(incoming, 0, 0);
+      ctx.globalAlpha = 1;
+    }
+
+    if (raw < 1) {
+      frameId = requestAnimationFrame(step);
+    } else {
+      frameId = null;
+      prevOff = incoming;
+      cycleId = setTimeout(startBuild, HOLD_MS);
     }
   }
 
-  for (let i = 0; i < rects.length; i++) {
-    const r = rects[i];
-
-    // ── Wind shimmer ──
-    // Primary wave: propagates left-to-right across the field
-    const wavePhase = r.phase + r.cx * WAVE_SPREAD;
-    const s1 = Math.sin(t * r.freq  + wavePhase);
-    // Secondary wave: slower, different propagation for turbulence
-    const s2 = Math.sin(t * r.freq2 + wavePhase * 0.8 + r.phase * 0.5);
-    const combined = s1 * 0.65 + s2 * 0.35;
-
-    const drawW   = r.w * (1 + SHIMMER_W * s1);
-    const drawH   = r.h * (1 + SHIMMER_H * s2);
-    const offsetY = SWAY_Y * combined;
-    const angle   = ROT_AMP * s1;
-    const opacity = OPACITY_MIN + (OPACITY_MAX - OPACITY_MIN) * (0.5 + 0.5 * combined);
-
-    // ── Sparkle override ──
-    const isSparkling = (i === sparkleIdx);
-    const scaleBoost  = isSparkling ? 1 + 0.35 * sparkleBoost : 1;
-    const opacBoost   = isSparkling ? sparkleBoost * 0.5 : 0;
-    const color       = isSparkling
-      ? lightenHex(r.color, sparkleBoost * 0.75)
-      : r.color;
-
-    ctx.save();
-    ctx.globalAlpha = Math.min(1, opacity + opacBoost);
-    ctx.translate(r.cx, r.cy + offsetY);
-    ctx.rotate(angle);
-
-    if (isSparkling && sparkleBoost > 0.05) {
-      // Soft glow ring — drawn before the rect so it sits behind
-      ctx.shadowColor = lightenHex(r.color, 0.9);
-      ctx.shadowBlur  = 18 * sparkleBoost;
-    }
-
-    ctx.fillStyle = color;
-    ctx.fillRect(
-      -drawW / 2 * scaleBoost,
-      -drawH / 2 * scaleBoost,
-       drawW * scaleBoost,
-       drawH * scaleBoost
-    );
-
-    // Reset shadow immediately so it doesn't bleed to other rects
-    if (isSparkling) ctx.shadowBlur = 0;
-
-    ctx.restore();
-  }
-
-  frameId = requestAnimationFrame(drawFrame);
+  frameId = requestAnimationFrame(step);
 }
 
-// ─── Sparkle scheduling ───────────────────────────────────────────────────
-function scheduleNextSparkle() {
-  const delay = SPARKLE_INTERVAL_MIN
-    + Math.random() * (SPARKLE_INTERVAL_MAX - SPARKLE_INTERVAL_MIN);
-  sparkleTimeout = setTimeout(() => {
-    sparkle = {
-      idx: Math.floor(Math.random() * rects.length),
-      t0:  performance.now(),
-      dur: SPARKLE_DUR_MIN + Math.random() * (SPARKLE_DUR_MAX - SPARKLE_DUR_MIN),
-    };
-    scheduleNextSparkle();
-  }, delay);
+// ─── Build → fade loop ────────────────────────────────────────────────────
+function startBuild() {
+  const canvas = document.getElementById('latticeCanvas');
+  if (buildToken) buildToken.alive = false;
+  buildToken = buildAsync(canvas.width, canvas.height, (newOff) => {
+    buildToken = null;
+    startFade(prevOff, newOff);
+  });
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────
-function startLoop() {
-  if (frameId)       cancelAnimationFrame(frameId);
-  if (sparkleTimeout) clearTimeout(sparkleTimeout);
-  sparkle = null;
-
+// ─── Resize ───────────────────────────────────────────────────────────────
+function resizeCanvas() {
   const canvas  = document.getElementById('latticeCanvas');
   canvas.width  = window.innerWidth;
   canvas.height = window.innerHeight;
+}
 
-  buildRects(canvas.width, canvas.height);
+function cancelAll() {
+  if (frameId)    { cancelAnimationFrame(frameId); frameId    = null; }
+  if (cycleId)    { clearTimeout(cycleId);          cycleId    = null; }
+  if (buildToken) { buildToken.alive = false;        buildToken = null; }
+}
+
+// ─── Boot / restart ───────────────────────────────────────────────────────
+function startLoop() {
+  cancelAll();
+  prevOff = null;
+  resizeCanvas();
   updateBrandColor();
-
-  frameId = requestAnimationFrame(drawFrame);
-  scheduleNextSparkle();
+  startBuild();
 }
 
 // ─── Events ───────────────────────────────────────────────────────────────
@@ -427,15 +407,15 @@ document.getElementById('themeToggle').addEventListener('click', () => {
   lightMode = !lightMode;
   document.body.classList.toggle('light-mode', lightMode);
   updateBrandColor();
-  // Rebuild so background colour in the offscreen matches
-  const canvas = document.getElementById('latticeCanvas');
-  buildRects(canvas.width, canvas.height);
+  cancelAll();
+  prevOff = null;
+  startBuild();
 });
 
 document.getElementById('paletteSelect').addEventListener('change', () => {
   updateBrandColor();
-  const canvas = document.getElementById('latticeCanvas');
-  buildRects(canvas.width, canvas.height);
+  cancelAll();
+  startBuild();   // keep prevOff so the crossfade transitions from old palette
 });
 
 window.addEventListener('load',   startLoop);

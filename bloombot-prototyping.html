@@ -69,23 +69,8 @@
   </style>
 </head>
 <body>
-<nav>
-  <a class="nav-brand" href="bloombot-modern.html">bloombot</a>
-  <ul class="nav-links">
-    <li><a href="bloombot-i101.html">I 101 <span class="caret">▼</span></a><ul class="dropdown"><li><a href="bloombot-i101.html#networks">Networks</a></li><li><a href="bloombot-i101.html#ethics">Ethics</a></li><li><a href="bloombot-i101.html#security">Security</a></li><li><a href="bloombot-i101.html#diversity">Diversity</a></li></ul></li>
-    <li><a href="bloombot-stories.html">Stories <span class="caret">▼</span></a><ul class="dropdown"><li><a href="bloombot - Lightning.html">Lightning</a></li><li><a href="bloombot - Coffee.html">Coffee</a></li></ul></li>
-    <li>
-      <a href="bloombot-prototyping.html" class="active">Prototyping <span class="caret">▼</span></a>
-      <ul class="dropdown">
-        <li><a href="bloombot - 3D Graph Paper.html">3D Graph Paper</a></li>
-        <li><a href="bloombot - Lattice.html">Lattice</a></li>
-        <li><a href="bloombot - Encoder Wheel.html">Encoder Wheel</a></li>
-        <li><a href="webpage-main/stlM2.html">3D Model Viewer</a></li>
-      </ul>
-    </li>
-    <li><a href="bloombot-scaffolds.html">Scaffolds</a></li>
-  </ul>
-</nav>
+<nav id="main-nav" data-active="prototyping"></nav>
+<script src="nav.js"></script>
 
 <header class="page-hero">
   <div class="page-hero-inner">
@@ -135,6 +120,16 @@
       <div class="tool-foot"><span class="tool-tag">I 341 · Physical Computing</span><span class="tool-arrow">→</span></div>
     </a>
 
+    <a class="tool-card" href="gear-generator.html">
+      <div class="tool-card-accent"></div>
+      <div class="tool-card-body">
+        <div class="tool-icon">⚙️</div>
+        <div class="tool-title">Gear Generator</div>
+        <div class="tool-desc">Involute spur gear designer with two meshing gears. Adjust teeth, module, diametral pitch, and pressure angle — export SVG or DXF for laser cutting.</div>
+      </div>
+      <div class="tool-foot"><span class="tool-tag">I 341 · Generator</span><span class="tool-arrow">→</span></div>
+    </a>
+
     <a class="tool-card" href="webpage-main/encoder_design3.html">
       <div class="tool-card-accent" style="background:var(--c549);"></div>
       <div class="tool-card-body">
@@ -147,18 +142,7 @@
 
   </div>
 
-  <p class="context-note"><strong>On tinkering:</strong> These tools are self-contained HTML files — download them, run them locally, and feel free to use them as seeds for your own modifications. Pass them to an LLM and ask it to add parameters, change the output, or fork a new direction.</p>
-</div>
 
-<div class="viewer-section">
-  <div class="viewer-inner">
-    <p class="viewer-label">3D Model Viewer</p>
-    <h2 class="viewer-title">STL Viewer</h2>
-    <p class="viewer-desc">Load and inspect .stl files in the browser. Useful for reviewing student designs before printing — drag and orbit to examine geometry.</p>
-    <div class="viewer-frame">
-      <iframe src="webpage-main/stlM2.html" title="STL 3D Model Viewer" loading="lazy"></iframe>
-    </div>
-  </div>
 </div>
 
 <footer>

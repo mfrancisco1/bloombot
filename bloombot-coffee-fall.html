@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>bloombot — Coffee</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.16.0/d3.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink: #1a1612; --cream: #f5f0e8; --warm: #e8dcc8;
+      --rust: #c4541a; --amber: #d97706; --coffee: #6f4e37;
+      --slate: #64748b; --border: #d1c4aa;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--ink);
+      color: #fff;
+    }
+
+    .scene {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    /* Surface is drawn on canvas now */
+
+    .brand {
+      position: absolute;
+      bottom: 4%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+    .brand.visible { opacity: 1; }
+    .brand h1 {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(1.2rem, 2.5vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      color: var(--coffee);
+      text-shadow: 0 0 30px rgba(111,78,55,0.3);
+    }
+    .brand .diné {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(0.5rem, 0.9vw, 0.65rem);
+      letter-spacing: 0.35em;
+      color: rgba(111,78,55,0.4);
+      margin-top: 0.5rem;
+    }
+
+    .enter-link {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+    .enter-link.visible { opacity: 1; }
+    .enter-link a {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(111,78,55,0.4);
+      text-decoration: none;
+      padding: 0.5rem 1.4rem;
+      border: 1px solid rgba(111,78,55,0.2);
+      border-radius: 4px;
+      transition: all 0.3s ease;
+    }
+    .enter-link a:hover {
+      color: var(--amber);
+      border-color: var(--amber);
+      box-shadow: 0 0 16px rgba(217,119,6,0.15);
+    }
+  </style>
+</head>
+<body>
+
+<div class="scene">
+  <canvas id="coffeeCanvas"></canvas>
+
+  <div class="brand" id="brand">
+    <h1>bloombot</h1>
+    <div class="diné">gohwééh &nbsp;·&nbsp; coffee</div>
+  </div>
+
+  <div class="enter-link" id="enterLink">
+    <a href="bloombot-modern.html">Enter</a>
+  </div>
+</div>
+
+<script>
+// ─── Coffee colors (from the coffee grounds generator) ───
+const coffeeColors = [
+  '#b9731d','#b6711c','#b46f1b','#b16c19','#af6a18','#ac6817','#a96616','#a76315',
+  '#a46114','#a15f13','#9e5d12','#9b5b11','#995810','#96560f','#93540e','#90520d',
+  '#8d500c','#8a4e0b','#874b0b','#84490a','#814709','#7e4508','#7b4308','#784107',
+  '#753f06','#713c06','#6e3a05','#6b3805','#683604','#643404','#613203','#5e3003',
+  '#5a2e02','#572c02','#532a01','#502801','#4d2601','#492401','#462200','#422000'
+];
+
+// ─── Coffee ground shape generator (from the turtle graphics algorithm) ───
+function generateGroundShape(size, numBumps, bumpVariance) {
+  const points = [];
+  for (let i = 0; i < numBumps; i++) {
+    const angle = (i / numBumps) * Math.PI * 2;
+    const radius = size + (Math.random() * bumpVariance);
+    points.push({
+      x: radius * Math.cos(angle),
+      y: radius * Math.sin(angle)
+    });
+  }
+  return points;
+}
+
+// ─── Physics simulation ───
+const canvas = document.getElementById('coffeeCanvas');
+const ctx = canvas.getContext('2d');
+
+let W, H;
+let grinds = [];
+let settled = [];
+let spawnTimer = null;
+let animFrame = null;
+let totalSpawned = 0;
+let maxGrinds = 120;
+let isRunning = false;
+
+const GRAVITY = 0.15;
+const BOUNCE_DAMPING = 0.3;
+const FRICTION = 0.88;
+const ROTATION_DAMPING = 0.9;
+const RAMP_ANGLE = 15 * Math.PI / 180; // 15 degrees
+
+// Surface geometry — computed on resize
+let surfaces = {};
+
+function computeSurfaces() {
+  const cy = H * 0.78; // base height for the ramps/cup
+  const rampLen = W * 0.40; // each ramp is 30% of width
+  const cupW = W * 0.10; // cup opening width
+  const cupH = H * 0.06; // cup depth
+  const cupBottom = cy + cupH;
+  const cupWallThick = 4;
+
+  // Left ramp: starts at left edge, angles down toward center
+  const leftRamp = {
+    x1: 0,
+    y1: cy - Math.tan(RAMP_ANGLE) * rampLen,
+    x2: rampLen,
+    y2: cy
+  };
+
+  // Right ramp: starts at right edge, angles down toward center (mirrored)
+  const rightRamp = {
+    x1: W,
+    y1: cy - Math.tan(RAMP_ANGLE) * rampLen,
+    x2: W - rampLen,
+    y2: cy
+  };
+
+  // Cup: centered, a U-shape
+  const cupLeft = W / 2 - cupW / 2;
+  const cupRight = W / 2 + cupW / 2;
+
+  surfaces = {
+    leftRamp, rightRamp,
+    cupLeft, cupRight, cupTop: cy, cupBottom, cupW, cupH,
+    cupCenterX: W / 2, cupCenterY: cupBottom,
+    rampLen, baseY: cy
+  };
+}
+
+function resize() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = W;
+  canvas.height = H;
+  computeSurfaces();
+}
+
+// Get Y on a line segment at a given X (returns null if x is outside segment)
+function lineYatX(seg, x) {
+  if (x < Math.min(seg.x1, seg.x2) || x > Math.max(seg.x1, seg.x2)) return null;
+  const t = (x - seg.x1) / (seg.x2 - seg.x1);
+  return seg.y1 + t * (seg.y2 - seg.y1);
+}
+
+// Normal vector of a line segment (pointing "up" / outward)
+function lineNormal(seg) {
+  const dx = seg.x2 - seg.x1;
+  const dy = seg.y2 - seg.y1;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  // Normal perpendicular, pointing upward (negative y)
+  let nx = -dy / len;
+  let ny = dx / len;
+  if (ny > 0) { nx = -nx; ny = -ny; } // ensure upward
+  return { nx, ny };
+}
+
+// Reflect velocity off a surface normal
+function reflect(vx, vy, nx, ny, damping) {
+  const dot = vx * nx + vy * ny;
+  return {
+    vx: (vx - 2 * dot * nx) * damping,
+    vy: (vy - 2 * dot * ny) * damping
+  };
+}
+
+// Draw the ramps and cup
+function drawSurfaces() {
+  const s = surfaces;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(111,78,55,0.4)';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+
+  // Left ramp
+  ctx.beginPath();
+  ctx.moveTo(s.leftRamp.x1, s.leftRamp.y1);
+  ctx.lineTo(s.leftRamp.x2, s.leftRamp.y2);
+  ctx.stroke();
+
+  // Right ramp
+  ctx.beginPath();
+  ctx.moveTo(s.rightRamp.x1, s.rightRamp.y1);
+  ctx.lineTo(s.rightRamp.x2, s.rightRamp.y2);
+  ctx.stroke();
+
+  // Espresso cup — straight-walled U shape, no circles
+  const cupL = s.cupLeft;
+  const cupR = s.cupRight;
+  const cupT = s.cupTop;
+  const cupB = s.cupBottom;
+
+  ctx.strokeStyle = 'rgba(111,78,55,0.5)';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  // Left wall
+  ctx.moveTo(cupL, cupT);
+  ctx.lineTo(cupL, cupB);
+  // Flat bottom
+  ctx.lineTo(cupR, cupB);
+  // Right wall
+  ctx.lineTo(cupR, cupT);
+  ctx.stroke();
+
+  // Saucer line under the cup — wider
+  ctx.strokeStyle = 'rgba(111,78,55,0.25)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  const saucerExtend = s.cupW * 1.2;
+  ctx.moveTo(cupL - saucerExtend, cupB + 4);
+  ctx.lineTo(cupR + saucerExtend, cupB + 4);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+class CoffeeGrind {
+  constructor(x) {
+    const baseSize = 4 + Math.random() * 10;
+    this.size = baseSize;
+    this.numBumps = 20 + Math.floor(Math.random() * 35);
+    this.bumpVariance = 1 + Math.random() * 3;
+    this.shape = generateGroundShape(this.size, this.numBumps, this.bumpVariance);
+    this.color = coffeeColors[Math.floor(Math.random() * coffeeColors.length)];
+    this.strokeColor = '#3a1f0a';
+
+    this.x = x;
+    this.y = -this.size * 2 - Math.random() * 60;
+    this.vx = (Math.random() - 0.5) * 1.2;
+    this.vy = 1 + Math.random() * 2;
+    this.rotation = Math.random() * Math.PI * 2;
+    this.angularVel = (Math.random() - 0.5) * 0.08;
+    this.settled = false;
+    this.settleCount = 0;
+    this.opacity = 0.9;
+  }
+
+  update() {
+    if (this.settled) return;
+
+    this.vy += GRAVITY;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.rotation += this.angularVel;
+
+    const s = surfaces;
+    const r = this.size;
+    let hit = false;
+
+    // ── Check left ramp collision ──
+    const leftY = lineYatX(s.leftRamp, this.x);
+    if (leftY !== null && this.y + r >= leftY) {
+      const n = lineNormal(s.leftRamp);
+      const ref = reflect(this.vx, this.vy, n.nx, n.ny, BOUNCE_DAMPING);
+      this.vx = ref.vx;
+      this.vy = ref.vy;
+      this.y = leftY - r;
+      // Slide bias toward center
+      this.vx += 0.3;
+      this.angularVel *= ROTATION_DAMPING;
+      hit = true;
+    }
+
+    // ── Check right ramp collision ──
+    const rightY = lineYatX(s.rightRamp, this.x);
+    if (rightY !== null && this.y + r >= rightY) {
+      const n = lineNormal(s.rightRamp);
+      const ref = reflect(this.vx, this.vy, n.nx, n.ny, BOUNCE_DAMPING);
+      this.vx = ref.vx;
+      this.vy = ref.vy;
+      this.y = rightY - r;
+      // Slide bias toward center
+      this.vx -= 0.3;
+      this.angularVel *= ROTATION_DAMPING;
+      hit = true;
+    }
+
+    // ── Check cup collision ──
+    if (this.x >= s.cupLeft - r && this.x <= s.cupRight + r) {
+      // Cup bottom (curved)
+      const distFromCenter = this.x - s.cupCenterX;
+      const cupRadius = s.cupW / 2;
+      // Approximate cup interior as a parabola
+      const cupFloorY = s.cupBottom - Math.sqrt(Math.max(0, cupRadius * cupRadius - distFromCenter * distFromCenter)) * (s.cupH / cupRadius) * 0.3;
+      const effectiveCupBottom = Math.min(s.cupBottom, s.cupTop + s.cupH * 0.85);
+
+      if (this.y + r >= effectiveCupBottom && this.x > s.cupLeft && this.x < s.cupRight) {
+        this.y = effectiveCupBottom - r;
+        this.vy = -this.vy * BOUNCE_DAMPING * 0.5;
+        this.vx *= FRICTION;
+        this.angularVel *= ROTATION_DAMPING;
+        hit = true;
+      }
+
+      // Cup left wall
+      if (this.x - r < s.cupLeft && this.x + r > s.cupLeft && this.y > s.cupTop && this.y < s.cupBottom) {
+        this.x = s.cupLeft + r;
+        this.vx = Math.abs(this.vx) * BOUNCE_DAMPING;
+        hit = true;
+      }
+
+      // Cup right wall
+      if (this.x + r > s.cupRight && this.x - r < s.cupRight && this.y > s.cupTop && this.y < s.cupBottom) {
+        this.x = s.cupRight - r;
+        this.vx = -Math.abs(this.vx) * BOUNCE_DAMPING;
+        hit = true;
+      }
+    }
+
+    // ── Settle check ──
+    if (hit) {
+      if (Math.abs(this.vy) < 0.4 && Math.abs(this.vx) < 0.4) {
+        this.settleCount++;
+        if (this.settleCount > 4) {
+          this.vy = 0;
+          this.vx = 0;
+          this.angularVel = 0;
+          this.settled = true;
+        }
+      }
+    }
+
+    // ── Fall off screen → remove (don't settle) ──
+    if (this.y > H + 50) {
+      this.settled = true;
+      this.opacity = 0;
+    }
+
+    // Walls
+    if (this.x < r) { this.x = r; this.vx = Math.abs(this.vx) * 0.5; }
+    if (this.x > W - r) { this.x = W - r; this.vx = -Math.abs(this.vx) * 0.5; }
+  }
+
+  draw(ctx) {
+    if (this.opacity <= 0) return;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation);
+    ctx.globalAlpha = this.opacity;
+
+    ctx.beginPath();
+    for (let i = 0; i < this.shape.length; i++) {
+      if (i === 0) ctx.moveTo(this.shape[i].x, this.shape[i].y);
+      else ctx.lineTo(this.shape[i].x, this.shape[i].y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = this.color;
+    ctx.fill();
+    ctx.strokeStyle = this.strokeColor;
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+}
+
+function spawnGrind() {
+  if (totalSpawned >= maxGrinds) return;
+
+  const batch = 1 + Math.floor(Math.random() * 3);
+  for (let b = 0; b < batch && totalSpawned < maxGrinds; b++) {
+    // Spawn across the width but weighted toward center area above the cup
+    const x = Math.random() * W * 0.6 + W * 0.2;
+    grinds.push(new CoffeeGrind(x));
+    totalSpawned++;
+  }
+}
+
+function animate() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Draw surfaces behind everything
+  drawSurfaces();
+
+  // Draw settled grinds
+  for (const g of settled) {
+    g.draw(ctx);
+  }
+
+  // Update and draw active grinds
+  const stillActive = [];
+  for (const g of grinds) {
+    g.update();
+    g.draw(ctx);
+    if (g.settled) {
+      settled.push(g);
+    } else {
+      stillActive.push(g);
+    }
+  }
+  grinds = stillActive;
+
+  animFrame = requestAnimationFrame(animate);
+}
+
+function startSimulation() {
+  if (isRunning) return;
+  isRunning = true;
+
+  grinds = [];
+  settled = [];
+  totalSpawned = 0;
+  maxGrinds = 80 + Math.floor(Math.random() * 80);
+
+  // Show brand after a moment
+  setTimeout(() => {
+    document.getElementById('brand').classList.add('visible');
+    document.getElementById('enterLink').classList.add('visible');
+  }, 1500);
+
+  // Spawn grinds in waves
+  let spawnCount = 0;
+  spawnTimer = setInterval(() => {
+    spawnGrind();
+    spawnCount++;
+    if (totalSpawned >= maxGrinds) {
+      clearInterval(spawnTimer);
+      spawnTimer = null;
+      // Mark running as done after last grinds settle
+      setTimeout(() => { isRunning = false; }, 2000);
+    }
+  }, 80 + Math.random() * 40);
+
+  animate();
+}
+
+function resetAndRestart() {
+  // Cancel existing timers
+  if (spawnTimer) { clearInterval(spawnTimer); spawnTimer = null; }
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  isRunning = false;
+
+  // Fade out brand
+  document.getElementById('brand').classList.remove('visible');
+  document.getElementById('enterLink').classList.remove('visible');
+
+  // Clear canvas
+  ctx.clearRect(0, 0, W, H);
+
+  // Short pause then restart
+  setTimeout(() => {
+    startSimulation();
+  }, 400);
+}
+
+// ─── Click to regenerate ───
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.enter-link')) return;
+  resetAndRestart();
+});
+
+// ─── Init ───
+resize();
+window.addEventListener('resize', () => {
+  resize();
+  resetAndRestart();
+});
+startSimulation();
+</script>
+
+</body>
+</html>

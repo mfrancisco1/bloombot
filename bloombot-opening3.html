@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>bloombot — Opening III</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.16.0/d3.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink: #1a1612; --cream: #f5f0e8; --warm: #e8dcc8;
+      --rust: #c4541a; --amber: #d97706; --forest: #2d5a27;
+      --slate: #64748b; --border: #d1c4aa; --shadow: rgba(26,22,18,0.10);
+      --lightning: #1e3a5f;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--ink);
+      color: #fff;
+      transition: background 0.6s ease;
+    }
+    body.light-mode {
+      background: #fff;
+    }
+
+    .opening {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #lightningCanvas {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    #lightningCanvas svg {
+      position: absolute;
+      left: 0;
+    }
+
+    /* Each SVG path gets clipped by a rect that animates from 0 to full width */
+    #lightningCanvas svg path {
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .brand {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+    }
+    .brand.visible { opacity: 1; }
+    .brand h1 {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(1.4rem, 3vw, 2.4rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      transition: color 0.6s ease, text-shadow 0.6s ease;
+    }
+
+    .enter-link {
+      position: absolute;
+      bottom: 3rem;
+      left: 50%;
+      z-index: 30;
+      opacity: 0;
+      animation: fadeUpCenter 1.2s ease-out 2s forwards;
+    }
+    .enter-link a {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      text-decoration: none;
+      padding: 0.6rem 1.6rem;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px;
+      transition: all 0.3s ease;
+    }
+    .enter-link a:hover {
+      color: var(--amber);
+      border-color: var(--amber);
+      box-shadow: 0 0 20px rgba(217,119,6,0.15);
+    }
+
+    .palette-picker {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      z-index: 20;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      opacity: 0;
+      animation: fadeUp 1s ease-out 2.5s forwards;
+    }
+    .palette-picker label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+    }
+    .palette-picker select {
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.6);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 4px;
+      padding: 0.35rem 0.6rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .palette-picker select:focus { outline: none; border-color: var(--amber); }
+    .palette-picker select option { background: var(--ink); color: #fff; }
+    body.light-mode .palette-picker label { color: rgba(0,0,0,0.35); }
+    body.light-mode .palette-picker select { background: rgba(0,0,0,0.06); color: rgba(0,0,0,0.5); border-color: rgba(0,0,0,0.12); }
+    body.light-mode .enter-link a { color: rgba(0,0,0,0.35); border-color: rgba(0,0,0,0.15); }
+    body.light-mode .enter-link a:hover { color: var(--rust); border-color: var(--rust); }
+    body.light-mode #lightningCanvas svg path { filter: none !important; }
+
+    .vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 30%, rgba(26,22,18,0.7) 100%);
+      transition: background 0.6s ease;
+    }
+    body.light-mode .vignette {
+      background: radial-gradient(ellipse at center, transparent 30%, rgba(255,255,255,0.7) 100%);
+    }
+
+    /* Theme toggle hint — bottom-left corner */
+    .theme-toggle-zone {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 20%;
+      height: 20%;
+      z-index: 25;
+      cursor: pointer;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUpCenter {
+      from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="opening">
+  <div id="lightningCanvas"></div>
+  <div class="vignette"></div>
+
+  <div class="brand">
+    <h1 id="brandTitle">bloombot</h1>
+  </div>
+
+  <div class="palette-picker">
+    <label>Palette</label>
+    <select id="paletteSelect">
+      <option value="sunrise" selected>Sunrise</option>
+      <option value="blues">Blues</option>
+      <option value="pinks">Pinks</option>
+      <option value="greens">Greens</option>
+      <option value="greys">Greys</option>
+      <option value="purples">Purples</option>
+      <option value="sunset">Sunset</option>
+    </select>
+  </div>
+
+  <div class="enter-link">
+    <a href="bloombot-modern.html">Enter</a>
+  </div>
+
+  <div class="theme-toggle-zone" id="themeToggle"></div>
+</div>
+
+<script>
+// ─── Palettes (from the Lightning generator) ───
+const colorPalettes = {
+  "sunrise": ['#fff9f5','#fff5eb','#fff0e0','#ffebd6','#ffe5cc','#ffdfc2','#ffd9b8','#ffd3ae','#ffcda4','#ffc79a','#ffc190','#ffbb86','#ffb57c','#ffaf72','#ffa968','#ffa35e','#ff9d54','#ff974a','#ff9140','#ff8b36','#ff852c'],
+  "blues": ['#ffc0cb','#f8b7ce','#f2afd1','#eba6d4','#e49dd7','#dd95da','#d58cdd','#ce84e0','#c67be2','#bd73e5','#b56ae8','#ab61ea','#a259ed','#9850ef','#8d47f1','#813ef4','#7435f6','#642bf8','#5220fb','#3a13fd','#0000ff'],
+  "pinks": ['#ffe0eb','#ffdbe9','#ffd6e7','#ffd2e5','#ffcde3','#ffc8e1','#ffc3e0','#ffbfde','#ffbadc','#ffb5da','#ffb0d8','#ffabd6','#ffa6d4','#ffa1d2','#ff9bd1','#ff96cf','#ff91cd','#ff8bcb','#ff85c9','#ff80c7','#ff7ac5','#ff73c3','#ff6dc1','#ff66bf','#ff5fbd','#ff57bb'],
+  "greens": ['#ffe0eb','#f6dbe2','#edd5da','#e4d0d2','#dbcbc9','#d2c6c1','#c9c0b9','#c1bbb0','#b8b6a8','#afb1a0','#a6ab98','#9ea690','#95a188','#8d9c81','#849779','#7c9171','#738c6a','#6b8762','#62825b','#5a7d53','#51784c'],
+  "greys": ['#c6a9b3','#bfa4ae','#b89fa8','#b19aa2','#aa959d','#a49097','#9d8c92','#96878c','#8f8287','#897e81','#82797c','#7c7477','#757072','#6f6b6c','#686767','#9dadb5','#9aa5a9','#969d9e','#919593','#8c8e89','#868680','#817f77','#7b786e','#757066','#6f695d','#686356','#625c4e','#5c5546','#554e3f','#4f4838'],
+  "purples": ['#b89ff5','#bd98ea','#c190e0','#c489d6','#c781cc','#c97ac2','#cb72b9','#cd6aaf','#ce62a5','#cf599c','#cf5092','#cf4689','#cf3b80','#cf2f77','#cf1f6e','#2d6c94','#416e96','#507098','#5d739b','#68759e','#7278a2','#7b7aa8','#827dae','#8980b5','#8f83bd','#9386c7','#9689d2','#968ddf','#9491ee','#8e96ff'],
+  "sunset": ['#ffd653','#fece4f','#fdc64a','#fcbe46','#fbb642','#faae3e','#f9a639','#f79e35','#f59531','#f48d2d','#f28428','#f07c24','#ee7320','#ec6a1c','#ea6017','#e75613','#e54c0f','#e2400a','#e03306','#dd2203','#da0000']
+};
+
+// Palette cycling order: sunrise first, sunset last
+const paletteOrder = ['sunrise','blues','pinks','greens','greys','purples','sunset'];
+let currentPaletteIndex = 0;
+let lightMode = false;
+
+// Track all drawn paths so we can erase them
+let drawnPaths = [];
+let cycleTimer = null;
+let isAnimating = false;
+
+function nextPalette() {
+  currentPaletteIndex = (currentPaletteIndex + 1) % paletteOrder.length;
+  const name = paletteOrder[currentPaletteIndex];
+  document.getElementById("paletteSelect").value = name;
+  return name;
+}
+
+// ─── Build a single horizontal zigzag bolt that draws on in place ───
+function buildAnimatedBolt(container, vw, h, zigzags, thickness, color, yPos, duration) {
+  const overshoot = vw * 0.25;
+  const totalW = vw + overshoot * 2;
+  // Add padding for the glow (drop-shadow) so it doesn't clip
+  const glowPad = Math.round(thickness * 2);
+  const pad = thickness + glowPad;
+  const vbW = totalW * 1.1 + pad * 2;
+  const vbH = h + pad * 2;
+
+  const svg = d3.select(container).append("svg")
+    .attr("width", vbW)
+    .attr("height", vbH)
+    .attr("viewBox", `${-pad} ${-pad} ${vbW + pad} ${vbH + pad}`)
+    .attr("xmlns", "http://www.w3.org/2000/svg")
+    .style("position", "absolute")
+    .style("top", `${yPos - glowPad}px`)
+    .style("left", `${-overshoot - glowPad}px`)
+    .style("overflow", "visible");
+
+  const line = d3.line().x(d => d[0]).y(d => d[1]);
+  const data = [];
+  for (let i = 0; i < zigzags; i++) {
+    data.push([(i * totalW) / zigzags, ((i % 2 === 0) ? 0 : h) + thickness]);
+  }
+
+  const path = svg.append("path")
+    .attr("d", line(data))
+    .attr("stroke", color)
+    .attr("stroke-width", thickness)
+    .attr("fill", "none")
+    .attr("stroke-linecap", "round")
+    .attr("stroke-linejoin", "round")
+    .style("opacity", 0.85);
+
+  if (thickness > 4) {
+    path.style("filter", `drop-shadow(0 0 ${Math.round(thickness * 0.8)}px ${color})`);
+  }
+
+  const totalLength = path.node().getTotalLength();
+  path
+    .attr("stroke-dasharray", totalLength)
+    .attr("stroke-dashoffset", totalLength);
+
+  // Draw on: left to right
+  path.transition()
+    .duration(duration)
+    .ease(d3.easeLinear)
+    .attr("stroke-dashoffset", 0);
+
+  // Store reference for erasing later
+  drawnPaths.push({ path, totalLength, duration });
+
+  return svg;
+}
+
+// ─── Erase all bolts left-to-right, then callback ───
+function eraseAll(callback) {
+  const brandEl = document.getElementById("brandTitle");
+  const brand = brandEl.closest(".brand");
+
+  // Fade out the title
+  brand.classList.remove("visible");
+
+  // Erase each bolt: dashoffset goes to -totalLength (reveals gap from left)
+  let maxEraseDuration = 0;
+  drawnPaths.forEach((item, i) => {
+    const eraseDuration = item.duration * 0.8;
+    if (eraseDuration > maxEraseDuration) maxEraseDuration = eraseDuration;
+
+    const delay = i * 32 + Math.random() * 64;
+
+    item.path.transition()
+      .delay(delay)
+      .duration(eraseDuration)
+      .ease(d3.easeLinear)
+      .attr("stroke-dashoffset", -item.totalLength);
+  });
+
+  // After the longest erase + stagger finishes, clean up and callback
+  const totalWait = maxEraseDuration + drawnPaths.length * 60 + 200;
+  setTimeout(() => {
+    drawnPaths = [];
+    if (callback) callback();
+  }, totalWait);
+}
+
+// ─── Main generation ───
+function generateOpening() {
+  if (isAnimating) return;
+  isAnimating = true;
+  if (cycleTimer) { clearTimeout(cycleTimer); cycleTimer = null; }
+
+  const canvas = document.getElementById("lightningCanvas");
+  canvas.innerHTML = "";
+  drawnPaths = [];
+
+  const palette = document.getElementById("paletteSelect").value;
+  const colors = colorPalettes[palette];
+
+  const brandEl = document.getElementById("brandTitle");
+  const brand = brandEl.closest(".brand");
+
+  // Brightness = perceived luminance via (0.299*R + 0.587*G + 0.114*B)
+  function hexBrightness(hex) {
+    const r = parseInt(hex.slice(1,3), 16);
+    const g = parseInt(hex.slice(3,5), 16);
+    const b = parseInt(hex.slice(5,7), 16);
+    return 0.299 * r + 0.587 * g + 0.114 * b;
+  }
+  // Light mode: darkest color for title; dark mode: brightest
+  const brandColor = lightMode
+    ? colors.reduce((a, b) => hexBrightness(a) < hexBrightness(b) ? a : b)
+    : colors.reduce((a, b) => hexBrightness(a) > hexBrightness(b) ? a : b);
+  brandEl.style.color = brandColor;
+  brandEl.style.textShadow = `0 0 40px ${brandColor}44, 0 0 80px ${brandColor}22`;
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  // ─── Parameter styles: randomly pick a style each cycle ───
+  const styles = [
+    { // Dense, tight bolts
+      numBolts: Math.floor(Math.random() * 20) + 22,
+      baseHeight: 10,
+      maxThickness: 3,
+      baseZigzags: 220,
+      zigzagCalc: (bz) => Math.floor(Math.random() * bz / 2) + bz * 0.75,
+    },
+    { // Medium classic bolts
+      numBolts: Math.floor(Math.random() * 16) + 16,
+      baseHeight: 18,
+      maxThickness: 8,
+      baseZigzags: 160,
+      zigzagCalc: (bz) => Math.floor(Math.random() * bz /2 ) + bz * .65,
+    },
+    { // Chunky, wide bolts
+      numBolts: Math.floor(Math.random() * 12) + 12,
+      baseHeight: 50,
+      maxThickness: 10,
+      baseZigzags: 120,
+      zigzagCalc: (bz) => Math.floor(Math.random() * bz / 2) + bz * .6,
+    },
+    { // Fine, many bolts
+      numBolts: Math.floor(Math.random() * 12) + 28,
+      baseHeight: 6,
+      maxThickness: 2,
+      baseZigzags: 300,
+      zigzagCalc: (bz) => Math.floor(Math.random() * bz / 3) + bz * 0.7,
+    },
+  ];
+  const style = styles[Math.floor(Math.random() * styles.length)];
+
+  const numBolts = style.numBolts;
+  const baseHeight = style.baseHeight;
+  const maxThickness = style.maxThickness;
+  const baseZigzags = style.baseZigzags;
+  const margin = 30;
+  const availableHeight = vh - margin * 2;
+  const spacing = availableHeight / numBolts;
+  const boltWidth = vw;
+
+  const centerY = vh / 2;
+  const clearZone = 20;
+
+  // Track the longest draw completion time
+  let maxDrawEnd = 0;
+
+  for (let i = 0; i < numBolts; i++) {
+    const t = Math.random() * maxThickness + 1;
+    const zz = style.zigzagCalc(baseZigzags);
+    const h = baseHeight * (0.4 + Math.random() * 0.6);
+
+    const yCenter_i = margin + spacing * i + spacing / 2;
+    const yPos = yCenter_i - (h + t * 2) / 2;
+
+    const boltTop = yPos;
+    const boltBottom = yPos + h + t * 2;
+    if (boltBottom > centerY - clearZone && boltTop < centerY + clearZone) {
+      continue;
+    }
+
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const duration = 480 + Math.random() * 960;
+    const delay = i * 64 + Math.random() * 120;
+
+    const drawEnd = delay + duration;
+    if (drawEnd > maxDrawEnd) maxDrawEnd = drawEnd;
+
+    setTimeout(() => {
+      buildAnimatedBolt(canvas, boltWidth, h, zz, t, color, yPos, duration);
+    }, delay);
+  }
+
+  // Show the title after a short moment
+  setTimeout(() => {
+    brand.classList.add("visible");
+  }, 400);
+
+  // Once all bolts finish drawing, mark animation done — stays in place until click
+  cycleTimer = setTimeout(() => {
+    isAnimating = false;
+  }, maxDrawEnd + 100);
+}
+
+// ─── Theme toggle: bottom-left 20% x 20% corner ───
+document.getElementById("themeToggle").addEventListener("click", (e) => {
+  e.stopPropagation();
+  lightMode = !lightMode;
+  document.body.classList.toggle("light-mode", lightMode);
+
+  // Update brand color for current palette
+  const palette = document.getElementById("paletteSelect").value;
+  const colors = colorPalettes[palette];
+  function hexBrightness(hex) {
+    const r = parseInt(hex.slice(1,3), 16);
+    const g = parseInt(hex.slice(3,5), 16);
+    const b = parseInt(hex.slice(5,7), 16);
+    return 0.299 * r + 0.587 * g + 0.114 * b;
+  }
+  const brandColor = lightMode
+    ? colors.reduce((a, b) => hexBrightness(a) < hexBrightness(b) ? a : b)
+    : colors.reduce((a, b) => hexBrightness(a) > hexBrightness(b) ? a : b);
+  const brandEl = document.getElementById("brandTitle");
+  brandEl.style.color = brandColor;
+  brandEl.style.textShadow = `0 0 40px ${brandColor}44, 0 0 80px ${brandColor}22`;
+});
+
+// ─── Click anywhere to immediately restart the cycle ───
+document.addEventListener("click", (e) => {
+  // Don't intercept the palette picker, enter link, or theme toggle zone
+  if (e.target.closest(".palette-picker") || e.target.closest(".enter-link") || e.target.closest(".theme-toggle-zone")) return;
+
+  if (cycleTimer) { clearTimeout(cycleTimer); cycleTimer = null; }
+  isAnimating = false;
+
+  // Advance palette and erase/regenerate
+  nextPalette();
+  if (drawnPaths.length > 0) {
+    eraseAll(() => {
+      setTimeout(() => {
+        generateOpening();
+      }, 150);
+    });
+  } else {
+    generateOpening();
+  }
+});
+
+// ─── Init ───
+window.addEventListener("load", generateOpening);
+window.addEventListener("resize", () => {
+  if (cycleTimer) { clearTimeout(cycleTimer); cycleTimer = null; }
+  isAnimating = false;
+  generateOpening();
+});
+document.getElementById("paletteSelect").addEventListener("change", () => {
+  if (cycleTimer) { clearTimeout(cycleTimer); cycleTimer = null; }
+  isAnimating = false;
+  // Sync the cycling index to the manually picked palette
+  const val = document.getElementById("paletteSelect").value;
+  const idx = paletteOrder.indexOf(val);
+  if (idx >= 0) currentPaletteIndex = idx;
+  generateOpening();
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bloombot — Gear Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:     #1a1612;
+  --cream:   #f5f0e8;
+  --warm:    #e8dcc8;
+  --rust:    #c4541a;
+  --amber:   #d97706;
+  --forest:  #2d5a27;
+  --slate:   #64748b;
+  --border:  #d1c4aa;
+  --card-bg: #ffffff;
+  --shadow:  rgba(26,22,18,0.10);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background: var(--cream); color: var(--ink);
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+}
+
+/* ── NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--ink);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 2rem; height: 56px;
+  border-bottom: 3px solid var(--rust); flex-shrink: 0;
+}
+.nav-brand {
+  font-family: 'Space Mono', monospace;
+  font-size: 1.2rem; font-weight: 700;
+  color: var(--amber); text-decoration: none;
+  letter-spacing: -0.03em;
+}
+.nav-title {
+  font-size: 0.82rem; color: rgba(255,255,255,0.6);
+  font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.nav-right { display: flex; gap: 0.5rem; }
+.nav-btn {
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.8); border-radius: 6px; padding: 0.35rem 0.8rem;
+  font-size: 0.75rem; font-family: 'Space Grotesk', sans-serif; font-weight: 500;
+  cursor: pointer; transition: all 0.15s;
+}
+.nav-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+.nav-btn.primary { background: var(--rust); border-color: var(--rust); color: #fff; }
+.nav-btn.primary:hover { background: #d4601f; }
+
+/* ── LAYOUT ── */
+.layout { display: flex; flex: 1; overflow: hidden; }
+
+/* ── SIDEBAR ── */
+aside {
+  width: 340px; flex-shrink: 0; border-right: 1.5px solid var(--border);
+  overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem;
+  background: var(--cream);
+}
+aside::-webkit-scrollbar { width: 5px; }
+aside::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.section-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--slate);
+  margin-bottom: 0.5rem;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.section-label::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* Gear cards */
+.gear-card {
+  background: var(--card-bg); border: 1.5px solid var(--border);
+  border-radius: 10px; overflow: visible; flex-shrink: 0;
+}
+.gear-card-top { height: 5px; border-radius: 10px 10px 0 0; }
+.gear-card-body { padding: 0.75rem 1rem; }
+.gear-card-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+  margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;
+}
+.gear-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* Param rows */
+.param-row { margin-bottom: 0.35rem; }
+.param-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.param-label { font-size: 0.78rem; color: var(--ink); font-weight: 500; }
+.param-input-wrap { display: flex; align-items: center; gap: 4px; }
+.param-input {
+  width: 68px; background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 5px; padding: 3px 6px; font-size: 0.78rem; text-align: right;
+  color: var(--ink); font-family: 'Space Mono', monospace; outline: none;
+}
+.param-input:focus { border-color: var(--rust); }
+.param-unit { font-size: 0.65rem; color: var(--slate); width: 20px; }
+
+input[type="range"] {
+  -webkit-appearance: none; width: 100%; height: 4px;
+  background: var(--border); border-radius: 2px; outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px;
+  background: var(--rust); border-radius: 50%; cursor: pointer;
+  border: 2px solid var(--card-bg); box-shadow: 0 1px 3px var(--shadow);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 14px; background: var(--rust);
+  border-radius: 50%; cursor: pointer; border: 2px solid var(--card-bg);
+}
+
+/* Display checkboxes */
+.check-row {
+  display: flex; align-items: center; gap: 6px; font-size: 0.78rem;
+  color: var(--ink); cursor: pointer; padding: 2px 0;
+}
+.check-row input { accent-color: var(--rust); }
+.color-swatch { width: 8px; height: 8px; border-radius: 50%; }
+
+/* Info panel */
+.info-card {
+  background: var(--warm); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 1rem 1.1rem;
+}
+.info-card h3 {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--slate); margin-bottom: 0.6rem;
+}
+.info-row { display: flex; justify-content: space-between; font-size: 0.78rem; padding: 2px 0; }
+.info-row .label { color: var(--slate); }
+.info-row .value { color: var(--ink); font-family: 'Space Mono', monospace; font-weight: 500; font-size: 0.72rem; }
+
+/* Ratio display */
+.ratio-card {
+  background: var(--ink); border-radius: 10px; padding: 1rem 1.1rem;
+  text-align: center;
+}
+.ratio-card .label {
+  font-family: 'Space Mono', monospace; font-size: 0.6rem;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: rgba(255,255,255,0.4); margin-bottom: 0.3rem;
+}
+.ratio-card .value {
+  font-family: 'Space Mono', monospace; font-size: 1.4rem;
+  font-weight: 700; color: var(--amber);
+}
+.ratio-card .sub {
+  font-size: 0.7rem; color: rgba(255,255,255,0.5); margin-top: 0.2rem;
+}
+
+/* ── VIEWPORT ── */
+main {
+  flex: 1; position: relative; overflow: hidden;
+  background: var(--card-bg);
+}
+#gearSvg { width: 100%; height: 100%; }
+.overlay {
+  position: absolute; top: 10px; left: 10px;
+  background: rgba(255,255,255,0.92); backdrop-filter: blur(8px);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 6px 10px; font-size: 0.7rem; color: var(--slate);
+  font-family: 'Space Mono', monospace; line-height: 1.5;
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="bloombot-modern.html">bloombot</a>
+  <span class="nav-title">Involute Gear Generator</span>
+  <div class="nav-right">
+    <button class="nav-btn" onclick="exportSVG()">Export SVG</button>
+    <button class="nav-btn" onclick="exportDXF()">Export DXF</button>
+  </div>
+</nav>
+
+<div class="layout">
+  <aside id="sidebar"></aside>
+  <main>
+    <svg id="gearSvg"></svg>
+    <div class="overlay" id="overlay"></div>
+  </main>
+</div>
+
+<script>
+// ─── State ──────────────────────────────────────────────────────────
+const gears = [
+  { id: 0, numTeeth: 24, diametralPitch: 8, pressureAngleDeg: 20, centerHoleDia: 8, color: '#c4541a', label: 'Gear A' },
+  { id: 1, numTeeth: 16, diametralPitch: 8, pressureAngleDeg: 20, centerHoleDia: 6, color: '#2d5a27', label: 'Gear B' },
+];
+
+const display = {
+  showPitchCircle: true,
+  showBaseCircle: false,
+  showCenterLine: true,
+  resolution: 30,
+  animating: false,
+  animAngle: 0,
+  animSpeed: 0.4,
+};
+
+// ─── Unit helpers ───────────────────────────────────────────────────
+function dpToModule(dp) { return 25.4 / dp; }
+function pitchDiameter(g) { return g.numTeeth * dpToModule(g.diametralPitch); }
+
+// ─── Involute Gear Math (clean approach from involute_gear_model) ──
+function inv(a) { return Math.tan(a) - a; }
+
+function generateGearProfile(g) {
+  const m = dpToModule(g.diametralPitch);
+  const Z = g.numTeeth;
+  const phi = g.pressureAngleDeg * Math.PI / 180;
+  const pitchR = m * Z / 2;
+  const baseR  = pitchR * Math.cos(phi);
+  const outerR = pitchR + m;
+  const rootR  = Math.max(0.01, pitchR - 1.25 * m);
+  const startR = Math.max(rootR, baseR); // involute starts here
+  const toothAngle = 2 * Math.PI / Z;
+  const halfToothAtPitch = Math.PI / (2 * Z);
+
+  // Core formula: half-tooth angular width at any radius R
+  function halfToothAngleAtR(R) {
+    const alpha = Math.acos(Math.min(1, baseR / R));
+    return halfToothAtPitch + inv(phi) - inv(alpha);
+  }
+
+  const halfToothStart = halfToothAngleAtR(startR);
+  const halfToothOuter = halfToothAngleAtR(outerR);
+  const useRadial = rootR < startR - 1e-9;
+
+  const invSteps = display.resolution;
+  const tipSteps = Math.max(4, Math.round(invSteps / 3));
+  const rootSteps = Math.max(4, Math.round(invSteps / 4));
+
+  const points = [];
+
+  for (let k = 0; k < Z; k++) {
+    const c = k * toothAngle;
+
+    // Start on root circle at right side of tooth space
+    if (k === 0) {
+      points.push([rootR * Math.cos(c - halfToothStart), rootR * Math.sin(c - halfToothStart)]);
+    }
+
+    // Radial segment from root up to involute start (if base > root)
+    if (useRadial) {
+      points.push([startR * Math.cos(c - halfToothStart), startR * Math.sin(c - halfToothStart)]);
+    }
+
+    // Right involute flank (startR → outerR)
+    for (let i = 1; i <= invSteps; i++) {
+      const t = i / invSteps;
+      const R = startR + (outerR - startR) * t;
+      const a = c - halfToothAngleAtR(R);
+      points.push([R * Math.cos(a), R * Math.sin(a)]);
+    }
+
+    // Tip arc
+    for (let i = 1; i <= tipSteps; i++) {
+      const t = i / tipSteps;
+      const a = (c - halfToothOuter) + (2 * halfToothOuter) * t;
+      points.push([outerR * Math.cos(a), outerR * Math.sin(a)]);
+    }
+
+    // Left involute flank (outerR → startR)
+    for (let i = invSteps - 1; i >= 0; i--) {
+      const t = i / invSteps;
+      const R = startR + (outerR - startR) * t;
+      const a = c + halfToothAngleAtR(R);
+      points.push([R * Math.cos(a), R * Math.sin(a)]);
+    }
+
+    // Radial segment from involute start back down to root
+    if (useRadial) {
+      points.push([rootR * Math.cos(c + halfToothStart), rootR * Math.sin(c + halfToothStart)]);
+    }
+
+    // Root arc to next tooth
+    const nextC = (k + 1) * toothAngle;
+    for (let i = 1; i <= rootSteps; i++) {
+      const t = i / rootSteps;
+      const a = (c + halfToothStart) + ((nextC - halfToothStart) - (c + halfToothStart)) * t;
+      points.push([rootR * Math.cos(a), rootR * Math.sin(a)]);
+    }
+  }
+
+  return { points, pitchRadius: pitchR, baseRadius: baseR, outerRadius: outerR, rootRadius: rootR, module: m };
+}
+
+function pointsToPath(pts) {
+  if (!pts.length) return '';
+  let d = 'M ' + pts[0][0].toFixed(5) + ' ' + pts[0][1].toFixed(5);
+  for (let i = 1; i < pts.length; i++) d += ' L ' + pts[i][0].toFixed(5) + ' ' + pts[i][1].toFixed(5);
+  return d + ' Z';
+}
+
+// ─── SVG Rendering ──────────────────────────────────────────────────
+function render() {
+  const g1 = generateGearProfile(gears[0]);
+  const g2 = generateGearProfile(gears[1]);
+  const centerDist = g1.pitchRadius + g2.pitchRadius;
+  const g1x = -centerDist / 2, g1y = 0;
+  const g2x = centerDist / 2,  g2y = 0;
+
+  const ratio = gears[0].numTeeth / gears[1].numTeeth;
+  const rot1 = display.animAngle;
+  const toothAngle2 = 360 / gears[1].numTeeth;
+  // Gear B faces gear A at 180°. We need a tooth *space* at 180°.
+  // Tooth space centers are at (k+0.5)*toothAngle. Offset so one lands at 180°.
+  const rot2 = -display.animAngle * ratio + 180 + toothAngle2 / 2;
+
+  const maxR = Math.max(g1.outerRadius, g2.outerRadius);
+  const pad = maxR * 0.2;
+  const totalW = centerDist + maxR * 2 + pad * 2;
+  const totalH = maxR * 2 + pad * 2;
+  const vx = g1x - g1.outerRadius - pad;
+  const vy = -maxR - pad;
+
+  const svg = document.getElementById('gearSvg');
+  const ns = 'http://www.w3.org/2000/svg';
+  svg.innerHTML = '';
+  svg.setAttribute('viewBox', `${vx.toFixed(2)} ${vy.toFixed(2)} ${totalW.toFixed(2)} ${totalH.toFixed(2)}`);
+
+  // Grid
+  const defs = document.createElementNS(ns, 'defs');
+  const gs = dpToModule(gears[0].diametralPitch) * 5;
+  const pat = document.createElementNS(ns, 'pattern');
+  pat.setAttribute('id','grid'); pat.setAttribute('width',gs); pat.setAttribute('height',gs);
+  pat.setAttribute('patternUnits','userSpaceOnUse');
+  const gp = document.createElementNS(ns,'path');
+  gp.setAttribute('d',`M ${gs} 0 L 0 0 0 ${gs}`);
+  gp.setAttribute('fill','none'); gp.setAttribute('stroke','rgba(26,22,18,0.06)'); gp.setAttribute('stroke-width', String(totalW * 0.001));
+  pat.appendChild(gp); defs.appendChild(pat); svg.appendChild(defs);
+  const bg = document.createElementNS(ns,'rect');
+  bg.setAttribute('x',-9999); bg.setAttribute('y',-9999);
+  bg.setAttribute('width',19998); bg.setAttribute('height',19998);
+  bg.setAttribute('fill','url(#grid)'); svg.appendChild(bg);
+
+  // Stroke widths scale with viewBox so gears look consistent at any module
+  const sw = totalW * 0.003;   // main outline
+  const swThin = totalW * 0.002; // reference circles, center marks
+
+  function drawGear(gear, gearState, cx, cy, rotation) {
+    const g = document.createElementNS(ns, 'g');
+    g.setAttribute('transform', `translate(${cx},${cy}) rotate(${rotation})`);
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', pointsToPath(gear.points));
+    path.setAttribute('fill', gearState.color + '18');
+    path.setAttribute('stroke', gearState.color);
+    path.setAttribute('stroke-width', sw);
+    path.setAttribute('stroke-linejoin', 'round');
+    g.appendChild(path);
+    if (gearState.centerHoleDia > 0) {
+      const hole = document.createElementNS(ns, 'circle');
+      hole.setAttribute('cx',0); hole.setAttribute('cy',0);
+      hole.setAttribute('r', gearState.centerHoleDia / 2);
+      hole.setAttribute('fill','#ffffff');
+      hole.setAttribute('stroke', gearState.color); hole.setAttribute('stroke-width', sw);
+      g.appendChild(hole);
+    }
+    svg.appendChild(g);
+
+    // Reference circles (unrotated)
+    const ug = document.createElementNS(ns, 'g');
+    ug.setAttribute('transform', `translate(${cx},${cy})`);
+    if (display.showPitchCircle) {
+      const pc = document.createElementNS(ns,'circle');
+      pc.setAttribute('cx',0); pc.setAttribute('cy',0); pc.setAttribute('r',gear.pitchRadius);
+      pc.setAttribute('fill','none'); pc.setAttribute('stroke', gearState.color);
+      pc.setAttribute('stroke-width', swThin); pc.setAttribute('stroke-dasharray', `${sw*8} ${sw*5}`);
+      pc.setAttribute('opacity','0.4'); ug.appendChild(pc);
+    }
+    if (display.showBaseCircle) {
+      const bc = document.createElementNS(ns,'circle');
+      bc.setAttribute('cx',0); bc.setAttribute('cy',0); bc.setAttribute('r',gear.baseRadius);
+      bc.setAttribute('fill','none'); bc.setAttribute('stroke', gearState.color);
+      bc.setAttribute('stroke-width', swThin); bc.setAttribute('stroke-dasharray', `${sw*4} ${sw*4}`);
+      bc.setAttribute('opacity','0.3'); ug.appendChild(bc);
+    }
+    if (display.showCenterLine) {
+      const s = gear.outerRadius * 0.06;
+      const l1 = document.createElementNS(ns,'line');
+      l1.setAttribute('x1',-s); l1.setAttribute('y1',0); l1.setAttribute('x2',s); l1.setAttribute('y2',0);
+      l1.setAttribute('stroke',gearState.color); l1.setAttribute('stroke-width', swThin); l1.setAttribute('opacity','0.5');
+      const l2 = document.createElementNS(ns,'line');
+      l2.setAttribute('x1',0); l2.setAttribute('y1',-s); l2.setAttribute('x2',0); l2.setAttribute('y2',s);
+      l2.setAttribute('stroke',gearState.color); l2.setAttribute('stroke-width', swThin); l2.setAttribute('opacity','0.5');
+      ug.appendChild(l1); ug.appendChild(l2);
+    }
+    svg.appendChild(ug);
+  }
+
+  if (display.showCenterLine) {
+    const cl = document.createElementNS(ns,'line');
+    cl.setAttribute('x1',g1x); cl.setAttribute('y1',g1y);
+    cl.setAttribute('x2',g2x); cl.setAttribute('y2',g2y);
+    cl.setAttribute('stroke','rgba(26,22,18,0.15)'); cl.setAttribute('stroke-width', swThin);
+    cl.setAttribute('stroke-dasharray', `${sw*10} ${sw*8}`); svg.appendChild(cl);
+  }
+
+  drawGear(g1, gears[0], g1x, g1y, rot1);
+  drawGear(g2, gears[1], g2x, g2y, rot2);
+
+  // ─── Scale bar (mm) ─────────────────────
+  // Pick a nice round scale bar length
+  const targetBarPx = totalW * 0.18;
+  const niceSteps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500];
+  let barLen = niceSteps[0];
+  for (const n of niceSteps) { if (n <= targetBarPx) barLen = n; }
+  const barY = vy + totalH - totalH * 0.04;
+  const barX = vx + totalW * 0.03;
+  const barSw = totalW * 0.004;
+  const tickH = totalW * 0.012;
+  const scaleG = document.createElementNS(ns, 'g');
+  scaleG.setAttribute('opacity', '0.55');
+  // Main bar line
+  const barLine = document.createElementNS(ns, 'line');
+  barLine.setAttribute('x1', barX); barLine.setAttribute('y1', barY);
+  barLine.setAttribute('x2', barX + barLen); barLine.setAttribute('y2', barY);
+  barLine.setAttribute('stroke', 'var(--ink)'); barLine.setAttribute('stroke-width', barSw);
+  scaleG.appendChild(barLine);
+  // End ticks
+  [barX, barX + barLen].forEach(x => {
+    const tick = document.createElementNS(ns, 'line');
+    tick.setAttribute('x1', x); tick.setAttribute('y1', barY - tickH/2);
+    tick.setAttribute('x2', x); tick.setAttribute('y2', barY + tickH/2);
+    tick.setAttribute('stroke', 'var(--ink)'); tick.setAttribute('stroke-width', barSw);
+    scaleG.appendChild(tick);
+  });
+  // Label
+  const barText = document.createElementNS(ns, 'text');
+  barText.setAttribute('x', barX + barLen / 2); barText.setAttribute('y', barY - tickH);
+  barText.setAttribute('text-anchor', 'middle');
+  barText.setAttribute('font-family', 'Space Mono, monospace');
+  barText.setAttribute('font-size', totalW * 0.018);
+  barText.setAttribute('fill', 'var(--ink)');
+  barText.textContent = barLen + ' mm';
+  scaleG.appendChild(barText);
+  svg.appendChild(scaleG);
+
+  document.getElementById('overlay').innerHTML =
+    `P=${gears[0].diametralPitch} &nbsp; m=${g1.module.toFixed(2)}mm &nbsp; CD=${centerDist.toFixed(1)}mm &nbsp; Ratio=${gears[0].numTeeth}:${gears[1].numTeeth}`;
+
+  updateInfo(g1, g2, centerDist);
+}
+
+// ─── Animation ──────────────────────────────────────────────────────
+let animFrame = null;
+function toggleAnim() {
+  display.animating = !display.animating;
+  const btn = document.getElementById('animBtn');
+  if (display.animating) {
+    btn.style.background = 'var(--rust)'; btn.style.color = '#fff';
+    btn.textContent = 'Stop Animation';
+    const step = () => {
+      display.animAngle = (display.animAngle + display.animSpeed) % 360;
+      render();
+      if (display.animating) animFrame = requestAnimationFrame(step);
+    };
+    animFrame = requestAnimationFrame(step);
+  } else {
+    cancelAnimationFrame(animFrame);
+    btn.style.background = 'var(--card-bg)'; btn.style.color = 'var(--ink)';
+    btn.textContent = 'Animate Gears';
+  }
+}
+
+// ─── Sidebar (built once, updated in place) ─────────────────────────
+// All input/slider DOM refs stored here so we can update without rebuilding
+const sidebarRefs = { inputs: {}, sliders: {}, pdLabels: {}, ratioVal: null, ratioSub: null };
+
+function buildSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.innerHTML = '';
+
+  // ─── Single parameters card ──────────────────────────────
+  const card = el('div','gear-card');
+  const top = el('div','gear-card-top');
+  top.style.background = 'var(--ink)';
+  card.appendChild(top);
+
+  const body = el('div','gear-card-body');
+
+  // Helper to build one param row
+  function addParam(def) {
+    const row = el('div','param-row');
+    const hdr = el('div','param-header');
+    const lbl = el('label','param-label');
+    lbl.textContent = def.label;
+    // Color dot for per-gear rows
+    if (def.dotColor) {
+      const dot = el('span','gear-dot');
+      dot.style.background = def.dotColor;
+      dot.style.marginRight = '4px';
+      lbl.prepend(dot);
+    }
+    const wrap = el('div','param-input-wrap');
+    const inp = el('input','param-input');
+    inp.type='number'; inp.min=def.min; inp.max=def.max; inp.step=def.step;
+    inp.value = def.getValue();
+    const unit = el('span','param-unit'); unit.textContent = def.unit;
+    wrap.appendChild(inp); wrap.appendChild(unit);
+    hdr.appendChild(lbl); hdr.appendChild(wrap);
+
+    const slider = document.createElement('input');
+    slider.type='range'; slider.min=def.min; slider.max=def.max; slider.step=def.step;
+    slider.value = def.getValue();
+
+    sidebarRefs.inputs[def.refKey] = inp;
+    sidebarRefs.sliders[def.refKey] = slider;
+
+    function update(val) {
+      let v = parseFloat(val); if (isNaN(v)) v = def.min;
+      v = Math.max(def.min, Math.min(def.max, v));
+      if (def.round) v = Math.round(v);
+      def.setValue(v);
+      // Sync the input & slider to clamped value
+      const display_v = def.getValue();
+      inp.value = typeof display_v === 'number' && !def.round ? display_v.toFixed(2) : display_v;
+      slider.value = display_v;
+      updatePdLabels();
+      updateRatio();
+      render();
+    }
+    inp.addEventListener('input', () => update(inp.value));
+    slider.addEventListener('input', () => update(slider.value));
+
+    row.appendChild(hdr); row.appendChild(slider);
+    body.appendChild(row);
+    return { inp, slider };
+  }
+
+  // Section: Per-gear teeth
+  const teethLabel = el('div','section-label'); teethLabel.textContent = 'Teeth';
+  body.appendChild(teethLabel);
+
+  gears.forEach((g, idx) => {
+    addParam({
+      refKey: `g${idx}_numTeeth`,
+      label: g.label + ' — Teeth (N)',
+      dotColor: g.color,
+      min: 6, max: 120, step: 1, unit: '', round: true,
+      getValue: () => g.numTeeth,
+      setValue: v => { g.numTeeth = v; },
+    });
+    // Pitch diameter readout
+    const pd = el('div');
+    pd.style.cssText = 'font-size:0.68rem; color:var(--slate); font-family:"Space Mono",monospace; margin:-2px 0 6px; text-align:right;';
+    sidebarRefs.pdLabels[idx] = pd;
+    body.appendChild(pd);
+  });
+
+  // Section: Shared parameters
+  const sharedLabel = el('div','section-label'); sharedLabel.textContent = 'Shared Gear Parameters';
+  body.appendChild(sharedLabel);
+
+  // Diametral Pitch — also syncs Module display
+  addParam({
+    refKey: 'diametralPitch',
+    label: 'Diametral Pitch (P)', min: 2, max: 32, step: 1, unit: '/in', round: true,
+    getValue: () => gears[0].diametralPitch,
+    setValue: v => {
+      gears[0].diametralPitch = v; gears[1].diametralPitch = v;
+      // Sync module controls
+      const newMod = dpToModule(v);
+      const mInp = sidebarRefs.inputs['module'];
+      const mSlider = sidebarRefs.sliders['module'];
+      if (mInp) mInp.value = newMod.toFixed(2);
+      if (mSlider) mSlider.value = newMod.toFixed(2);
+    },
+  });
+
+  // Module (virtual — derived from DP)
+  addParam({
+    refKey: 'module',
+    label: 'Module (m)', min: 0.8, max: 12.7, step: 0.01, unit: 'mm', round: false,
+    getValue: () => parseFloat(dpToModule(gears[0].diametralPitch).toFixed(2)),
+    setValue: v => {
+      const newDP = Math.max(2, Math.min(32, Math.round(25.4 / v)));
+      gears[0].diametralPitch = newDP; gears[1].diametralPitch = newDP;
+      // Sync DP controls
+      const dpInp = sidebarRefs.inputs['diametralPitch'];
+      const dpSlider = sidebarRefs.sliders['diametralPitch'];
+      if (dpInp) dpInp.value = newDP;
+      if (dpSlider) dpSlider.value = newDP;
+    },
+  });
+
+  // Pressure Angle
+  addParam({
+    refKey: 'pressureAngleDeg',
+    label: 'Pressure Angle (PA)', min: 14.5, max: 25, step: 0.5, unit: '\u00B0', round: false,
+    getValue: () => gears[0].pressureAngleDeg,
+    setValue: v => { gears[0].pressureAngleDeg = v; gears[1].pressureAngleDeg = v; },
+  });
+
+  // Center Hole
+  addParam({
+    refKey: 'centerHoleDia',
+    label: 'Center Hole', min: 0, max: 40, step: 0.5, unit: 'mm', round: false,
+    getValue: () => gears[0].centerHoleDia,
+    setValue: v => { gears[0].centerHoleDia = v; gears[1].centerHoleDia = v; },
+  });
+
+  card.appendChild(body);
+  sb.appendChild(card);
+
+  // ─── Ratio card ──────────────────────────────────────────
+  const ratioCard = el('div','ratio-card');
+  const rLabel = el('div','label'); rLabel.textContent = 'Gear Ratio';
+  const rVal = el('div','value'); sidebarRefs.ratioVal = rVal;
+  const rSub = el('div','sub'); sidebarRefs.ratioSub = rSub;
+  ratioCard.appendChild(rLabel); ratioCard.appendChild(rVal); ratioCard.appendChild(rSub);
+  sb.appendChild(ratioCard);
+
+  // ─── Display options ─────────────────────────────────────
+  const dispSec = el('div');
+  const dispLabel = el('div','section-label'); dispLabel.textContent = 'Display';
+  dispSec.appendChild(dispLabel);
+
+  [['showPitchCircle','Pitch Circles','var(--amber)'],
+   ['showBaseCircle','Base Circles','var(--slate)'],
+   ['showCenterLine','Center Lines','var(--ink)']].forEach(([key,label,color]) => {
+    const row = el('label','check-row');
+    const cb = document.createElement('input');
+    cb.type='checkbox'; cb.checked = display[key];
+    cb.addEventListener('change', () => { display[key] = cb.checked; render(); });
+    const sw = el('span','color-swatch'); sw.style.background = color;
+    row.appendChild(cb); row.appendChild(sw); row.appendChild(document.createTextNode(label));
+    dispSec.appendChild(row);
+  });
+
+  const animBtn = document.createElement('button');
+  animBtn.id = 'animBtn';
+  animBtn.style.cssText = 'width:100%; margin-top:8px; padding:7px; border:1.5px solid var(--border); border-radius:6px; background:var(--card-bg); color:var(--ink); font-family:"Space Grotesk",sans-serif; font-size:0.78rem; font-weight:600; cursor:pointer; transition:all 0.15s;';
+  animBtn.textContent = 'Animate Gears';
+  animBtn.addEventListener('click', toggleAnim);
+  dispSec.appendChild(animBtn);
+
+  // Speed slider
+  const speedRow = el('div','param-row');
+  speedRow.style.marginTop = '8px';
+  const speedHdr = el('div','param-header');
+  const speedLbl = el('label','param-label'); speedLbl.textContent = 'Speed';
+  const speedWrap = el('div','param-input-wrap');
+  const speedVal = el('span','param-unit');
+  speedVal.style.width = 'auto';
+  speedVal.textContent = display.animSpeed.toFixed(1) + '\u00D7';
+  speedWrap.appendChild(speedVal);
+  speedHdr.appendChild(speedLbl); speedHdr.appendChild(speedWrap);
+  const speedSlider = document.createElement('input');
+  speedSlider.type = 'range'; speedSlider.min = 0.05; speedSlider.max = 3; speedSlider.step = 0.05;
+  speedSlider.value = display.animSpeed;
+  speedSlider.addEventListener('input', () => {
+    display.animSpeed = parseFloat(speedSlider.value);
+    speedVal.textContent = display.animSpeed.toFixed(1) + '\u00D7';
+  });
+  speedRow.appendChild(speedHdr); speedRow.appendChild(speedSlider);
+  dispSec.appendChild(speedRow);
+  sb.appendChild(dispSec);
+
+  // ─── Info card ───────────────────────────────────────────
+  const infoCard = el('div','info-card');
+  infoCard.innerHTML = '<h3>Calculated Properties</h3>';
+  const infoDiv = el('div'); infoDiv.id = 'infoRows';
+  infoCard.appendChild(infoDiv);
+  sb.appendChild(infoCard);
+
+  updatePdLabels();
+  updateRatio();
+}
+
+function updatePdLabels() {
+  gears.forEach((g, idx) => {
+    const pd = sidebarRefs.pdLabels[idx];
+    if (!pd) return;
+    const val = pitchDiameter(g);
+    pd.textContent = `D = ${val.toFixed(2)} mm (${(val/25.4).toFixed(3)}\u2033)`;
+  });
+}
+
+function updateRatio() {
+  const n1 = gears[0].numTeeth, n2 = gears[1].numTeeth;
+  const gcdFn = (a,b) => b === 0 ? a : gcdFn(b, a%b);
+  const g = gcdFn(n1,n2);
+  if (sidebarRefs.ratioVal) sidebarRefs.ratioVal.textContent = `${n1/g} : ${n2/g}`;
+  if (sidebarRefs.ratioSub) sidebarRefs.ratioSub.textContent = `${n1}T \u00D7 ${n2}T = ${(n1/n2).toFixed(4)}`;
+}
+
+function updateInfo(g1, g2, cd) {
+  const m = g1.module;
+  const rows = [
+    ['Module', m.toFixed(3) + ' mm'],
+    ['Diametral Pitch', gears[0].diametralPitch + ' /in'],
+    ['Circular Pitch', (Math.PI * m).toFixed(3) + ' mm'],
+    ['Center Distance', cd.toFixed(2) + ' mm'],
+    ['',''],
+    ['Gear A Pitch \u00D8', (g1.pitchRadius*2).toFixed(2) + ' mm'],
+    ['Gear A Outer \u00D8', (g1.outerRadius*2).toFixed(2) + ' mm'],
+    ['Gear A Root \u00D8', (g1.rootRadius*2).toFixed(2) + ' mm'],
+    ['',''],
+    ['Gear B Pitch \u00D8', (g2.pitchRadius*2).toFixed(2) + ' mm'],
+    ['Gear B Outer \u00D8', (g2.outerRadius*2).toFixed(2) + ' mm'],
+    ['Gear B Root \u00D8', (g2.rootRadius*2).toFixed(2) + ' mm'],
+  ];
+  const c = document.getElementById('infoRows');
+  if (!c) return;
+  c.innerHTML = rows.map(([l,v]) =>
+    l === '' ? '<div style="height:4px"></div>' :
+    `<div class="info-row"><span class="label">${l}</span><span class="value">${v}</span></div>`
+  ).join('');
+}
+
+// ─── Export ─────────────────────────────────────────────────────────
+function exportSVG() {
+  const g1 = generateGearProfile(gears[0]);
+  const g2 = generateGearProfile(gears[1]);
+  const cd = g1.pitchRadius + g2.pitchRadius;
+  const maxR = Math.max(g1.outerRadius, g2.outerRadius);
+  const pad = 5, w = cd + maxR*2 + pad*2, h = maxR*2 + pad*2;
+  const ox = -cd/2 - g1.outerRadius - pad, oy = -maxR - pad;
+  function offsetPath(pts, dx) { return pts.map(([x,y]) => [(x+dx).toFixed(5), y.toFixed(5)]); }
+  const p1 = offsetPath(g1.points, -cd/2), p2 = offsetPath(g2.points, cd/2);
+  const toD = pts => 'M ' + pts.map(p=>p.join(' ')).join(' L ') + ' Z';
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${w.toFixed(2)}mm" height="${h.toFixed(2)}mm"
+     viewBox="${ox.toFixed(4)} ${oy.toFixed(4)} ${w.toFixed(4)} ${h.toFixed(4)}">
+  <g fill="none" stroke="black" stroke-width="0.1">
+    <path d="${toD(p1)}" />
+    ${gears[0].centerHoleDia > 0 ? `<circle cx="${(-cd/2).toFixed(4)}" cy="0" r="${(gears[0].centerHoleDia/2).toFixed(4)}" />` : ''}
+    <path d="${toD(p2)}" />
+    ${gears[1].centerHoleDia > 0 ? `<circle cx="${(cd/2).toFixed(4)}" cy="0" r="${(gears[1].centerHoleDia/2).toFixed(4)}" />` : ''}
+  </g>
+</svg>`;
+  dl(svg, `gears_${gears[0].numTeeth}-${gears[1].numTeeth}t.svg`, 'image/svg+xml');
+}
+
+function exportDXF() {
+  const g1 = generateGearProfile(gears[0]);
+  const g2 = generateGearProfile(gears[1]);
+  const cd = g1.pitchRadius + g2.pitchRadius;
+  let dxf = '0\nSECTION\n2\nENTITIES\n';
+  function addPoly(pts, dx) {
+    dxf += `0\nLWPOLYLINE\n8\n0\n70\n1\n90\n${pts.length}\n`;
+    for (const [x,y] of pts) dxf += `10\n${(x+dx).toFixed(6)}\n20\n${y.toFixed(6)}\n`;
+  }
+  function addCircle(cx,cy,r) {
+    dxf += `0\nCIRCLE\n8\n0\n10\n${cx.toFixed(6)}\n20\n${cy.toFixed(6)}\n40\n${r.toFixed(6)}\n`;
+  }
+  addPoly(g1.points, -cd/2);
+  if (gears[0].centerHoleDia > 0) addCircle(-cd/2, 0, gears[0].centerHoleDia/2);
+  addPoly(g2.points, cd/2);
+  if (gears[1].centerHoleDia > 0) addCircle(cd/2, 0, gears[1].centerHoleDia/2);
+  dxf += '0\nENDSEC\n0\nEOF\n';
+  dl(dxf, `gears_${gears[0].numTeeth}-${gears[1].numTeeth}t.dxf`, 'application/dxf');
+}
+
+function dl(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function el(tag, cls) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  return e;
+}
+
+// ─── Init ───────────────────────────────────────────────────────────
+buildSidebar();
+render();
+</script>
+</body>
+</html>

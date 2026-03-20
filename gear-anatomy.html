@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bloombot — Gear Tooth Anatomy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink:     #1a1612;
+  --cream:   #f5f0e8;
+  --warm:    #e8dcc8;
+  --rust:    #c4541a;
+  --amber:   #d97706;
+  --forest:  #2d5a27;
+  --slate:   #64748b;
+  --border:  #d1c4aa;
+  --card-bg: #ffffff;
+  --shadow:  rgba(26,22,18,0.10);
+}
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background: var(--cream); color: var(--ink);
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+}
+
+/* Nav */
+nav {
+  background: var(--ink); display: flex; align-items: center; justify-content: space-between;
+  padding: 0 2rem; height: 56px; border-bottom: 3px solid var(--rust); flex-shrink: 0;
+}
+.nav-brand { font-family: 'Space Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--amber); text-decoration: none; letter-spacing: -0.03em; }
+.nav-title { font-size: 0.82rem; color: rgba(255,255,255,0.6); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; }
+
+/* Layout */
+.layout { display: flex; flex: 1; overflow: hidden; }
+
+/* Legend sidebar */
+aside {
+  width: 300px; flex-shrink: 0; border-right: 1.5px solid var(--border);
+  overflow-y: auto; padding: 1rem; background: var(--cream);
+}
+aside::-webkit-scrollbar { width: 5px; }
+aside::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.legend-title {
+  font-family: 'Space Mono', monospace; font-size: 0.62rem;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--slate);
+  margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;
+}
+.legend-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.seg-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 10px; margin-bottom: 4px;
+  border-radius: 8px; cursor: pointer; transition: background 0.15s;
+  border: 1.5px solid transparent;
+}
+.seg-item:hover { background: var(--warm); }
+.seg-item.active { background: var(--card-bg); border-color: var(--border); box-shadow: 0 1px 4px var(--shadow); }
+.seg-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; margin-top: 2px; border: 1px solid rgba(0,0,0,0.1); }
+.seg-info { flex: 1; }
+.seg-name { font-family: 'Space Mono', monospace; font-size: 0.75rem; font-weight: 700; margin-bottom: 2px; }
+.seg-desc { font-size: 0.72rem; color: var(--slate); line-height: 1.4; }
+.seg-num { font-family: 'Space Mono', monospace; font-size: 0.62rem; color: var(--slate); background: var(--cream); border-radius: 3px; padding: 1px 5px; flex-shrink: 0; margin-top: 2px; }
+
+/* Params */
+.param-section {
+  background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 0.75rem 1rem; margin-bottom: 0.75rem;
+}
+.param-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.param-row:last-child { margin-bottom: 0; }
+.param-label { font-size: 0.75rem; font-weight: 500; width: 60px; flex-shrink: 0; }
+.param-slider { flex: 1; -webkit-appearance: none; height: 4px; background: var(--border); border-radius: 2px; outline: none; }
+.param-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: var(--rust); border-radius: 50%; cursor: pointer; border: 2px solid var(--card-bg); box-shadow: 0 1px 3px var(--shadow); }
+.param-val { font-family: 'Space Mono', monospace; font-size: 0.72rem; width: 36px; text-align: right; color: var(--ink); }
+
+/* Circles legend */
+.circle-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 0.72rem; }
+.circle-line { width: 20px; height: 0; flex-shrink: 0; }
+
+/* View toggle */
+.view-toggle {
+  display: flex; gap: 0; margin-bottom: 0.75rem; border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden;
+}
+.view-btn {
+  flex: 1; padding: 6px; font-family: 'Space Grotesk', sans-serif; font-size: 0.72rem;
+  font-weight: 600; border: none; cursor: pointer; transition: all 0.15s;
+  background: var(--card-bg); color: var(--slate);
+}
+.view-btn.active { background: var(--ink); color: var(--amber); }
+
+/* Viewport */
+main { flex: 1; position: relative; overflow: hidden; background: var(--card-bg); }
+#canvas { width: 100%; height: 100%; }
+.info-overlay {
+  position: absolute; bottom: 12px; left: 12px;
+  background: rgba(255,255,255,0.92); backdrop-filter: blur(8px);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 14px; font-size: 0.72rem; color: var(--slate);
+  font-family: 'Space Mono', monospace; line-height: 1.6;
+  max-width: 280px;
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="bloombot-modern.html">bloombot</a>
+  <span class="nav-title">Gear Tooth Anatomy</span>
+</nav>
+
+<div class="layout">
+  <aside id="sidebar"></aside>
+  <main>
+    <svg id="canvas"></svg>
+    <div class="info-overlay" id="info"></div>
+  </main>
+</div>
+
+<script>
+// ─── Segment definitions ─────────────────────────────────────────
+const SEGMENTS = [
+  { id: 'rootArc',        name: 'Root Arc',           color: '#6366f1', desc: 'Arc along the root circle between adjacent teeth. This is the bottom of the tooth space.' },
+  { id: 'rightRadial',    name: 'Right Radial',       color: '#c4541a', desc: 'Straight radial segment from root circle up to where the involute begins. Present when the base circle is above the root circle.' },
+  { id: 'rightInvolute',  name: 'Right Involute',     color: '#2d5a27', desc: 'The involute curve from the start radius to the tip. This is the working contact surface of the tooth.' },
+  { id: 'tipArc',         name: 'Tip Arc',            color: '#0891b2', desc: 'Arc across the top of the tooth at the outer radius, connecting the two involute flanks.' },
+  { id: 'leftInvolute',   name: 'Left Involute',      color: '#7c3aed', desc: 'Mirror involute curve on the opposite flank. Also a working contact surface.' },
+  { id: 'leftRadial',     name: 'Left Radial',        color: '#db2777', desc: 'Mirror radial segment on the left side, from involute start back down to root circle.' },
+];
+
+// ─── State ───────────────────────────────────────────────────────
+let numTeeth = 18;
+let diametralPitch = 6;
+let pressureAngleDeg = 20;
+let activeSegment = null; // null = show all
+let viewMode = 'full';    // 'full' or 'tooth'
+
+// ─── Math (clean involute approach) ──────────────────────────────
+function inv(a) { return Math.tan(a) - a; }
+function dpToModule(dp) { return 25.4 / dp; }
+
+function gearGeometry() {
+  const m = dpToModule(diametralPitch);
+  const Z = numTeeth;
+  const phi = pressureAngleDeg * Math.PI / 180;
+  const pitchR = m * Z / 2;
+  const baseR  = pitchR * Math.cos(phi);
+  const outerR = pitchR + m;
+  const rootR  = Math.max(0.01, pitchR - 1.25 * m);
+  const startR = Math.max(rootR, baseR);
+  const toothAngle = 2 * Math.PI / Z;
+  const halfToothAtPitch = Math.PI / (2 * Z);
+  const useRadial = rootR < startR - 1e-9;
+
+  function halfToothAngleAtR(R) {
+    const alpha = Math.acos(Math.min(1, baseR / R));
+    return halfToothAtPitch + inv(phi) - inv(alpha);
+  }
+
+  const halfToothStart = halfToothAngleAtR(startR);
+  const halfToothOuter = halfToothAngleAtR(outerR);
+
+  return { m, Z, phi, pitchR, baseR, outerR, rootR, startR, toothAngle,
+           halfToothAtPitch, useRadial, halfToothAngleAtR, halfToothStart, halfToothOuter };
+}
+
+function generateSegments() {
+  const g = gearGeometry();
+  const steps = 40;
+  const tipSteps = 16;
+  const rootSteps = 16;
+  const c = 0; // tooth 0
+
+  function pt(r, a) { return [r * Math.cos(a), r * Math.sin(a)]; }
+
+  // Right radial (root → startR)
+  const seg_rightRadial = [];
+  if (g.useRadial) {
+    seg_rightRadial.push(pt(g.rootR, c - g.halfToothStart));
+    seg_rightRadial.push(pt(g.startR, c - g.halfToothStart));
+  }
+
+  // Right involute (startR → outerR)
+  const seg_rightInvolute = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const R = g.startR + (g.outerR - g.startR) * t;
+    seg_rightInvolute.push(pt(R, c - g.halfToothAngleAtR(R)));
+  }
+
+  // Tip arc
+  const seg_tipArc = [];
+  for (let i = 0; i <= tipSteps; i++) {
+    const t = i / tipSteps;
+    const a = (c - g.halfToothOuter) + 2 * g.halfToothOuter * t;
+    seg_tipArc.push(pt(g.outerR, a));
+  }
+
+  // Left involute (outerR → startR)
+  const seg_leftInvolute = [];
+  for (let i = steps; i >= 0; i--) {
+    const t = i / steps;
+    const R = g.startR + (g.outerR - g.startR) * t;
+    seg_leftInvolute.push(pt(R, c + g.halfToothAngleAtR(R)));
+  }
+
+  // Left radial (startR → root)
+  const seg_leftRadial = [];
+  if (g.useRadial) {
+    seg_leftRadial.push(pt(g.startR, c + g.halfToothStart));
+    seg_leftRadial.push(pt(g.rootR, c + g.halfToothStart));
+  }
+
+  // Root arcs (before and after this tooth)
+  const prevLeftEnd = -g.toothAngle + g.halfToothStart;
+  const thisRightStart = c - g.halfToothStart;
+  const seg_rootBefore = [];
+  for (let i = 0; i <= rootSteps; i++) {
+    seg_rootBefore.push(pt(g.rootR, prevLeftEnd + (thisRightStart - prevLeftEnd) * (i / rootSteps)));
+  }
+
+  const thisLeftEnd = c + g.halfToothStart;
+  const nextRightStart = g.toothAngle - g.halfToothStart;
+  const seg_rootAfter = [];
+  for (let i = 0; i <= rootSteps; i++) {
+    seg_rootAfter.push(pt(g.rootR, thisLeftEnd + (nextRightStart - thisLeftEnd) * (i / rootSteps)));
+  }
+
+  return {
+    rootArc:        { pts: seg_rootBefore.concat([[NaN,NaN]]).concat(seg_rootAfter) },
+    rightRadial:    { pts: seg_rightRadial },
+    rightInvolute:  { pts: seg_rightInvolute },
+    tipArc:         { pts: seg_tipArc },
+    leftInvolute:   { pts: seg_leftInvolute },
+    leftRadial:     { pts: seg_leftRadial },
+    _circles: { pitchR: g.pitchR, baseR: g.baseR, outerR: g.outerR, rootR: g.rootR },
+    _params: { m: g.m, Z: g.Z, toothAngle: g.toothAngle },
+  };
+}
+
+// Generate the full gear outline (all teeth) for background rendering
+function generateFullGear() {
+  const g = gearGeometry();
+  const invSteps = 30;
+  const tipSteps = 10;
+  const rootSteps = 8;
+
+  const points = [];
+  for (let k = 0; k < g.Z; k++) {
+    const c = k * g.toothAngle;
+
+    if (k === 0) {
+      points.push([g.rootR * Math.cos(c - g.halfToothStart), g.rootR * Math.sin(c - g.halfToothStart)]);
+    }
+
+    if (g.useRadial) {
+      points.push([g.startR * Math.cos(c - g.halfToothStart), g.startR * Math.sin(c - g.halfToothStart)]);
+    }
+
+    for (let i = 1; i <= invSteps; i++) {
+      const t = i / invSteps;
+      const R = g.startR + (g.outerR - g.startR) * t;
+      const a = c - g.halfToothAngleAtR(R);
+      points.push([R * Math.cos(a), R * Math.sin(a)]);
+    }
+
+    for (let i = 1; i <= tipSteps; i++) {
+      const t = i / tipSteps;
+      const a = (c - g.halfToothOuter) + 2 * g.halfToothOuter * t;
+      points.push([g.outerR * Math.cos(a), g.outerR * Math.sin(a)]);
+    }
+
+    for (let i = invSteps - 1; i >= 0; i--) {
+      const t = i / invSteps;
+      const R = g.startR + (g.outerR - g.startR) * t;
+      const a = c + g.halfToothAngleAtR(R);
+      points.push([R * Math.cos(a), R * Math.sin(a)]);
+    }
+
+    if (g.useRadial) {
+      points.push([g.rootR * Math.cos(c + g.halfToothStart), g.rootR * Math.sin(c + g.halfToothStart)]);
+    }
+
+    const nextC = (k + 1) * g.toothAngle;
+    for (let i = 1; i <= rootSteps; i++) {
+      const t = i / rootSteps;
+      const a = (c + g.halfToothStart) + ((nextC - g.halfToothStart) - (c + g.halfToothStart)) * t;
+      points.push([g.rootR * Math.cos(a), g.rootR * Math.sin(a)]);
+    }
+  }
+
+  return { points, pitchR: g.pitchR, outerR: g.outerR, rootR: g.rootR, baseR: g.baseR };
+}
+
+// ─── Render ──────────────────────────────────────────────────────
+function render() {
+  const segs = generateSegments();
+  const circles = segs._circles;
+  const full = generateFullGear();
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.getElementById('canvas');
+  svg.innerHTML = '';
+
+  let vx, vy, vw, vh;
+  if (viewMode === 'tooth') {
+    // Zoom to just the one tooth + some padding
+    const pad = circles.outerR * 0.15;
+    const toothAngle = segs._params.toothAngle;
+    // Compute bounding box of the tooth segments
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    SEGMENTS.forEach(s => {
+      const pts = segs[s.id].pts;
+      pts.forEach(([x,y]) => {
+        if (isNaN(x)) return;
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+      });
+    });
+    vx = minX - pad; vy = minY - pad;
+    vw = (maxX - minX) + pad * 2;
+    vh = (maxY - minY) + pad * 2;
+  } else {
+    // Full gear view
+    const pad = circles.outerR * 0.25;
+    vx = -circles.outerR - pad; vy = -circles.outerR - pad;
+    vw = (circles.outerR + pad) * 2; vh = vw;
+  }
+
+  svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
+
+  // Grid
+  const defs = document.createElementNS(ns, 'defs');
+  const gs = dpToModule(diametralPitch) * 3;
+  const pat = document.createElementNS(ns, 'pattern');
+  pat.setAttribute('id','grid'); pat.setAttribute('width',gs); pat.setAttribute('height',gs);
+  pat.setAttribute('patternUnits','userSpaceOnUse');
+  const gp = document.createElementNS(ns,'path');
+  gp.setAttribute('d',`M ${gs} 0 L 0 0 0 ${gs}`);
+  gp.setAttribute('fill','none'); gp.setAttribute('stroke','rgba(26,22,18,0.05)'); gp.setAttribute('stroke-width','0.1');
+  pat.appendChild(gp); defs.appendChild(pat); svg.appendChild(defs);
+  const bg = document.createElementNS(ns,'rect');
+  bg.setAttribute('x',-9999); bg.setAttribute('y',-9999);
+  bg.setAttribute('width',19998); bg.setAttribute('height',19998);
+  bg.setAttribute('fill','url(#grid)'); svg.appendChild(bg);
+
+  // Full gear outline (ghosted)
+  if (viewMode === 'full') {
+    const pts = full.points;
+    let d = 'M ' + pts[0][0].toFixed(4) + ' ' + pts[0][1].toFixed(4);
+    for (let i = 1; i < pts.length; i++) d += ' L ' + pts[i][0].toFixed(4) + ' ' + pts[i][1].toFixed(4);
+    d += ' Z';
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('fill', 'rgba(26,22,18,0.03)');
+    path.setAttribute('stroke', 'rgba(26,22,18,0.12)');
+    path.setAttribute('stroke-width', '0.2');
+    svg.appendChild(path);
+  }
+
+  // Reference circles
+  const circlesDefs = [
+    { r: circles.outerR, label: 'Addendum', color: '#0891b2', dash: '2 1.5' },
+    { r: circles.pitchR, label: 'Pitch',    color: '#d97706', dash: '3 2' },
+    { r: circles.baseR,  label: 'Base',     color: '#7c3aed', dash: '1.5 1.5' },
+    { r: circles.rootR,  label: 'Root',     color: '#6366f1', dash: '1 1' },
+  ];
+
+  circlesDefs.forEach(cd => {
+    const circle = document.createElementNS(ns, 'circle');
+    circle.setAttribute('cx', 0); circle.setAttribute('cy', 0); circle.setAttribute('r', cd.r);
+    circle.setAttribute('fill', 'none'); circle.setAttribute('stroke', cd.color);
+    circle.setAttribute('stroke-width', '0.2'); circle.setAttribute('stroke-dasharray', cd.dash);
+    circle.setAttribute('opacity', '0.35');
+    svg.appendChild(circle);
+  });
+
+  // Center crosshair
+  const s = circles.outerR * 0.04;
+  [[[-s,0],[s,0]],[[0,-s],[0,s]]].forEach(([p1,p2]) => {
+    const l = document.createElementNS(ns,'line');
+    l.setAttribute('x1',p1[0]); l.setAttribute('y1',p1[1]);
+    l.setAttribute('x2',p2[0]); l.setAttribute('y2',p2[1]);
+    l.setAttribute('stroke','rgba(26,22,18,0.3)'); l.setAttribute('stroke-width','0.15');
+    svg.appendChild(l);
+  });
+
+  // Draw colored segments
+  const strokeW = viewMode === 'tooth' ? '0.6' : '0.5';
+  const dimOpacity = activeSegment ? '0.12' : '1';
+
+  SEGMENTS.forEach(segDef => {
+    const data = segs[segDef.id];
+    if (!data || !data.pts || data.pts.length < 2) return;
+
+    const isActive = activeSegment === segDef.id;
+    const opacity = activeSegment === null ? '1' : (isActive ? '1' : dimOpacity);
+    const sw = isActive ? String(parseFloat(strokeW) * 2.2) : strokeW;
+
+    // Handle NaN breaks (for root arc with two pieces)
+    let paths = [[]];
+    data.pts.forEach(p => {
+      if (isNaN(p[0])) { paths.push([]); }
+      else { paths[paths.length - 1].push(p); }
+    });
+
+    paths.forEach(pts => {
+      if (pts.length < 2) return;
+      let d = 'M ' + pts[0][0].toFixed(4) + ' ' + pts[0][1].toFixed(4);
+      for (let i = 1; i < pts.length; i++) d += ' L ' + pts[i][0].toFixed(4) + ' ' + pts[i][1].toFixed(4);
+      const path = document.createElementNS(ns, 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', segDef.color);
+      path.setAttribute('stroke-width', sw);
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round');
+      path.setAttribute('opacity', opacity);
+      svg.appendChild(path);
+
+      // Draw dots at endpoints when active
+      if (isActive) {
+        [pts[0], pts[pts.length-1]].forEach(pt => {
+          const dot = document.createElementNS(ns, 'circle');
+          dot.setAttribute('cx', pt[0]); dot.setAttribute('cy', pt[1]);
+          dot.setAttribute('r', parseFloat(sw) * 1.2);
+          dot.setAttribute('fill', segDef.color);
+          svg.appendChild(dot);
+        });
+      }
+    });
+  });
+
+  // Update info overlay
+  const m = dpToModule(diametralPitch);
+  document.getElementById('info').innerHTML =
+    `N=${numTeeth} &nbsp; m=${m.toFixed(2)}mm &nbsp; PA=${pressureAngleDeg}&deg;<br>` +
+    `Pitch\u00D8=${(circles.pitchR*2).toFixed(1)}mm &nbsp; Outer\u00D8=${(circles.outerR*2).toFixed(1)}mm`;
+}
+
+// ─── Build sidebar ───────────────────────────────────────────────
+function buildSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.innerHTML = '';
+
+  // View toggle
+  const toggle = document.createElement('div');
+  toggle.className = 'view-toggle';
+  ['full', 'tooth'].forEach(mode => {
+    const btn = document.createElement('button');
+    btn.className = 'view-btn' + (viewMode === mode ? ' active' : '');
+    btn.textContent = mode === 'full' ? 'Full Gear' : 'Single Tooth';
+    btn.addEventListener('click', () => { viewMode = mode; buildSidebar(); render(); });
+    toggle.appendChild(btn);
+  });
+  sb.appendChild(toggle);
+
+  // Params
+  const paramSec = document.createElement('div');
+  paramSec.className = 'param-section';
+
+  const paramDefs = [
+    { key: 'numTeeth', label: 'Teeth', min: 6, max: 60, step: 1, get: () => numTeeth, set: v => numTeeth = Math.round(v) },
+    { key: 'dp', label: 'DP', min: 2, max: 20, step: 1, get: () => diametralPitch, set: v => diametralPitch = Math.round(v) },
+    { key: 'pa', label: 'PA', min: 14.5, max: 25, step: 0.5, get: () => pressureAngleDeg, set: v => pressureAngleDeg = v },
+  ];
+
+  paramDefs.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'param-row';
+    const lbl = document.createElement('span');
+    lbl.className = 'param-label'; lbl.textContent = p.label;
+    const slider = document.createElement('input');
+    slider.className = 'param-slider'; slider.type = 'range';
+    slider.min = p.min; slider.max = p.max; slider.step = p.step; slider.value = p.get();
+    const val = document.createElement('span');
+    val.className = 'param-val'; val.textContent = p.get();
+    slider.addEventListener('input', () => {
+      p.set(parseFloat(slider.value));
+      val.textContent = p.get();
+      render();
+    });
+    row.appendChild(lbl); row.appendChild(slider); row.appendChild(val);
+    paramSec.appendChild(row);
+  });
+  sb.appendChild(paramSec);
+
+  // Segment legend
+  const legendTitle = document.createElement('div');
+  legendTitle.className = 'legend-title';
+  legendTitle.textContent = 'Tooth Segments';
+  sb.appendChild(legendTitle);
+
+  SEGMENTS.forEach((seg, i) => {
+    const item = document.createElement('div');
+    item.className = 'seg-item' + (activeSegment === seg.id ? ' active' : '');
+
+    const num = document.createElement('span');
+    num.className = 'seg-num'; num.textContent = i + 1;
+
+    const swatch = document.createElement('div');
+    swatch.className = 'seg-swatch';
+    swatch.style.background = seg.color;
+
+    const info = document.createElement('div');
+    info.className = 'seg-info';
+    const name = document.createElement('div');
+    name.className = 'seg-name'; name.textContent = seg.name;
+    const desc = document.createElement('div');
+    desc.className = 'seg-desc'; desc.textContent = seg.desc;
+    info.appendChild(name); info.appendChild(desc);
+
+    item.appendChild(num); item.appendChild(swatch); item.appendChild(info);
+
+    item.addEventListener('click', () => {
+      activeSegment = activeSegment === seg.id ? null : seg.id;
+      buildSidebar();
+      render();
+    });
+
+    sb.appendChild(item);
+  });
+
+  // Reference circles legend
+  const circTitle = document.createElement('div');
+  circTitle.className = 'legend-title';
+  circTitle.textContent = 'Reference Circles';
+  circTitle.style.marginTop = '0.5rem';
+  sb.appendChild(circTitle);
+
+  const circlesDefs = [
+    { label: 'Addendum (outer)', color: '#0891b2', dash: '4,3' },
+    { label: 'Pitch circle',     color: '#d97706', dash: '6,4' },
+    { label: 'Base circle',      color: '#7c3aed', dash: '3,3' },
+    { label: 'Root (dedendum)',   color: '#6366f1', dash: '2,2' },
+  ];
+
+  circlesDefs.forEach(cd => {
+    const row = document.createElement('div');
+    row.className = 'circle-item';
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    line.setAttribute('width', '24'); line.setAttribute('height', '12');
+    line.className = 'circle-line';
+    const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    l.setAttribute('x1','0'); l.setAttribute('y1','6'); l.setAttribute('x2','24'); l.setAttribute('y2','6');
+    l.setAttribute('stroke', cd.color); l.setAttribute('stroke-width', '2');
+    l.setAttribute('stroke-dasharray', cd.dash);
+    line.appendChild(l);
+    const text = document.createElement('span');
+    text.textContent = cd.label;
+    row.appendChild(line); row.appendChild(text);
+    sb.appendChild(row);
+  });
+}
+
+// ─── Init ────────────────────────────────────────────────────────
+buildSidebar();
+render();
+</script>
+</body>
+</html>

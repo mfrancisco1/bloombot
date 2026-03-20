@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spatial Network — Architecture Visualization</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+  :root {
+    --bg: #0d1117; --panel: #161b22; --panel2: #1c2129; --border: #30363d;
+    --text: #e6edf3; --muted: #7d8590; --dim: #484f58;
+    --accent: #58a6ff; --green: #3fb950; --orange: #d29922;
+    --red: #f85149; --purple: #bc8cff; --pink: #f778ba; --cyan: #39d353;
+    --mono: 'Space Mono', monospace; --sans: 'DM Sans', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); overflow: hidden; height: 100vh; }
+
+  /* ── Top bar ── */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 48px; background: var(--panel); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 20px; gap: 16px;
+  }
+  .topbar .logo { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .04em; }
+  .topbar .sep { width: 1px; height: 20px; background: var(--border); }
+  .topbar .stats { margin-left: auto; font-size: 11px; color: var(--dim); font-family: var(--mono); }
+  .topbar .pin-info { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .topbar .pin-info .count { color: var(--accent); font-weight: 700; }
+  .topbar button {
+    font-family: var(--sans); font-size: 11px; font-weight: 500;
+    padding: 5px 12px; border: 1px solid var(--border); border-radius: 4px;
+    background: transparent; color: var(--muted); cursor: pointer; transition: all .15s;
+  }
+  .topbar button:hover { color: var(--text); border-color: var(--dim); }
+
+  /* ── SVG fills viewport below topbar ── */
+  #viz { position: fixed; top: 48px; left: 0; width: 100vw; height: calc(100vh - 48px); display: block; }
+
+  /* ── Legend ── */
+  .legend {
+    position: fixed; bottom: 12px; left: 12px; z-index: 90;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; min-width: 200px; font-size: 11px;
+  }
+  .legend h4 { font-size: 10px; font-weight: 700; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+  .legend-item .swatch { flex-shrink: 0; }
+  .legend-item .label { color: var(--muted); }
+
+  /* ── Detail panel ── */
+  .detail-panel {
+    position: fixed; top: 60px; right: 12px; width: 320px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    z-index: 90; display: none; overflow: hidden;
+  }
+  .detail-panel.open { display: block; }
+  .detail-header {
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .detail-header h3 { font-size: 13px; font-weight: 600; }
+  .detail-header .close-btn {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 14px; padding: 2px 6px; border-radius: 3px;
+  }
+  .detail-header .close-btn:hover { color: var(--text); background: var(--panel2); }
+  .detail-body { padding: 14px 16px; max-height: 60vh; overflow-y: auto; }
+  .detail-body .field { margin-bottom: 10px; }
+  .detail-body .field-label { font-size: 10px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; }
+  .detail-body .field-value { font-size: 12px; color: var(--text); line-height: 1.5; }
+  .detail-body .tag {
+    display: inline-block; font-size: 10px; font-family: var(--mono);
+    padding: 2px 8px; border-radius: 3px; margin: 2px 2px 2px 0;
+    border: 1px solid var(--border); color: var(--muted);
+  }
+  .detail-body .badge {
+    display: inline-block; font-size: 9px; font-family: var(--mono);
+    padding: 1px 6px; border-radius: 3px; margin-left: 6px;
+  }
+
+  /* ── Tuning panel ── */
+  .tuning-panel {
+    position: fixed; top: 60px; left: 12px; z-index: 90;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; width: 240px; display: none;
+  }
+  .tuning-panel.open { display: block; }
+  .tuning-panel h4 {
+    font-size: 10px; font-weight: 700; color: var(--dim); text-transform: uppercase;
+    letter-spacing: .06em; margin-bottom: 10px;
+  }
+  .tuning-row {
+    margin-bottom: 10px;
+  }
+  .tuning-row label {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; color: var(--muted); margin-bottom: 4px;
+  }
+  .tuning-row label .val {
+    font-family: var(--mono); font-size: 10px; color: var(--accent); min-width: 36px; text-align: right;
+  }
+  .tuning-row input[type="range"] {
+    width: 100%; height: 4px; -webkit-appearance: none; appearance: none;
+    background: var(--border); border-radius: 2px; outline: none;
+  }
+  .tuning-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
+  }
+  .tuning-row input[type="range"]::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">SPATIAL NETWORK</span>
+  <span class="sep"></span>
+  <span style="font-size:11px;color:var(--muted)">Architecture Map</span>
+  <span class="sep"></span>
+  <button id="btn-tuning">Tuning</button>
+  <span class="sep"></span>
+  <span class="pin-info" id="pin-info" style="display:none">📌 <span class="count" id="pin-count">0</span> pinned</span>
+  <button id="btn-unpin" style="display:none">Unpin All</button>
+  <span class="stats" id="stats-bar"></span>
+</div>
+
+<div class="tuning-panel" id="tuning-panel">
+  <h4>Force Tuning</h4>
+  <div class="tuning-row">
+    <label>Repulsion <span class="val" id="val-repulsion">-500</span></label>
+    <input type="range" id="sl-repulsion" min="-2000" max="100" value="-500" step="10">
+  </div>
+  <div class="tuning-row">
+    <label>Link Distance <span class="val" id="val-linkdist">80</span></label>
+    <input type="range" id="sl-linkdist" min="10" max="1000" value="80" step="5">
+  </div>
+  <div class="tuning-row">
+    <label>Link Strength <span class="val" id="val-linkstr">0.25</span></label>
+    <input type="range" id="sl-linkstr" min="0.02" max="1" value="0.25" step="0.01">
+  </div>
+  <div class="tuning-row">
+    <label>Center Gravity <span class="val" id="val-gravity">0.03</span></label>
+    <input type="range" id="sl-gravity" min="0" max="0.15" value="0.03" step="0.005">
+  </div>
+  <div class="tuning-row">
+    <label>Damping <span class="val" id="val-damping">0.40</span></label>
+    <input type="range" id="sl-damping" min="0.05" max="0.9" value="0.40" step="0.01">
+  </div>
+  <div class="tuning-row">
+    <label>Collision Pad <span class="val" id="val-collision">6</span></label>
+    <input type="range" id="sl-collision" min="0" max="30" value="6" step="1">
+  </div>
+</div>
+
+<canvas id="viz"></canvas>
+
+<div class="legend">
+  <h4>Nodes</h4>
+  <div class="legend-item"><span class="swatch" style="width:14px;height:14px;background:#58a6ff;border-radius:50%"></span><span class="label">Frontend Page</span></div>
+  <div class="legend-item"><span class="swatch" style="width:10px;height:10px;background:#3fb950;border-radius:2px"></span><span class="label">API Endpoint</span></div>
+  <div class="legend-item"><span class="swatch" style="width:10px;height:10px;background:#bc8cff;border-radius:50%"></span><span class="label">DB Table</span></div>
+  <div class="legend-item"><span class="swatch" style="width:10px;height:10px;background:#d29922;transform:rotate(45deg)"></span><span class="label">Auth / Session</span></div>
+  <div class="legend-item"><span class="swatch" style="width:10px;height:10px;background:#f778ba;border-radius:50%"></span><span class="label">Service</span></div>
+  <div class="legend-item"><span class="swatch" style="width:10px;height:10px;background:#f0883e;border-radius:2px"></span><span class="label">Pydantic Model</span></div>
+  <h4 style="margin-top:10px">Interaction</h4>
+  <div class="legend-item"><span class="label">Scroll = zoom</span></div>
+  <div class="legend-item"><span class="label">Drag node = move + pin</span></div>
+  <div class="legend-item"><span class="label">Click node = details + toggle pin</span></div>
+  <div class="legend-item"><span class="label">Click bg = deselect</span></div>
+</div>
+
+<div class="detail-panel" id="detail-panel">
+  <div class="detail-header">
+    <h3 id="detail-title">—</h3>
+    <button class="close-btn" id="detail-close">✕</button>
+  </div>
+  <div class="detail-body" id="detail-body"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════════
+
+const PAGES = [
+  { id: "page-shell", label: "/", name: "Shell (SPA)", desc: "Unified single-page app shell — hosts all views via client-side routing", apis: ["api-spaces-list","api-projects-list","api-auth-me","api-feed","api-terms-list"], file: "templates/shell.html" },
+  { id: "page-3d", label: "/3d", name: "3D Explorer", desc: "WebGL 3D visualization of spaces", apis: ["api-spaces-list","api-surfaces","api-voxels","api-landmarks","api-stats"], file: "templates/index.html" },
+  { id: "page-composer", label: "/composer", name: "Composer", desc: "Visual surface-relation editor", apis: ["api-spaces-list","api-surfaces","api-relations","api-composer-stats","api-lenses"], file: "templates/composer.html" },
+  { id: "page-spreadsheet", label: "/spreadsheet", name: "Spreadsheet", desc: "Tabular view of surfaces and voxels — bulk editing", apis: ["api-spaces-list","api-surfaces","api-voxels","api-populate"], file: "templates/spreadsheet.html" },
+  { id: "page-network", label: "/network", name: "Network Graph", desc: "D3 force-directed graph of surface relations", apis: ["api-spaces-list","api-relations","api-shared-terms","api-lenses"], file: "templates/network.html" },
+  { id: "page-feed", label: "/feed", name: "Feed", desc: "Public/community post feed with @mentions", apis: ["api-feed","api-posts-create","api-post-image","api-mention-search","api-auth-me"], file: "templates/feed.html" },
+  { id: "page-post", label: "/post/:id", name: "Post Detail", desc: "Single post view with annotations", apis: ["api-post-get","api-annotations","api-auth-me"], file: "templates/post.html" },
+  { id: "page-space", label: "/space/:id", name: "Space Detail", desc: "Space overview — surfaces, stats, permissions", apis: ["api-spaces-list","api-surfaces","api-stats","api-permissions","api-space-mentions","api-space-images","api-nearby"], file: "templates/space.html" },
+  { id: "page-surface", label: "/surface/:id", name: "Surface Detail", desc: "Surface detail — voxels, landmarks, terms", apis: ["api-surfaces","api-voxels","api-landmarks","api-surface-terms","api-surface-mentions","api-surface-images"], file: "templates/surface.html" },
+  { id: "page-user", label: "/user/:id", name: "User Profile", desc: "Public profile — avatar, bio, spaces", apis: ["api-user-get","api-user-spaces","api-auth-me"], file: "templates/user.html" },
+  { id: "page-account", label: "/account", name: "Account Settings", desc: "Edit profile, password reset flow", apis: ["api-auth-me","api-user-update","api-reset-password"], file: "templates/account.html" },
+  { id: "page-auth-login", label: "/auth/login", name: "OAuth Login", desc: "Redirects to Google OAuth2", apis: ["api-auth-login"], file: "(redirect)" },
+  { id: "page-auth-callback", label: "/auth/callback", name: "OAuth Callback", desc: "Exchanges code for tokens, creates session", apis: ["api-auth-callback"], file: "(server handler)" },
+];
+
+const APIS = [
+  { id: "api-spaces-list", label: "GET /api/spaces", method: "GET", group: "spaces", desc: "List all visible spaces", tables: ["tbl-spaces","tbl-permissions","tbl-community"], auth: true },
+  { id: "api-spaces-create", label: "POST /api/spaces", method: "POST", group: "spaces", desc: "Create a new space", tables: ["tbl-spaces"], auth: false },
+  { id: "api-spaces-update", label: "PATCH /api/spaces/:id", method: "PATCH", group: "spaces", desc: "Update space", tables: ["tbl-spaces"], auth: true },
+  { id: "api-spaces-delete", label: "DELETE /api/spaces/:id", method: "DELETE", group: "spaces", desc: "Delete a space (cascades)", tables: ["tbl-spaces"], auth: true },
+  { id: "api-surfaces", label: "CRUD /api/.../surfaces", method: "CRUD", group: "surfaces", desc: "Manage surfaces within a space", tables: ["tbl-surfaces","tbl-voxels"], auth: false },
+  { id: "api-voxels", label: "CRUD /api/.../voxels", method: "CRUD", group: "voxels", desc: "Manage voxels", tables: ["tbl-voxels"], auth: false },
+  { id: "api-populate", label: "POST .../populate", method: "POST", group: "voxels", desc: "Auto-fill voxels", tables: ["tbl-voxels","tbl-surfaces"], auth: false },
+  { id: "api-landmarks", label: "CRUD /api/.../landmarks", method: "CRUD", group: "landmarks", desc: "Manage landmarks", tables: ["tbl-landmarks"], auth: false },
+  { id: "api-relations", label: "CRUD /api/.../relations", method: "CRUD", group: "relations", desc: "Surface-to-surface relations", tables: ["tbl-relations","tbl-surfaces"], auth: false },
+  { id: "api-lenses", label: "GET .../lenses", method: "GET", group: "relations", desc: "List lens names", tables: ["tbl-relations"], auth: false },
+  { id: "api-stats", label: "GET .../stats", method: "GET", group: "spaces", desc: "Aggregate counts", tables: ["tbl-surfaces","tbl-voxels","tbl-landmarks","tbl-relations"], auth: false },
+  { id: "api-composer-stats", label: "GET .../composer-stats", method: "GET", group: "spaces", desc: "Extended stats for composer", tables: ["tbl-surfaces","tbl-relations","tbl-voxels"], auth: false },
+  { id: "api-projects-list", label: "CRUD /api/projects", method: "CRUD", group: "projects", desc: "Manage projects", tables: ["tbl-projects","tbl-project-spaces"], auth: false },
+  { id: "api-terms-list", label: "CRUD /api/terms", method: "CRUD", group: "terms", desc: "Global term dictionary", tables: ["tbl-terms","tbl-surface-terms"], auth: false },
+  { id: "api-surface-terms", label: "CRUD /api/surfaces/:id/terms", method: "CRUD", group: "terms", desc: "Link terms to surfaces", tables: ["tbl-terms","tbl-surface-terms"], auth: false },
+  { id: "api-shared-terms", label: "GET /api/network/shared-terms", method: "GET", group: "terms", desc: "Cross-space term overlap", tables: ["tbl-surface-terms","tbl-surfaces","tbl-terms"], auth: false },
+  { id: "api-auth-login", label: "GET /auth/login", method: "GET", group: "auth", desc: "Initiate Google OAuth", tables: [], auth: false },
+  { id: "api-auth-callback", label: "GET /auth/callback", method: "GET", group: "auth", desc: "OAuth callback", tables: ["tbl-users","tbl-sessions"], auth: false },
+  { id: "api-auth-me", label: "GET /auth/me", method: "GET", group: "auth", desc: "Current user from session", tables: ["tbl-users","tbl-sessions"], auth: true },
+  { id: "api-auth-register", label: "POST /auth/register", method: "POST", group: "auth", desc: "Email+password registration", tables: ["tbl-users","tbl-email-verify"], auth: false },
+  { id: "api-auth-email-login", label: "POST /auth/email-login", method: "POST", group: "auth", desc: "Email+password sign in", tables: ["tbl-users","tbl-sessions"], auth: false },
+  { id: "api-auth-verify", label: "GET /auth/verify-email", method: "GET", group: "auth", desc: "Email verification", tables: ["tbl-users","tbl-email-verify","tbl-sessions"], auth: false },
+  { id: "api-auth-resend", label: "POST /auth/resend-verification", method: "POST", group: "auth", desc: "Resend verification", tables: ["tbl-email-verify"], auth: false },
+  { id: "api-auth-forgot", label: "POST /auth/forgot-password", method: "POST", group: "auth", desc: "Send password reset", tables: ["tbl-users","tbl-email-verify"], auth: false },
+  { id: "api-reset-password", label: "POST /auth/reset-password", method: "POST", group: "auth", desc: "Reset password via token", tables: ["tbl-users","tbl-email-verify"], auth: false },
+  { id: "api-feed", label: "GET /api/feed", method: "GET", group: "posts", desc: "Paginated post feed", tables: ["tbl-posts","tbl-post-mentions","tbl-post-images","tbl-annotations","tbl-users","tbl-community"], auth: false },
+  { id: "api-post-get", label: "GET /api/posts/:id", method: "GET", group: "posts", desc: "Single post", tables: ["tbl-posts","tbl-post-mentions","tbl-post-images","tbl-annotations"], auth: false },
+  { id: "api-posts-create", label: "POST /api/posts", method: "POST", group: "posts", desc: "Create post", tables: ["tbl-posts","tbl-post-mentions"], auth: true },
+  { id: "api-post-image", label: "POST /api/posts/:id/image", method: "POST", group: "posts", desc: "Upload image to post", tables: ["tbl-post-images"], auth: true },
+  { id: "api-annotations", label: "CRUD /api/images/:id/annotations", method: "CRUD", group: "posts", desc: "Image annotations", tables: ["tbl-annotations","tbl-post-images"], auth: true },
+  { id: "api-mention-search", label: "GET /api/mention-search", method: "GET", group: "posts", desc: "Autocomplete @mention", tables: ["tbl-spaces","tbl-surfaces"], auth: false },
+  { id: "api-surface-mentions", label: "GET /api/surfaces/:id/mentions", method: "GET", group: "posts", desc: "Posts mentioning surface", tables: ["tbl-posts","tbl-post-mentions"], auth: false },
+  { id: "api-space-mentions", label: "GET /api/spaces/:id/mentions", method: "GET", group: "posts", desc: "Posts mentioning space", tables: ["tbl-posts","tbl-post-mentions"], auth: false },
+  { id: "api-surface-images", label: "GET /api/surfaces/:id/images", method: "GET", group: "posts", desc: "Surface image annotations", tables: ["tbl-annotations","tbl-post-images"], auth: false },
+  { id: "api-space-images", label: "GET /api/spaces/:id/images", method: "GET", group: "posts", desc: "Space image annotations", tables: ["tbl-annotations","tbl-post-images"], auth: false },
+  { id: "api-user-get", label: "GET /api/users/:id", method: "GET", group: "users", desc: "Public user profile", tables: ["tbl-users","tbl-spaces"], auth: false },
+  { id: "api-user-spaces", label: "GET /api/users/:id/spaces", method: "GET", group: "users", desc: "User's spaces", tables: ["tbl-spaces"], auth: false },
+  { id: "api-user-update", label: "PATCH /api/users/me", method: "PATCH", group: "users", desc: "Update own profile", tables: ["tbl-users"], auth: true },
+  { id: "api-permissions", label: "CRUD /api/.../permissions", method: "CRUD", group: "access", desc: "Space permissions (owner only)", tables: ["tbl-permissions"], auth: true },
+  { id: "api-members", label: "CRUD /api/.../members", method: "CRUD", group: "access", desc: "Community members", tables: ["tbl-community"], auth: true },
+  { id: "api-nearby", label: "GET /api/spaces/nearby", method: "GET", group: "spaces", desc: "Proximity search", tables: ["tbl-spaces"], auth: false },
+];
+
+const TABLES = [
+  { id: "tbl-spaces", label: "spaces", desc: "Core spatial containers", cols: "id, name, description, scale_mpu, user_id, visibility, lat, lon, created_at" },
+  { id: "tbl-surfaces", label: "support_surfaces", desc: "Bounded planes within spaces", cols: "id, space_id, name, surface_type, elevation, x_min/max, z_min/max, material, risk_score" },
+  { id: "tbl-voxels", label: "voxels", desc: "Discrete 3D cells on surfaces", cols: "id, space_id, surface_id, cx, cy, cz, size, risk_score, occupancy" },
+  { id: "tbl-landmarks", label: "landmarks", desc: "Named points of interest", cols: "id, space_id, surface_id, name, landmark_type, cx, cy, cz" },
+  { id: "tbl-relations", label: "surface_relations", desc: "Directed edges between surfaces", cols: "id, space_id, from_surface_id, to_surface_id, interaction_class, quality, lens" },
+  { id: "tbl-projects", label: "projects", desc: "Community groupings", cols: "id, name, description, created_at" },
+  { id: "tbl-project-spaces", label: "project_spaces", desc: "Join: spaces↔projects", cols: "project_id, space_id" },
+  { id: "tbl-users", label: "users", desc: "Identity", cols: "id, google_id, email, display_name, password_hash, email_verified, avatar_url, bio" },
+  { id: "tbl-sessions", label: "sessions", desc: "Server-side sessions", cols: "id, user_id, token, expires_at" },
+  { id: "tbl-permissions", label: "permissions", desc: "Fine-grained ACL", cols: "id, space_id, surface_id, voxel_id, user_id, action" },
+  { id: "tbl-community", label: "community_members", desc: "Project membership", cols: "community_id, user_id, role, joined_at" },
+  { id: "tbl-email-verify", label: "email_verifications", desc: "Verification tokens", cols: "id, user_id, token, purpose, expires_at, used" },
+  { id: "tbl-terms", label: "terms", desc: "Global vocabulary", cols: "id, term, description" },
+  { id: "tbl-surface-terms", label: "surface_terms", desc: "Term↔surface links", cols: "id, surface_id, term_id, context" },
+  { id: "tbl-posts", label: "posts", desc: "User posts", cols: "id, user_id, body, visibility, created_at" },
+  { id: "tbl-post-mentions", label: "post_mentions", desc: "Parsed @mentions", cols: "id, post_id, target_type, target_id, mention_text" },
+  { id: "tbl-post-images", label: "post_images", desc: "Post image uploads", cols: "id, post_id, file_id, rel_path, mime_type, width, height" },
+  { id: "tbl-annotations", label: "image_annotations", desc: "Image annotations", cols: "id, image_id, annotation_type, geometry, target_type, target_id, label" },
+];
+
+const SERVICES = [
+  { id: "svc-auth-session", label: "Session Manager", type: "auth", desc: "Cookie + Bearer token auth, 7-day expiry" },
+  { id: "svc-auth-password", label: "Password Hashing", type: "auth", desc: "PBKDF2-HMAC-SHA256, 260k iterations" },
+  { id: "svc-auth-perm", label: "Permission Checker", type: "auth", desc: "Visibility + ownership + ACL checks" },
+  { id: "svc-email", label: "Email Service", type: "service", desc: "SMTP with TLS" },
+  { id: "svc-upload", label: "File Upload", type: "service", desc: "Disk storage, UUID naming, 10MB limit" },
+  { id: "svc-mentions", label: "Mention Parser", type: "service", desc: "Detects @Space and @Space>Surface" },
+];
+
+const MODELS = [
+  { id: "mdl-space", label: "SpaceCreate/Update", group: "spaces" },
+  { id: "mdl-surface", label: "SurfaceCreate/Update", group: "surfaces" },
+  { id: "mdl-voxel", label: "VoxelCreate", group: "voxels" },
+  { id: "mdl-landmark", label: "LandmarkCreate", group: "landmarks" },
+  { id: "mdl-relation", label: "RelationCreate/Update/Flip", group: "relations" },
+  { id: "mdl-project", label: "ProjectCreate/Update", group: "projects" },
+  { id: "mdl-term", label: "TermCreate/SurfaceTermCreate", group: "terms" },
+  { id: "mdl-post", label: "PostCreate/Update", group: "posts" },
+  { id: "mdl-annotation", label: "AnnotationCreate", group: "posts" },
+  { id: "mdl-auth", label: "EmailRegister/Login/Reset", group: "auth" },
+  { id: "mdl-user", label: "UserUpdate", group: "users" },
+  { id: "mdl-perm", label: "PermissionCreate", group: "access" },
+  { id: "mdl-member", label: "CommunityMemberCreate", group: "access" },
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// BUILD GRAPH
+// ═══════════════════════════════════════════════════════════════════
+
+const nodes = [];
+const links = [];
+
+const CAT = {
+  page:    { color: "#58a6ff", r: 22 },
+  api:     { color: "#3fb950", r: 8 },
+  table:   { color: "#bc8cff", r: 8 },
+  auth:    { color: "#d29922", r: 9 },
+  service: { color: "#f778ba", r: 8 },
+  model:   { color: "#f0883e", r: 6 },
+};
+
+PAGES.forEach(p => nodes.push({ ...p, category: "page", r: CAT.page.r }));
+APIS.forEach(a => nodes.push({ ...a, category: "api", r: CAT.api.r + (a.auth ? 2 : 0) }));
+TABLES.forEach(t => nodes.push({ ...t, category: "table", r: CAT.table.r }));
+SERVICES.forEach(s => nodes.push({ ...s, category: s.type, r: CAT[s.type].r }));
+MODELS.forEach(m => nodes.push({ ...m, category: "model", r: CAT.model.r, desc: `Pydantic model for ${m.group}` }));
+
+PAGES.forEach(p => (p.apis || []).forEach(a => links.push({ source: p.id, target: a, type: "page-api" })));
+APIS.forEach(a => (a.tables || []).forEach(t => links.push({ source: a.id, target: t, type: "db" })));
+APIS.filter(a => a.auth).forEach(a => links.push({ source: a.id, target: "svc-auth-session", type: "auth" }));
+["api-auth-register","api-auth-email-login","api-reset-password"].forEach(id => links.push({ source: id, target: "svc-auth-password", type: "auth" }));
+["api-spaces-list","api-spaces-update","api-spaces-delete","api-permissions"].forEach(id => links.push({ source: id, target: "svc-auth-perm", type: "auth" }));
+["api-auth-register","api-auth-resend","api-auth-forgot"].forEach(id => links.push({ source: id, target: "svc-email", type: "service" }));
+["api-post-image"].forEach(id => links.push({ source: id, target: "svc-upload", type: "service" }));
+["api-posts-create"].forEach(id => links.push({ source: id, target: "svc-mentions", type: "service" }));
+MODELS.forEach(m => {
+  APIS.filter(a => a.group === m.group && ["POST","PATCH","CRUD"].includes(a.method)).forEach(a => {
+    links.push({ source: m.id, target: a.id, type: "model" });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// CANVAS RENDERER — no D3 SVG, no event conflicts
+// ═══════════════════════════════════════════════════════════════════
+
+const canvas = document.getElementById("viz");
+const ctx = canvas.getContext("2d");
+const dpr = window.devicePixelRatio || 1;
+
+function resize() {
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = (window.innerHeight - 48) * dpr;
+  canvas.style.width = window.innerWidth + "px";
+  canvas.style.height = (window.innerHeight - 48) + "px";
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resize();
+window.addEventListener("resize", resize);
+
+const W = () => window.innerWidth;
+const H = () => window.innerHeight - 48;
+
+// ═══════════════════════════════════════════════════════════════════
+// SIMULATION
+// ═══════════════════════════════════════════════════════════════════
+
+// Mutable force parameters — sliders write directly to these
+const PARAMS = {
+  repulsion: -500,       // negative = repel
+  linkDist: 80,          // target link length
+  linkStr: 0.25,         // link spring strength
+  gravity: 0.03,         // pull toward center
+  damping: 0.40,         // velocity decay (higher = more friction)
+  collisionPad: 6,       // extra padding between nodes
+};
+
+const simulation = d3force_simulation();
+
+function d3force_simulation() {
+  const alpha = { value: 1, min: 0.001, decay: 0.02, target: 0 };
+
+  // Initialize positions — spread out by category in a large ring
+  const categoryOrder = ["page", "api", "table", "auth", "service", "model"];
+  const cx0 = W() / 2, cy0 = H() / 2;
+  const spreadRadius = Math.min(W(), H()) * 0.35;
+
+  nodes.forEach((n, i) => {
+    const catIdx = categoryOrder.indexOf(n.category);
+    const catAngle = (catIdx / categoryOrder.length) * Math.PI * 2;
+    const jitter = (Math.random() - 0.5) * spreadRadius * 0.6;
+    const jitter2 = (Math.random() - 0.5) * spreadRadius * 0.6;
+    const baseR = spreadRadius * (0.3 + Math.random() * 0.7);
+    n.x = cx0 + Math.cos(catAngle) * baseR + jitter;
+    n.y = cy0 + Math.sin(catAngle) * baseR + jitter2;
+    n.vx = 0;
+    n.vy = 0;
+  });
+
+  // Resolve links to objects
+  const nodeById = new Map(nodes.map(n => [n.id, n]));
+  links.forEach(l => {
+    if (typeof l.source === "string") l.source = nodeById.get(l.source);
+    if (typeof l.target === "string") l.target = nodeById.get(l.target);
+  });
+
+  function tickInner() {
+    // Link force — uses PARAMS.linkDist and PARAMS.linkStr
+    links.forEach(l => {
+      if (!l.source || !l.target) return;
+      let dx = l.target.x - l.source.x;
+      let dy = l.target.y - l.source.y;
+      let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      // Per-type multiplier on the base distance
+      let distMult = l.type === "page-api" ? 1.25 : l.type === "db" ? 0.875 : l.type === "model" ? 0.625 : 1;
+      let targetDist = PARAMS.linkDist * distMult;
+      // Per-type multiplier on the base strength
+      let strMult = l.type === "page-api" ? 1.2 : l.type === "model" ? 2.0 : 0.8;
+      let strength = PARAMS.linkStr * strMult;
+      let f = (dist - targetDist) / dist * alpha.value * strength;
+      let fx = dx * f * 0.5;
+      let fy = dy * f * 0.5;
+      l.source.vx += fx;
+      l.source.vy += fy;
+      l.target.vx -= fx;
+      l.target.vy -= fy;
+    });
+
+    // Repulsion — uses PARAMS.repulsion
+    // Pages get 3x the repulsion of other nodes
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        let a = nodes[i], b = nodes[j];
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        let dist2 = dx * dx + dy * dy;
+        if (dist2 < 1) dist2 = 1;
+        let strA = a.category === "page" ? PARAMS.repulsion * 3 : PARAMS.repulsion;
+        let strB = b.category === "page" ? PARAMS.repulsion * 3 : PARAMS.repulsion;
+        let avgStr = (strA + strB) / 2;
+        let f = avgStr * alpha.value / dist2;
+        let fx = dx * f;
+        let fy = dy * f;
+        a.vx -= fx;
+        a.vy -= fy;
+        b.vx += fx;
+        b.vy += fy;
+      }
+    }
+
+    // Center gravity — uses PARAMS.gravity
+    let cx = W() / 2, cy = H() / 2;
+    nodes.forEach(n => {
+      n.vx += (cx - n.x) * PARAMS.gravity * alpha.value;
+      n.vy += (cy - n.y) * PARAMS.gravity * alpha.value;
+    });
+
+    // Collision — uses PARAMS.collisionPad
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        let a = nodes[i], b = nodes[j];
+        let dx = b.x - a.x, dy = b.y - a.y;
+        let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        let minDist = (a.r || 8) + (b.r || 8) + PARAMS.collisionPad;
+        if (dist < minDist) {
+          let f = (minDist - dist) / dist * 0.5;
+          let fx = dx * f, fy = dy * f;
+          a.vx -= fx; a.vy -= fy;
+          b.vx += fx; b.vy += fy;
+        }
+      }
+    }
+
+    // Apply velocities — uses PARAMS.damping
+    nodes.forEach(n => {
+      if (n.fx != null) { n.x = n.fx; n.vx = 0; }
+      else { n.vx *= (1 - PARAMS.damping); n.x += n.vx; }
+      if (n.fy != null) { n.y = n.fy; n.vy = 0; }
+      else { n.vy *= (1 - PARAMS.damping); n.y += n.vy; }
+    });
+
+    alpha.value += (alpha.target - alpha.value) * alpha.decay;
+  }
+
+  function tick() {
+    if (alpha.value < alpha.min) return;
+    tickInner();
+  }
+
+  return {
+    tick,
+    alpha,
+    reheat(v) { alpha.value = Math.max(alpha.value, v || 0.3); },
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CAMERA (pan + zoom)
+// ═══════════════════════════════════════════════════════════════════
+
+let camX = 0, camY = 0, camScale = 1;
+
+function screenToWorld(sx, sy) {
+  return [(sx - camX) / camScale, (sy - camY) / camScale];
+}
+
+function worldToScreen(wx, wy) {
+  return [wx * camScale + camX, wy * camScale + camY];
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// HIT TESTING
+// ═══════════════════════════════════════════════════════════════════
+
+function hitTest(sx, sy) {
+  const [wx, wy] = screenToWorld(sx, sy);
+  // Check in reverse order (top-drawn last = first hit)
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const n = nodes[i];
+    const hitR = Math.max(n.r + 6, 14) / camScale; // larger hit area, scale-independent
+    const dx = wx - n.x, dy = wy - n.y;
+    if (dx * dx + dy * dy <= hitR * hitR * camScale * camScale) {
+      // Redo in world coords properly
+      const dr = Math.max(n.r + 6, 14);
+      const ddx = wx - n.x, ddy = wy - n.y;
+      if (ddx * ddx + ddy * ddy <= dr * dr) return n;
+    }
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MOUSE / TOUCH INTERACTION — pure DOM events, no D3
+// ═══════════════════════════════════════════════════════════════════
+
+const pinnedNodes = new Set();
+let selectedNode = null;
+let dragNode = null;
+let dragging = false;
+let dragStartWorldX = 0, dragStartWorldY = 0;
+let panStartX = 0, panStartY = 0, panStartCamX = 0, panStartCamY = 0;
+let isPanning = false;
+let mouseDownTime = 0;
+
+canvas.addEventListener("mousedown", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left;
+  const sy = e.clientY - rect.top;
+  const hit = hitTest(sx, sy);
+
+  mouseDownTime = Date.now();
+  dragging = false;
+
+  if (hit) {
+    // Start dragging a node
+    dragNode = hit;
+    const [wx, wy] = screenToWorld(sx, sy);
+    dragStartWorldX = wx;
+    dragStartWorldY = wy;
+    dragNode.fx = dragNode.x;
+    dragNode.fy = dragNode.y;
+    simulation.reheat(0.15);
+    canvas.style.cursor = "grabbing";
+  } else {
+    // Start panning
+    isPanning = true;
+    panStartX = e.clientX;
+    panStartY = e.clientY;
+    panStartCamX = camX;
+    panStartCamY = camY;
+    canvas.style.cursor = "grabbing";
+  }
+});
+
+canvas.addEventListener("mousemove", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left;
+  const sy = e.clientY - rect.top;
+
+  if (dragNode) {
+    const [wx, wy] = screenToWorld(sx, sy);
+    const dx = wx - dragStartWorldX;
+    const dy = wy - dragStartWorldY;
+    if (dx * dx + dy * dy > 4) dragging = true;
+    dragNode.fx = wx;
+    dragNode.fy = wy;
+    simulation.reheat(0.15);
+  } else if (isPanning) {
+    const dx = e.clientX - panStartX;
+    const dy = e.clientY - panStartY;
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) dragging = true;
+    camX = panStartCamX + dx;
+    camY = panStartCamY + dy;
+  } else {
+    // Hover cursor
+    const hit = hitTest(sx, sy);
+    canvas.style.cursor = hit ? "grab" : "default";
+  }
+});
+
+canvas.addEventListener("mouseup", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left;
+  const sy = e.clientY - rect.top;
+
+  if (dragNode) {
+    if (dragging) {
+      // Dropped after drag — pin it
+      dragNode.fx = dragNode.x;
+      dragNode.fy = dragNode.y;
+      pinnedNodes.add(dragNode.id);
+      updatePinUI();
+    } else {
+      // Click (no drag) — toggle pin
+      togglePin(dragNode);
+      selectNode(dragNode);
+    }
+    dragNode = null;
+  } else if (isPanning) {
+    if (!dragging) {
+      // Click on background — deselect
+      selectNode(null);
+    }
+    isPanning = false;
+  }
+
+  dragging = false;
+  canvas.style.cursor = "default";
+});
+
+// // Scroll to zoom
+// canvas.addEventListener("wheel", (e) => {
+//   e.preventDefault();
+//   const rect = canvas.getBoundingClientRect();
+//   const sx = e.clientX - rect.left;
+//   const sy = e.clientY - rect.top;
+
+//   const zoomFactor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+//   const newScale = Math.max(0.05, Math.min(8, camScale * zoomFactor));
+
+//   // Zoom toward cursor position
+//   camX = sx - (sx - camX) * (newScale / camScale);
+//   camY = sy - (sy - camY) * (newScale / camScale);
+//   camScale = newScale;
+// }, { passive: false });
+canvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left;
+  const sy = e.clientY - rect.top;
+
+  const zoomIntensity = 0.0015; // sensitivity (adjust this)
+  const zoom = Math.exp(-e.deltaY * zoomIntensity);
+
+  const newScale = Math.max(0.05, Math.min(8, camScale * zoom));
+
+  // Zoom toward cursor
+  camX = sx - (sx - camX) * (newScale / camScale);
+  camY = sy - (sy - camY) * (newScale / camScale);
+
+  camScale = newScale;
+}, { passive: false });
+
+// ═══════════════════════════════════════════════════════════════════
+// PIN / SELECT
+// ═══════════════════════════════════════════════════════════════════
+
+function togglePin(n) {
+  if (pinnedNodes.has(n.id)) {
+    n.fx = null;
+    n.fy = null;
+    pinnedNodes.delete(n.id);
+    simulation.reheat(0.15);
+  } else {
+    n.fx = n.x;
+    n.fy = n.y;
+    pinnedNodes.add(n.id);
+  }
+  updatePinUI();
+}
+
+function updatePinUI() {
+  const count = pinnedNodes.size;
+  document.getElementById("pin-count").textContent = count;
+  document.getElementById("pin-info").style.display = count > 0 ? "" : "none";
+  document.getElementById("btn-unpin").style.display = count > 0 ? "" : "none";
+}
+
+document.getElementById("btn-unpin").onclick = () => {
+  nodes.forEach(n => { n.fx = null; n.fy = null; });
+  pinnedNodes.clear();
+  simulation.reheat(0.3);
+  updatePinUI();
+};
+
+function selectNode(n) {
+  selectedNode = n;
+  const panel = document.getElementById("detail-panel");
+  if (!n) {
+    panel.classList.remove("open");
+    return;
+  }
+  panel.classList.add("open");
+  showDetail(n);
+}
+
+document.getElementById("detail-close").onclick = () => selectNode(null);
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER LOOP
+// ═══════════════════════════════════════════════════════════════════
+
+const linkColors = { "page-api": "#3fb950", db: "#bc8cff", auth: "#d29922", service: "#f778ba", model: "#f0883e" };
+
+function draw() {
+  simulation.tick();
+
+  const w = W(), h = H();
+  ctx.clearRect(0, 0, w, h);
+  ctx.save();
+  ctx.translate(camX, camY);
+  ctx.scale(camScale, camScale);
+
+  // Draw links
+  links.forEach(l => {
+    if (!l.source || !l.target) return;
+    ctx.beginPath();
+    ctx.moveTo(l.source.x, l.source.y);
+    ctx.lineTo(l.target.x, l.target.y);
+    ctx.strokeStyle = linkColors[l.type] || "#30363d";
+    ctx.globalAlpha = selectedNode
+      ? (l.source === selectedNode || l.target === selectedNode ? 0.7 : 0.04)
+      : (l.type === "model" ? 0.15 : 0.25);
+    ctx.lineWidth = l.type === "page-api" ? 1.5 : 0.8;
+    if (l.type === "db") ctx.setLineDash([5, 3]);
+    else if (l.type === "auth") ctx.setLineDash([3, 3]);
+    else if (l.type === "model") ctx.setLineDash([2, 4]);
+    else ctx.setLineDash([]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  ctx.globalAlpha = 1;
+
+  // Draw nodes
+  const connectedToSelected = new Set();
+  if (selectedNode) {
+    connectedToSelected.add(selectedNode.id);
+    links.forEach(l => {
+      if (l.source === selectedNode) connectedToSelected.add(l.target.id);
+      if (l.target === selectedNode) connectedToSelected.add(l.source.id);
+    });
+  }
+
+  nodes.forEach(n => {
+    const cat = CAT[n.category] || CAT.api;
+    const isConnected = !selectedNode || connectedToSelected.has(n.id);
+    ctx.globalAlpha = isConnected ? 1 : 0.12;
+
+    // Pin ring
+    if (pinnedNodes.has(n.id)) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r + 5, 0, Math.PI * 2);
+      ctx.strokeStyle = "#58a6ff";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 2]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Node shape
+    ctx.beginPath();
+    if (n.category === "page") {
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = cat.color;
+      ctx.globalAlpha *= 0.15;
+      ctx.fill();
+      ctx.globalAlpha = isConnected ? 1 : 0.12;
+      ctx.strokeStyle = cat.color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else if (n.category === "auth") {
+      ctx.save();
+      ctx.translate(n.x, n.y);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = cat.color;
+      ctx.globalAlpha *= 0.2;
+      ctx.fillRect(-n.r * 0.6, -n.r * 0.6, n.r * 1.2, n.r * 1.2);
+      ctx.globalAlpha = isConnected ? 1 : 0.12;
+      ctx.strokeStyle = cat.color;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-n.r * 0.6, -n.r * 0.6, n.r * 1.2, n.r * 1.2);
+      ctx.restore();
+    } else if (n.category === "api" || n.category === "model") {
+      const rw = n.category === "model" ? n.r * 1.4 : n.r * 1.8;
+      const rh = n.category === "model" ? n.r * 1.0 : n.r * 1.2;
+      ctx.fillStyle = cat.color;
+      ctx.globalAlpha *= 0.2;
+      roundRect(ctx, n.x - rw/2, n.y - rh/2, rw, rh, 3);
+      ctx.fill();
+      ctx.globalAlpha = isConnected ? 1 : 0.12;
+      ctx.strokeStyle = cat.color;
+      ctx.lineWidth = n.auth ? 2 : 1;
+      roundRect(ctx, n.x - rw/2, n.y - rh/2, rw, rh, 3);
+      ctx.stroke();
+    } else {
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = cat.color;
+      ctx.globalAlpha *= 0.2;
+      ctx.fill();
+      ctx.globalAlpha = isConnected ? 1 : 0.12;
+      ctx.strokeStyle = cat.color;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
+
+    // Label
+    ctx.globalAlpha = isConnected ? 0.85 : 0.1;
+    ctx.fillStyle = n.category === "page" ? cat.color : cat.color;
+    ctx.font = n.category === "page"
+      ? "bold 9px 'Space Mono', monospace"
+      : "8px 'Space Mono', monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+
+    if (n.category === "page") {
+      // Route inside, name below
+      ctx.textBaseline = "middle";
+      ctx.fillText(n.label, n.x, n.y);
+      ctx.fillStyle = "#e6edf3";
+      ctx.font = "600 10px 'DM Sans', sans-serif";
+      ctx.textBaseline = "top";
+      ctx.fillText(n.name, n.x, n.y + n.r + 4);
+    } else {
+      const txt = n.category === "table" ? n.label
+        : n.category === "api" ? (n.label || "").replace(/^(GET|POST|PATCH|DELETE|CRUD)\s+/, "").slice(0, 22)
+        : n.label || "";
+      ctx.fillText(txt, n.x, n.y + n.r + 3);
+    }
+
+    // Pin dot
+    if (pinnedNodes.has(n.id)) {
+      ctx.globalAlpha = isConnected ? 1 : 0.3;
+      ctx.beginPath();
+      ctx.arc(n.x + n.r - 2, n.y - n.r + 2, 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#58a6ff";
+      ctx.fill();
+      ctx.strokeStyle = "#0d1117";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  });
+
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  requestAnimationFrame(draw);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+requestAnimationFrame(draw);
+
+// Stats
+document.getElementById("stats-bar").textContent =
+  `${PAGES.length} pages · ${APIS.length} endpoints · ${TABLES.length} tables · ${SERVICES.length} services · ${links.length} links`;
+
+// ═══════════════════════════════════════════════════════════════════
+// DETAIL PANEL
+// ═══════════════════════════════════════════════════════════════════
+
+function showDetail(d) {
+  const catColors = { page: "#58a6ff", api: "#3fb950", table: "#bc8cff", auth: "#d29922", service: "#f778ba", model: "#f0883e" };
+  const color = catColors[d.category] || "#7d8590";
+  const icon = d.category === "page" ? "⬤" : d.category === "table" ? "◉" : d.category === "auth" ? "◆" : "■";
+  document.getElementById("detail-title").innerHTML = `<span style="color:${color}">${icon}</span> ${d.name || d.label}`;
+
+  let html = "";
+  const field = (label, value) => `<div class="field"><div class="field-label">${label}</div><div class="field-value">${value}</div></div>`;
+
+  if (d.category === "page") {
+    html += field("Route", `<code style="color:${color}">${d.label}</code>`);
+    html += field("Description", d.desc);
+    html += field("Template", `<code>${d.file}</code>`);
+    const pageApis = APIS.filter(a => (d.apis || []).includes(a.id));
+    html += field("API Dependencies", pageApis.map(a =>
+      `<span class="tag" style="border-color:${catColors.api}40;color:${catColors.api}">${a.method} ${a.label.replace(/^(GET|POST|PATCH|DELETE|CRUD)\s+/,"")}</span>`
+    ).join(""));
+    const needsAuth = pageApis.some(a => a.auth);
+    html += field("Auth Required", needsAuth
+      ? `<span class="badge" style="background:#d2992230;color:#d29922">Yes</span>`
+      : `<span class="badge" style="background:#3fb95020;color:#3fb950">Public</span>`);
+  } else if (d.category === "api") {
+    html += field("Endpoint", `<code style="color:${color}">${d.label}</code>`);
+    html += field("Method", `<span class="badge" style="background:${color}20;color:${color}">${d.method}</span>`);
+    html += field("Description", d.desc);
+    html += field("Auth", d.auth
+      ? `<span class="badge" style="background:#d2992230;color:#d29922">Required</span>`
+      : `<span class="badge" style="background:#3fb95020;color:#3fb950">Public</span>`);
+    if (d.tables && d.tables.length) {
+      html += field("Tables", d.tables.map(tid => {
+        const t = TABLES.find(x => x.id === tid);
+        return t ? `<span class="tag" style="border-color:${catColors.table}40;color:${catColors.table}">${t.label}</span>` : "";
+      }).join(""));
+    }
+  } else if (d.category === "table") {
+    html += field("Table", `<code style="color:${color}">${d.label}</code>`);
+    html += field("Description", d.desc);
+    html += field("Columns", `<code style="font-size:10px;color:var(--muted);line-height:1.6">${d.cols}</code>`);
+  } else if (d.category === "auth" || d.category === "service") {
+    html += field("Name", `<span style="color:${color}">${d.label}</span>`);
+    html += field("Description", d.desc);
+  } else if (d.category === "model") {
+    html += field("Model", `<code style="color:${color}">${d.label}</code>`);
+    html += field("Description", d.desc);
+  }
+
+  document.getElementById("detail-body").innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TUNING PANEL — sliders write to PARAMS, reheat sim on change
+// ═══════════════════════════════════════════════════════════════════
+
+document.getElementById("btn-tuning").onclick = () => {
+  document.getElementById("tuning-panel").classList.toggle("open");
+};
+
+function wireSlider(sliderId, valId, paramKey, fmt) {
+  const sl = document.getElementById(sliderId);
+  const valEl = document.getElementById(valId);
+  sl.addEventListener("input", () => {
+    const v = parseFloat(sl.value);
+    PARAMS[paramKey] = v;
+    valEl.textContent = fmt ? fmt(v) : v;
+    simulation.reheat(0.5);
+  });
+  // Sync initial display
+  valEl.textContent = fmt ? fmt(PARAMS[paramKey]) : PARAMS[paramKey];
+  sl.value = PARAMS[paramKey];
+}
+
+wireSlider("sl-repulsion",  "val-repulsion",  "repulsion",    v => v.toFixed(0));
+wireSlider("sl-linkdist",   "val-linkdist",   "linkDist",     v => v.toFixed(0));
+wireSlider("sl-linkstr",    "val-linkstr",    "linkStr",      v => v.toFixed(2));
+wireSlider("sl-gravity",    "val-gravity",    "gravity",      v => v.toFixed(3));
+wireSlider("sl-damping",    "val-damping",    "damping",      v => v.toFixed(2));
+wireSlider("sl-collision",  "val-collision",  "collisionPad", v => v.toFixed(0));
+</script>
+</body>
+</html>

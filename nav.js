@@ -79,7 +79,7 @@
   // ─── Build HTML ───────────────────────────────────────────────
   function p(href) { return prefix + href; }
 
-  let html = `<a class="nav-brand" href="${p('index.html')}">bloombot</a>`;
+  let html = `<a class="nav-brand" href="${p('opening.html')}">bloombot</a>`;
   html += '<ul class="nav-links">';
 
   menus.forEach(function (menu) {

@@ -2,11 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0; url=bloombot-modern.html">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>bloombot</title>
-  <link rel="canonical" href="bloombot-modern.html">
+  <style>
+    html, body { margin: 0; padding: 0; background: #1a1612; }
+  </style>
+  <script>
+    // Randomly pick one of the opening animations
+    const openings = [
+      'bloombot-coffee-fall.html',
+      'bloombot-lightning-opening.html'
+    ];
+    const pick = openings[Math.floor(Math.random() * openings.length)];
+    window.location.replace(pick);
+  </script>
+  <noscript>
+    <meta http-equiv="refresh" content="0; url=bloombot-lightning-opening.html">
+  </noscript>
 </head>
-<body>
-  <p>Redirecting to <a href="bloombot-modern.html">bloombot</a>…</p>
-</body>
+<body></body>
 </html>

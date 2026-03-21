@@ -31,17 +31,17 @@
 
     /* ── Top-right: brand ── */
     .brand-corner {
-      top: 4.0rem; right: 28.6rem;
+      top: 4.0rem; right: 8.6rem;
       animation: fadeDown 0.9s ease-out 0.3s forwards;
     }
     .brand-name {
-      font-family: 'Space Mono', monospace; font-size: 2.05rem; font-weight: 700;
+      font-family: 'Space Mono', monospace; font-size: 3.05rem; font-weight: 700;
       color: var(--amber); letter-spacing: -0.03em;
       text-decoration: none; display: block;
     }
     /* ── Bottom-left: controls ── */
     .controls-panel {
-      bottom: 25.6rem; left: 14.6rem;
+      bottom: 1.6rem; left: 1.6rem;
       display: flex; flex-direction: column; gap: 0.55rem;
       animation: fadeUp 0.9s ease-out 0.5s forwards;
     }
@@ -399,13 +399,13 @@ const meshEdges = [
   { from:'slow2Pin',     to:'slowIdler',     angleDeg:  8  },
   { from:'slowIdler',    to:'minute',        angleDeg: 35  },
   { from:'minutePin',    to:'hour1',         angleDeg:188  },
-  { from:'hour1Pin',     to:'hour2',         angleDeg:252  },
+  { from:'hour1Pin',     to:'hour2',         angleDeg:222  },
   { from:'hour2Pin',     to:'hourIdler',     angleDeg:205  },
   { from:'hourIdler',    to:'hour',          angleDeg:240  },
   // Day/Week extension
   { from:'hourClockPin', to:'hcRelay',        angleDeg: 35  },
   { from:'hcRelayPin',   to:'clockHour',     angleDeg: 20  },
-  { from:'hourSlowPin',  to:'day1Big',       angleDeg:215  },
+  { from:'hourSlowPin',  to:'day1Big',       angleDeg:115  },
   { from:'day1Pin',      to:'day',           angleDeg:250  },
   { from:'daySlowPin',   to:'week',          angleDeg:200  },
 ];

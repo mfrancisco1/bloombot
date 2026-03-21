@@ -8,323 +8,643 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root { --ink: #1a1612; --amber: #d97706; --dim: rgba(255,255,255,0.38); }
+    :root { --ink: #1a1612; --amber: #d97706; --dim: rgba(255,255,255,0.35); }
 
-    html, body {
-      height: 100%; overflow: hidden;
+    html, body { height: 100%; overflow: hidden;
       font-family: 'Space Grotesk', sans-serif;
-      background: var(--ink); color: #fff;
+      background: var(--ink); color: #fff; }
+
+    /* ── Full-screen SVG ── */
+    .stage { position: fixed; inset: 0; }
+    svg    { width: 100%; height: 100%; display: block; }
+
+    /* ── Shared UI panel style ── */
+    .ui-panel {
+      position: fixed; z-index: 20;
+      padding: 0.75rem 1.1rem;
+      background: rgba(26,22,18,0.74);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      opacity: 0;
     }
 
-    /* ── NAV ── */
-    nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 2rem; height: 52px;
-      border-bottom: 1px solid rgba(255,255,255,0.07);
-      background: rgba(26,22,18,0.88);
-      backdrop-filter: blur(12px);
+    /* ── Top-right: brand ── */
+    .brand-corner {
+      top: 4.0rem; right: 28.6rem;
+      animation: fadeDown 0.9s ease-out 0.3s forwards;
     }
-    .nav-brand {
-      font-family: 'Space Mono', monospace; font-size: 1.05rem; font-weight: 700;
-      color: var(--amber); text-decoration: none; letter-spacing: -0.03em;
+    .brand-name {
+      font-family: 'Space Mono', monospace; font-size: 2.05rem; font-weight: 700;
+      color: var(--amber); letter-spacing: -0.03em;
+      text-decoration: none; display: block;
     }
-    .nav-links { display: flex; gap: 0.25rem; list-style: none; }
-    .nav-links a {
+    /* ── Bottom-left: controls ── */
+    .controls-panel {
+      bottom: 25.6rem; left: 14.6rem;
+      display: flex; flex-direction: column; gap: 0.55rem;
+      animation: fadeUp 0.9s ease-out 0.5s forwards;
+    }
+    .ctrl-row {
+      display: flex; align-items: center; gap: 0.55rem;
+    }
+    .ctrl-row label {
+      font-family: 'Space Mono', monospace; font-size: 0.58rem;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: rgba(255,255,255,0.32); width: 4.2rem; flex-shrink: 0;
+    }
+    .ctrl-row select {
+      background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.70);
+      border: 1px solid rgba(255,255,255,0.13); border-radius: 4px;
+      padding: 0.28rem 0.5rem;
       font-family: 'Space Mono', monospace; font-size: 0.68rem;
-      letter-spacing: 0.12em; text-transform: uppercase;
-      color: var(--dim); text-decoration: none;
-      padding: 0.4rem 0.8rem; border-radius: 4px;
-      transition: color 0.2s, background 0.2s;
+      cursor: pointer; appearance: none; outline: none;
+      transition: border-color 0.2s; min-width: 9rem;
     }
-    .nav-links a:hover { color: #fff; background: rgba(255,255,255,0.07); }
+    .ctrl-row select:focus  { border-color: var(--amber); }
+    .ctrl-row select option { background: #1a1612; color: #fff; }
 
-    /* ── CANVAS ── */
-    #gearCanvas {
-      position: fixed; inset: 0; z-index: 1;
-      width: 100vw; height: 100vh;
+    /* ── Bottom-right: enter ── */
+    .enter-corner {
+      bottom: 1.6rem; right: 1.6rem;
+      animation: fadeUp 0.9s ease-out 0.7s forwards;
+      padding: 0;
+      background: transparent; border: none; backdrop-filter: none;
     }
-
-    /* ── ENTER ── */
-    .enter-wrap {
-      position: fixed; bottom: 2.5rem; right: 2.5rem;
-      z-index: 20;
-      opacity: 0; animation: fadeUp 1s ease-out 0.8s forwards;
-    }
-    .enter-wrap a {
-      font-family: 'Space Mono', monospace; font-size: 0.75rem;
+    .enter-corner a {
+      font-family: 'Space Mono', monospace; font-size: 0.72rem;
       letter-spacing: 0.2em; text-transform: uppercase;
       color: rgba(255,255,255,0.38); text-decoration: none;
-      padding: 0.6rem 1.6rem;
-      border: 1px solid rgba(255,255,255,0.14); border-radius: 4px;
+      padding: 0.55rem 1.3rem;
+      border: 1px solid rgba(255,255,255,0.13); border-radius: 4px;
       transition: all 0.3s ease; display: inline-block;
     }
-    .enter-wrap a:hover {
-      color: var(--amber); border-color: var(--amber);
-      box-shadow: 0 0 24px rgba(217,119,6,0.18);
-    }
+    .enter-corner a:hover { color: var(--amber); border-color: var(--amber);
+      box-shadow: 0 0 20px rgba(217,119,6,0.18); }
 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(8px); }
       to   { opacity: 1; transform: translateY(0); }
     }
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── SVG gear styles ── */
+    .link {
+      stroke: rgba(255,220,180,0.09); stroke-width: 1.8;
+      stroke-dasharray: 5 8; stroke-linecap: round;
+      vector-effect: non-scaling-stroke;
+    }
+    .mesh-dot {
+      fill: rgba(217,119,6,0.10); stroke: rgba(217,119,6,0.22);
+      stroke-width: 1; vector-effect: non-scaling-stroke;
+    }
+    .gear-outline { stroke-width: 1.8; vector-effect: non-scaling-stroke; }
+    .gear-helper  { fill: rgba(255,240,220,0.042); stroke: rgba(255,220,180,0.20); }
+    .guide-circle {
+      fill: none; stroke: rgba(255,220,180,0.11);
+      stroke-width: 1; stroke-dasharray: 4 6;
+      vector-effect: non-scaling-stroke;
+    }
+    .time-dial  { fill: none; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+    .arm        { fill: rgba(255,220,180,0.055); stroke: rgba(255,220,180,0.17);
+                  stroke-width: 1; vector-effect: non-scaling-stroke; }
+    .compound-ring { fill: none; stroke: rgba(255,220,180,0.24);
+                     stroke-width: 1; vector-effect: non-scaling-stroke; }
+    .clock-hand    { stroke-linecap: round; vector-effect: non-scaling-stroke; }
+    .label-line    { stroke: rgba(255,220,180,0.26); stroke-width: 1.1;
+                     vector-effect: non-scaling-stroke; }
+    .gear-label {
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      fill: rgba(245,235,220,0.92); dominant-baseline: middle; pointer-events: none;
+    }
+    .gear-sub {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 400;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      dominant-baseline: middle; pointer-events: none;
+    }
   </style>
 </head>
 <body>
 
-<nav>
-  <a class="nav-brand" href="opening.html">bloombot</a>
-  <ul class="nav-links">
-    <li><a href="bloombot-home.html">Studio</a></li>
-    <li><a href="bloombot-modern.html">Teaching</a></li>
-  </ul>
-</nav>
+<div class="stage">
+  <svg id="sceneSvg">
+    <defs>
+      <pattern id="gridPat" width="48" height="48" patternUnits="userSpaceOnUse">
+        <path d="M 48 0 L 0 0 0 48" fill="none" stroke="rgba(255,220,180,0.04)" stroke-width="1"/>
+      </pattern>
+      <radialGradient id="bgGrad" cx="28%" cy="38%" r="78%">
+        <stop offset="0%"   stop-color="#1e1a14"/>
+        <stop offset="100%" stop-color="#110e0b"/>
+      </radialGradient>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#bgGrad)"/>
+    <rect width="100%" height="100%" fill="url(#gridPat)" opacity="0.5"/>
+    <g id="linksLayer"></g>
+    <g id="meshLayer"></g>
+    <g id="gearsLayer"></g>
+    <g id="labelsLayer"></g>
+  </svg>
+</div>
 
-<canvas id="gearCanvas"></canvas>
+<!-- Top-right: brand -->
+<div class="ui-panel brand-corner">
+  <a class="brand-name" href="opening.html" id="brandTitle">bloombot</a>
+</div>
 
-<div class="enter-wrap">
+<!-- Bottom-left: palette + timezone -->
+<div class="ui-panel controls-panel">
+  <div class="ctrl-row">
+    <label>Color</label>
+    <select id="paletteSelect">
+      <option value="sunrise" selected>Sunrise</option>
+      <option value="blues">Blues</option>
+      <option value="pinks">Pinks</option>
+      <option value="greens">Greens</option>
+      <option value="greys">Greys</option>
+      <option value="purples">Purples</option>
+      <option value="sunset">Sunset</option>
+    </select>
+  </div>
+  <div class="ctrl-row">
+    <label>City</label>
+    <select id="tzSelect">
+      <option value="America/Indiana/Indianapolis" selected>Bloomington IN</option>
+      <option value="America/Denver">Albuquerque NM</option>
+      <option value="America/Los_Angeles">Menlo Park CA</option>
+      <option value="America/Chicago">Madison WI</option>
+      <option value="Europe/Istanbul">Istanbul</option>
+      <option value="Asia/Tokyo">Kyoto</option>
+      <option value="Europe/Madrid">Barcelona</option>
+    </select>
+  </div>
+  <div style="padding-top:0.45rem; border-top:1px solid rgba(255,255,255,0.08); margin-top:0.2rem;">
+    <a href="gear-generator.html" style="font-family:'Space Mono',monospace; font-size:0.58rem; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.28); text-decoration:none; transition:color 0.2s;"
+       onmouseover="this.style.color='rgba(255,255,255,0.65)'" onmouseout="this.style.color='rgba(255,255,255,0.28)'">
+      gear generator &rarr;
+    </a>
+  </div>
+</div>
+
+<!-- Bottom-right: enter -->
+<div class="ui-panel enter-corner">
   <a href="bloombot-home.html">Enter</a>
 </div>
 
 <script>
-// ─── Gear specs ──────────────────────────────────────────────────────────────
-// Each gear rotates once per its time unit.
-// freq = rotations per second
-// dir  = +1 (CW) or -1 (CCW) — alternates for external meshing
-// pos  = [cx, cy] in module units (m), defines gear center
-// The six gears are chained: each meshes with the next.
-// Meshing condition: dist(center_i, center_{i+1}) = R_i + R_{i+1}
+// ─── Palettes ────────────────────────────────────────────────────────────────
+const colorPalettes = {
+  sunrise:  ['#fff9f5','#ffe5cc','#ffd3ae','#ffc190','#ffaf72','#ff9d54','#ff8b36','#ff7920','#ff6600','#f55a00','#e84e00','#da4200','#cc3600','#be2a00','#b01e00','#a21200','#940600','#860000','#780000','#6a0000','#5c0000'],
+  blues:    ['#ffc0cb','#f2afd1','#e49dd7','#d58cdd','#c67be2','#b56ae8','#a259ed','#8d47f1','#7435f6','#5220fb','#3a13fd','#1a05f9','#0000f0','#0000d8','#0000c0','#0000a8','#000090','#000078','#000060','#000048','#000030'],
+  pinks:    ['#ffe0eb','#ffd6e7','#ffc8e1','#ffbadc','#ffabd6','#ff9ccf','#ff8dc9','#ff7ec2','#ff6ebc','#ff5eb5','#ff4dae','#ff3ba7','#ff27a0','#ff1099','#f40092','#e5008b','#d60084','#c7007d','#b80076','#a9006f','#9a0068'],
+  greens:   ['#ffe0eb','#e4d0d2','#c9c0b9','#aeb0a2','#93a08b','#789175','#5d8160','#42714c','#286238','#0e5226','#00431c','#003516','#002810','#001c0a','#001006','#000400','#000000','#001200','#002400','#003600','#004800'],
+  greys:    ['#f0e8e0','#ddd6ce','#cbc4bc','#b8b2aa','#a6a098','#948e86','#827c74','#706a62','#5e5850','#4c463e','#3a342c','#28221a','#161008','#0e0800','#060000','#000000','#040404','#0c0c0c','#141414','#1c1c1c','#242424'],
+  purples:  ['#b89ff5','#c190e0','#c781cc','#cb72b9','#ce62a5','#cf4689','#cf2f77','#cf1f6e','#7438f8','#642bf8','#5220fb','#3a13fd','#2d6c94','#417098','#5074a0','#5e78a8','#6a7cb0','#7680b8','#8285c0','#8e8ac8','#9a8fd0'],
+  sunset:   ['#ffd653','#fdc64a','#fbb642','#f9a639','#f59531','#f28428','#ee7320','#ea6017','#e54c0f','#e03306','#da0000','#c40000','#ae0000','#980000','#820000','#6c0000','#560000','#400000','#2a0000','#140000','#000000'],
+};
 
-const GEARS = [
-  { N:80, label:'hour',      sub:'1 rev / hour',   freq:1/3600, dir:+1, color:'#d97706', pos:[44,   60  ] },
-  { N:40, label:'minute',    sub:'1 rev / min',    freq:1/60,   dir:-1, color:'#c4541a', pos:[96,   30  ] },
-  { N:24, label:'second',    sub:'1 rev / sec',    freq:1,      dir:+1, color:'#22c55e', pos:[128,  30  ] },
-  { N:16, label:'½ sec',     sub:'2 rev / sec',    freq:2,      dir:-1, color:'#3b82f6', pos:[142,  44  ] },
-  { N:10, label:'1/10 sec',  sub:'10 rev / sec',   freq:10,     dir:+1, color:'#a855f7', pos:[155,  44  ] },
-  { N:8,  label:'1/100 sec', sub:'100 rev / sec',  freq:100,    dir:-1, color:'#06b6d4', pos:[164,  44  ] },
+// ─── Color helpers ───────────────────────────────────────────────────────────
+function hexToRgb(hex) {
+  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+}
+function colorFromHex(hex) {
+  const [r,g,b] = hexToRgb(hex);
+  return { fill:`rgba(${r},${g},${b},0.16)`, stroke:hex, hand:hex,
+           dial:`rgba(${r},${g},${b},0.22)`, idx:hex };
+}
+// Pick 8 evenly-spread colors from a palette for the 8 featured gears
+const FEATURED_IDS = ['second','half','tenth','hundredth','minute','clockHour','day','week',
+                      'largo','adagio','andante','allegro','presto'];
+function buildGearColors(palName) {
+  const pal = colorPalettes[palName];
+  const n   = pal.length;
+  const out = {};
+  FEATURED_IDS.forEach((id, i) => {
+    const idx = Math.round(i * (n - 1) / (FEATURED_IDS.length - 1));
+    out[id] = colorFromHex(pal[idx]);
+  });
+  return out;
+}
+let GEAR_COLORS = buildGearColors('sunrise');
+
+// ─── Gear math ───────────────────────────────────────────────────────────────
+const SVG_NS    = 'http://www.w3.org/2000/svg';
+const MODULE    = 1.45;
+const ROOT_ID   = 'second';
+const ROOT_PERIOD = 1;
+
+function inv(a)            { return Math.tan(a) - a; }
+function clamp(v, lo, hi)  { return Math.min(hi, Math.max(lo, v)); }
+function polar(r, a)       { return { x: r * Math.cos(a), y: r * Math.sin(a) }; }
+function normDeg(a)        { const w = a % 360; return w < 0 ? w + 360 : w; }
+function sampleArc(r, a0, a1, steps, skip) {
+  const pts = [];
+  for (let i = skip ? 1 : 0; i <= steps; i++) {
+    const a = a0 + (a1 - a0) * i / steps;
+    pts.push(polar(r, a));
+  }
+  return pts;
+}
+function buildPath(pts) {
+  if (!pts.length) return '';
+  const d = [`M ${pts[0].x.toFixed(3)} ${pts[0].y.toFixed(3)}`];
+  for (let i = 1; i < pts.length; i++) d.push(`L ${pts[i].x.toFixed(3)} ${pts[i].y.toFixed(3)}`);
+  return d.join(' ') + ' Z';
+}
+
+function computeGeometry(N, pitchRadius) {
+  const phi = 20 * Math.PI / 180;
+  const dp  = N / (pitchRadius * 2);
+  const outerR = pitchRadius + 1/dp;
+  const rootR  = Math.max(6, pitchRadius - 1.25/dp);
+  const baseR  = pitchRadius * Math.cos(phi);
+  const startR = Math.max(rootR, baseR);
+  const tpa    = 2 * Math.PI / N;
+  const htp    = Math.PI / (2 * N);
+  function halfAtR(R) {
+    const alpha = Math.acos(clamp(baseR/R, -1, 1));
+    return htp + inv(phi) - inv(alpha);
+  }
+  return { N, pitchRadius, outerRadius:outerR, rootRadius:rootR, baseRadius:baseR,
+           startRadius:startR, tpa, halfAtR, halfStart:halfAtR(startR), halfOuter:halfAtR(outerR) };
+}
+
+function buildOutline(g) {
+  const pts = [], INV=18, TIP=10, ROOT=8, radial = g.rootRadius < g.startRadius - 1e-6;
+  for (let k = 0; k < g.N; k++) {
+    const c = k * g.tpa;
+    if (k===0) pts.push(polar(g.rootRadius, c - g.halfStart));
+    if (radial) pts.push(polar(g.startRadius, c - g.halfStart));
+    for (let i=1; i<=INV; i++) {
+      const R = g.startRadius + (g.outerRadius - g.startRadius)*i/INV;
+      pts.push(polar(R, c - g.halfAtR(R)));
+    }
+    pts.push(...sampleArc(g.outerRadius, c-g.halfOuter, c+g.halfOuter, TIP, true));
+    for (let i=INV-1; i>=0; i--) {
+      const R = g.startRadius + (g.outerRadius - g.startRadius)*i/INV;
+      pts.push(polar(R, c + g.halfAtR(R)));
+    }
+    if (radial) pts.push(polar(g.rootRadius, c + g.halfStart));
+    pts.push(...sampleArc(g.rootRadius, c+g.halfStart, (k+1)*g.tpa-g.halfStart, ROOT, true));
+  }
+  return buildPath(pts);
+}
+
+function svgEl(parent, tag, attrs) {
+  const e = document.createElementNS(SVG_NS, tag);
+  if (attrs) Object.entries(attrs).forEach(([k,v]) => e.setAttribute(k, String(v)));
+  parent.appendChild(e);
+  return e;
+}
+
+// ─── Gear specs ──────────────────────────────────────────────────────────────
+// Original timed train (second → half → tenth → hundredth → minute → hour)
+// plus extended chain: hour → 24h → week
+// Period chain: second(1s) → half(0.5s) → tenth(0.1s) → hundredth(0.01s)
+//               second(1s) → slow stages → minute(60s) → hour(3600s)
+//               hour → compound stages → day(86400s) → week(604800s)
+const gearSpecs = [
+  // ── Fast outputs ──────────────────────────────────────
+  { id:'second',          axle:'second',    N:44, featured:true,  title:'SECOND',    subtitle:'1 rev = 1 s',      labelDx:200,    labelDy:-12, anchor:'start' },
+  { id:'secondSlow',      axle:'second',    N:20, featured:false },
+  { id:'half',            axle:'half',      N:22, featured:true,  title:'HALF',      subtitle:'1 rev = 0.5 s',    labelDx:44,   labelDy:224,   anchor:'start'  },
+  { id:'halfHelper',      axle:'half',      N:50, featured:false },
+  { id:'tenth',           axle:'tenth',     N:10, featured:true,  title:'TENTH',     subtitle:'1 rev = 0.1 s',    labelDx:120,   labelDy:8,    anchor:'start'  },
+  { id:'tenthHelper',     axle:'tenth',     N:50, featured:false },
+  { id:'fastRelay',       axle:'fastRelay', N:10, featured:false },
+  { id:'fastRelayGear',   axle:'fastRelay', N:24, featured:false },
+  { id:'hundredth',       axle:'hundredth', N:12, featured:true,  title:'HUNDREDTH', subtitle:'1 rev = 0.01 s',   labelDx:62,   labelDy:52,   anchor:'start'  },
+  // ── Tempo gears (1 rev = 1 quarter-note beat) ────────────────────────────
+  // tempoPin(N=44, coaxial second) → tempoHub(N=44, relay, ~128 units from second)
+  // → 5 output gears fanning from tempoHub.  period = N_out/44 s;  BPM = 2640/N_out
+  { id:'tempoPin', axle:'second',   N:44, featured:false },
+  { id:'tempoHub', axle:'tempoHub', N:44, featured:false },
+  { id:'largo',    axle:'largo',   N:66, featured:true, title:'LARGO',   subtitle:'40 BPM',  labelDx:-160, labelDy:-15, anchor:'end'    },
+  { id:'adagio',   axle:'adagio',  N:40, featured:true, title:'ADAGIO',  subtitle:'66 BPM',  labelDx:-160,  labelDy:-22,  anchor:'end'  },
+  { id:'andante',  axle:'andante', N:33, featured:true, title:'ANDANTE', subtitle:'80 BPM',  labelDx:-160,  labelDy:60,  anchor:'end'  },
+  { id:'allegro',  axle:'allegro', N:22, featured:true, title:'ALLEGRO', subtitle:'120 BPM', labelDx:-82,  labelDy:146,  anchor:'end'  },
+  { id:'presto',   axle:'presto',  N:15, featured:true, title:'PRESTO',  subtitle:'176 BPM', labelDx:-24,  labelDy:184,  anchor:'end'  },
+  // ── Slow reduction chain ──────────────────────────────
+  { id:'slow1',           axle:'slow1',     N:80, featured:false },
+  { id:'slow1Pin',        axle:'slow1',     N:16, featured:false },
+  { id:'slow2',           axle:'slow2',     N:64, featured:false },
+  { id:'slow2Pin',        axle:'slow2',     N:16, featured:false },
+  { id:'slowIdler',       axle:'slowIdler', N:24, featured:false },
+  { id:'minute',          axle:'minute',    N:60, featured:true,  title:'MINUTE',    subtitle:'1 rev = 1 min',    labelDx:142,   labelDy:-20, anchor:'start'  },
+  { id:'minutePin',       axle:'minute',    N:12, featured:false },
+  { id:'hour1',           axle:'hour1',     N:48, featured:false },
+  { id:'hour1Pin',        axle:'hour1',     N:16, featured:false },
+  { id:'hour2',           axle:'hour2',     N:48, featured:false },
+  { id:'hour2Pin',        axle:'hour2',     N:15, featured:false },
+  { id:'hourIdler',       axle:'hourIdler', N:24, featured:false },
+  { id:'hour',            axle:'hour',      N:75, featured:false },
+  // ── 12-hour clock face: hourClockPin(N=10, coaxial hour) → hcRelay(N=60) → hcRelayPin(N=12, coaxial) → clockHour(N=24) ──
+  // Ratio: (10/60)×(12/24) = (1/6)×(1/2) = 1/12 → period = 3600×12 = 43200s ✓
+  { id:'hourClockPin',  axle:'hour',      N:10, featured:false },
+  { id:'hcRelay',       axle:'hcRelay',   N:60, featured:false },
+  { id:'hcRelayPin',    axle:'hcRelay',   N:12, featured:false },
+  { id:'clockHour',     axle:'clockHour', N:24, featured:true,  title:'HOUR',      subtitle:'1 rev = 12 hr',    labelDx:114,  labelDy:-20,  anchor:'start'    },
+  // ── 24-hour extension: hour → [hourSlowPin+day1 compound] → day ─────────
+  // hourSlowPin(N=12) coaxial with hour → day1Big(N=72) → day1Pin(N=12) coaxial → day(N=48)
+  // Total ratio: (12/72)*(12/48) = 1/24  → period = 3600*24 = 86400s ✓
+  { id:'hourSlowPin',     axle:'hour',      N:12, featured:false },
+  { id:'day1Big',         axle:'day1',      N:72, featured:false },
+  { id:'day1Pin',         axle:'day1',      N:12, featured:false },
+  { id:'day',             axle:'day',       N:48, featured:true,  title:'24 HOURS',  subtitle:'1 rev = 24 hr',    labelDx:-158,  labelDy:154, anchor:'end' },
+  // ── Week extension: day → [daySlowPin] → week ────────────────────────────
+  // daySlowPin(N=12) coaxial with day → week(N=84)
+  // Total ratio: 12/84 = 1/7  → period = 86400*7 = 604800s ✓
+  { id:'daySlowPin',      axle:'day',       N:12, featured:false },
+  { id:'week',            axle:'week',      N:84, featured:true,  title:'WEEK',      subtitle:'1 rev = 7 days',   labelDx:-222,  labelDy:-15, anchor:'end' },
 ];
 
-// ─── Involute math ───────────────────────────────────────────────────────────
-const PHI = 20 * Math.PI / 180; // pressure angle
-function inv(a) { return Math.tan(a) - a; }
+const coaxialEdges = [
+  { from:'second',      to:'secondSlow',    phaseDeg: 14  },
+  { from:'second',      to:'tempoPin',      phaseDeg:  5  },
+  { from:'half',        to:'halfHelper',    phaseDeg: 22  },
+  { from:'tenth',       to:'tenthHelper',   phaseDeg:-18  },
+  { from:'fastRelay',   to:'fastRelayGear', phaseDeg: 10  },
+  { from:'slow1',       to:'slow1Pin',      phaseDeg:-10  },
+  { from:'slow2',       to:'slow2Pin',      phaseDeg: 12  },
+  { from:'minute',      to:'minutePin',     phaseDeg:-14  },
+  { from:'hour1',       to:'hour1Pin',      phaseDeg: 20  },
+  { from:'hour2',       to:'hour2Pin',      phaseDeg:-16  },
+  // Extended chain
+  { from:'hour',        to:'hourSlowPin',   phaseDeg: 28  },
+  { from:'hour',        to:'hourClockPin',  phaseDeg: 10  },
+  { from:'hcRelay',     to:'hcRelayPin',    phaseDeg:-16  },
+  { from:'day1Big',     to:'day1Pin',       phaseDeg:-22  },
+  { from:'day',         to:'daySlowPin',    phaseDeg: 20  },
+];
 
-function buildGearPoints(N, m) {
-  // Returns array of [x,y] points for one full gear outline (angle=0)
-  const pitchR = N * m / 2;
-  const baseR  = pitchR * Math.cos(PHI);
-  const outerR = pitchR + m;
-  const rootR  = Math.max(baseR * 0.97, pitchR - 1.25 * m);
-  const startR = Math.max(rootR, baseR);
-  const halfAtPitch = Math.PI / (2 * N);
+const meshEdges = [
+  // Fast side
+  { from:'second',       to:'half',          angleDeg: 55  },
+  // Tempo branch: tempoPin → tempoHub (relay, ~128 units up-left) → fan of 5
+  { from:'tempoPin',     to:'tempoHub',      angleDeg:135  },
+  { from:'tempoHub',     to:'presto',        angleDeg: 45  },
+  { from:'tempoHub',     to:'allegro',       angleDeg:85  },
+  { from:'tempoHub',     to:'andante',       angleDeg:125  },
+  { from:'tempoHub',     to:'adagio',        angleDeg:175  },
+  { from:'tempoHub',     to:'largo',         angleDeg:225  },
+  { from:'halfHelper',   to:'tenth',         angleDeg: 15  },
+  { from:'tenthHelper',  to:'fastRelay',     angleDeg: 95  },
+  { from:'fastRelayGear',to:'hundredth',     angleDeg: 35  },
+  // Slow side
+  { from:'secondSlow',   to:'slow1',         angleDeg:235  },
+  { from:'slow1Pin',     to:'slow2',         angleDeg:310  },
+  { from:'slow2Pin',     to:'slowIdler',     angleDeg:  8  },
+  { from:'slowIdler',    to:'minute',        angleDeg: 35  },
+  { from:'minutePin',    to:'hour1',         angleDeg:188  },
+  { from:'hour1Pin',     to:'hour2',         angleDeg:252  },
+  { from:'hour2Pin',     to:'hourIdler',     angleDeg:205  },
+  { from:'hourIdler',    to:'hour',          angleDeg:240  },
+  // Day/Week extension
+  { from:'hourClockPin', to:'hcRelay',        angleDeg: 35  },
+  { from:'hcRelayPin',   to:'clockHour',     angleDeg: 20  },
+  { from:'hourSlowPin',  to:'day1Big',       angleDeg:215  },
+  { from:'day1Pin',      to:'day',           angleDeg:250  },
+  { from:'daySlowPin',   to:'week',          angleDeg:200  },
+];
 
-  function halfAtR(R) {
-    const alpha = Math.acos(Math.min(1, baseR / R));
-    return halfAtPitch + inv(PHI) - inv(alpha);
+// ─── Layout solver ────────────────────────────────────────────────────────────
+const gearById = new Map(gearSpecs.map(s => [s.id, s]));
+const outgoing = new Map();
+function addEdge(from, edge) {
+  if (!outgoing.has(from)) outgoing.set(from, []);
+  outgoing.get(from).push(edge);
+}
+coaxialEdges.forEach(e => addEdge(e.from, {...e, type:'coaxial'}));
+meshEdges.forEach(e    => addEdge(e.from, {...e, type:'mesh'}));
+
+gearSpecs.forEach(s => {
+  s.geometry = computeGeometry(s.N, s.N * MODULE);
+  s.outline  = buildOutline(s.geometry);
+});
+
+function solveLayout() {
+  const root = gearById.get(ROOT_ID);
+  root.x = 0; root.y = 0; root.angularGain = 1; root.angularOffset = 0;
+  function visit(id) {
+    const parent = gearById.get(id);
+    (outgoing.get(id) || []).forEach(edge => {
+      const child = gearById.get(edge.to);
+      if (edge.type === 'coaxial') {
+        child.x = parent.x; child.y = parent.y;
+        child.angularGain   = parent.angularGain;
+        child.angularOffset = normDeg(parent.angularOffset + edge.phaseDeg);
+      } else {
+        const psi = edge.angleDeg * Math.PI / 180;
+        const cd  = parent.geometry.pitchRadius + child.geometry.pitchRadius;
+        const ratio = parent.N / child.N;
+        child.x = parent.x + Math.cos(psi) * cd;
+        child.y = parent.y + Math.sin(psi) * cd;
+        child.angularGain   = -parent.angularGain * ratio;
+        child.angularOffset = normDeg((-parent.angularOffset * ratio) + (1+ratio)*edge.angleDeg + 180 + 180/child.N);
+      }
+      visit(child.id);
+    });
   }
-
-  const toothAng = 2 * Math.PI / N;
-  const STEPS = Math.max(6, Math.round(80 / N));
-  const pts = [];
-
-  for (let k = 0; k < N; k++) {
-    const base  = k * toothAng;
-    const hS    = halfAtR(startR);
-    const hO    = halfAtR(outerR);
-
-    // Root right
-    pts.push([rootR * Math.cos(base - hS), rootR * Math.sin(base - hS)]);
-
-    // Radial up to involute start (when base circle > root)
-    if (startR > rootR + 0.01) {
-      pts.push([startR * Math.cos(base - hS), startR * Math.sin(base - hS)]);
-    }
-
-    // Right involute flank
-    for (let i = 1; i <= STEPS; i++) {
-      const R = startR + (outerR - startR) * i / STEPS;
-      const a = base - halfAtR(R);
-      pts.push([R * Math.cos(a), R * Math.sin(a)]);
-    }
-
-    // Tip arc
-    for (let i = 1; i <= 4; i++) {
-      const a = base - hO + 2 * hO * i / 4;
-      pts.push([outerR * Math.cos(a), outerR * Math.sin(a)]);
-    }
-
-    // Left involute flank (reversed)
-    for (let i = STEPS - 1; i >= 0; i--) {
-      const R = startR + (outerR - startR) * i / STEPS;
-      const a = base + halfAtR(R);
-      pts.push([R * Math.cos(a), R * Math.sin(a)]);
-    }
-
-    // Back to root
-    if (startR > rootR + 0.01) {
-      pts.push([startR * Math.cos(base + hS), startR * Math.sin(base + hS)]);
-    }
-    pts.push([rootR * Math.cos(base + toothAng - hS), rootR * Math.sin(base + toothAng - hS)]);
-  }
-
-  return { pts, pitchR, outerR, rootR };
+  visit(ROOT_ID);
 }
 
-// ─── Canvas setup ────────────────────────────────────────────────────────────
-const canvas = document.getElementById('gearCanvas');
-const ctx    = canvas.getContext('2d');
-const NAV_H  = 52;
+// ─── Scene build ─────────────────────────────────────────────────────────────
+const axleMap       = new Map();
+const axleRenderMap = new Map();
 
-// Gear geometry cache (recomputed on resize)
-let gearCache = [];
-let m = 8; // module in px, set by resize
-
-function computeLayout() {
-  const VW = canvas.width;
-  const VH = canvas.height;
-
-  // Scale so the gear system fills the canvas.
-  // Bounding box in module-units: x: [4, 168], y: [10, 100]
-  const mByW = VW / 168;
-  const mByH = VH / 110;
-  m = Math.min(mByW, mByH);
-
-  gearCache = GEARS.map(g => {
-    const scale = m;
-    const cx    = g.pos[0] * scale;
-    const cy    = g.pos[1] * scale;
-    const geo   = buildGearPoints(g.N, scale);
-    const hubR  = scale * 2.6;
-    const dotR  = scale * 1.0;
-    return { ...g, cx, cy, scale, geo, hubR, dotR };
+function buildAxles() {
+  axleMap.clear();
+  gearSpecs.forEach(s => {
+    if (!axleMap.has(s.axle)) axleMap.set(s.axle, {id:s.axle, gears:[], x:s.x, y:s.y});
+    const a = axleMap.get(s.axle);
+    a.gears.push(s); a.x = s.x; a.y = s.y;
+  });
+  axleMap.forEach(axle => {
+    axle.gears.sort((a,b) => a.featured !== b.featured ? (a.featured?1:-1) : b.geometry.outerRadius - a.geometry.outerRadius);
+    axle.featuredGear   = axle.gears.find(g => g.featured) || null;
+    axle.referenceGear  = axle.featuredGear || axle.gears[0];
+    axle.maxOuterRadius = axle.gears.reduce((m,g) => Math.max(m, g.geometry.outerRadius), 0);
   });
 }
 
-function resize() {
-  canvas.width  = window.innerWidth;
-  canvas.height = window.innerHeight;
-  computeLayout();
-}
-resize();
-window.addEventListener('resize', resize);
-
-// ─── Drawing ─────────────────────────────────────────────────────────────────
-function drawGear(gc, angle) {
-  const { cx, cy, geo, color, hubR, dotR } = gc;
-  const pts = geo.pts;
-  const cosA = Math.cos(angle), sinA = Math.sin(angle);
-
-  // Gear body
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(angle);
-
-  ctx.beginPath();
-  ctx.moveTo(pts[0][0], pts[0][1]);
-  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
-  ctx.closePath();
-  ctx.fillStyle = color;
-  ctx.fill();
-
-  // Tooth edge highlight
-  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-  ctx.lineWidth = 0.6;
-  ctx.stroke();
-
-  // Hub hole
-  ctx.beginPath();
-  ctx.arc(0, 0, hubR, 0, Math.PI * 2);
-  ctx.fillStyle = '#1a1612';
-  ctx.fill();
-
-  // Centre dot
-  ctx.beginPath();
-  ctx.arc(0, 0, dotR, 0, Math.PI * 2);
-  ctx.fillStyle = color;
-  ctx.fill();
-
-  ctx.restore();
+function setViewBox() {
+  const svg = document.getElementById('sceneSvg');
+  let x0=Infinity, y0=Infinity, x1=-Infinity, y1=-Infinity;
+  gearSpecs.forEach(s => {
+    x0=Math.min(x0, s.x-s.geometry.outerRadius); x1=Math.max(x1, s.x+s.geometry.outerRadius);
+    y0=Math.min(y0, s.y-s.geometry.outerRadius); y1=Math.max(y1, s.y+s.geometry.outerRadius);
+  });
+  gearSpecs.filter(s=>s.featured).forEach(s => {
+    const lx=s.x+(s.labelDx||0), ly=s.y+(s.labelDy||0);
+    x0=Math.min(x0,lx-90); x1=Math.max(x1,lx+90);
+    y0=Math.min(y0,ly-30); y1=Math.max(y1,ly+24);
+  });
+  const p=90;
+  svg.setAttribute('viewBox', `${(x0-p).toFixed(2)} ${(y0-p).toFixed(2)} ${(x1-x0+2*p).toFixed(2)} ${(y1-y0+2*p).toFixed(2)}`);
 }
 
-function drawLabel(gc, now) {
-  const { cx, cy, geo, color, label, sub, N, scale, freq } = gc;
-  const pitchR = geo.pitchR;
+// Hands use near-white with a dark drop-shadow so they pop against any gear colour.
+const HAND_COLOR  = '#fef6e8';
+const HAND_SHADOW = 'drop-shadow(0 0 3px rgba(0,0,0,0.95)) drop-shadow(0 0 7px rgba(0,0,0,0.7))';
 
-  // Outer ring – pitch circle ghost
-  ctx.beginPath();
-  ctx.arc(cx, cy, pitchR, 0, Math.PI * 2);
-  ctx.strokeStyle = color + '22';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  // Label inside gear (non-rotating)
-  const fontSize = Math.max(8, Math.min(18, pitchR * 0.22));
-  const subSize  = Math.max(6, Math.min(11, pitchR * 0.13));
-
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  // Main label
-  ctx.font = `600 ${fontSize}px 'Space Grotesk', sans-serif`;
-  ctx.fillStyle = 'rgba(255,255,255,0.82)';
-  ctx.fillText(label, cx, cy - fontSize * 0.5);
-
-  // Sub label
-  ctx.font = `${subSize}px 'Space Mono', monospace`;
-  ctx.fillStyle = color + 'aa';
-  ctx.fillText(sub, cx, cy + fontSize * 0.7);
+function drawHand(wrapper, gear) {
+  const r  = gear.geometry.pitchRadius;
+  const hl = Math.max(8.5, r*0.70), lw=Math.max(2.2, Math.min(5.5, r*0.055));
+  const hL = Math.max(5,   Math.min(13,  r*0.19)), hw=Math.max(3, Math.min(8, r*0.10));
+  const hg = svgEl(wrapper,'g',{transform:`rotate(${(-gear.angularOffset).toFixed(3)})`});
+  svgEl(hg,'line',{x1:0, y1:0, x2:0, y2:(-hl).toFixed(3),
+    class:'clock-hand', stroke:HAND_COLOR, 'stroke-width':lw.toFixed(3),
+    filter:HAND_SHADOW});
+  svgEl(hg,'path',{
+    d:`M 0 ${(-hl-hL).toFixed(3)} L ${hw.toFixed(3)} ${(-hl+hL*0.08).toFixed(3)} L ${(-hw).toFixed(3)} ${(-hl+hL*0.08).toFixed(3)} Z`,
+    fill:HAND_COLOR, filter:HAND_SHADOW});
 }
 
-// ─── Meshing connectors (axle dots) ──────────────────────────────────────────
-function drawConnectors() {
-  GEARS.forEach(g => {
-    const gc = gearCache[GEARS.indexOf(g)];
-    ctx.beginPath();
-    ctx.arc(gc.cx, gc.cy, 2, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
-    ctx.fill();
+function createAxleDecor(sg, axle) {
+  const r=axle.maxOuterRadius, spokes=Math.max(3,Math.min(6,Math.round(r/22)));
+  const aw=Math.max(4.4,r*0.13), al=Math.max(14,r*0.44);
+  for (let i=0;i<spokes;i++) {
+    svgEl(sg,'rect',{x:(-aw/2).toFixed(3),y:(-al/2).toFixed(3),
+      width:aw.toFixed(3),height:al.toFixed(3),rx:(aw/2).toFixed(3),
+      class:'arm',transform:`rotate(${(360/spokes*i-8).toFixed(3)}) translate(0 ${(-r*0.08).toFixed(3)})`});
+  }
+  const hr=Math.max(6.4,r*0.12);
+  const hubColor = axle.featuredGear ? GEAR_COLORS[axle.featuredGear.id].stroke : '#f5f0e8';
+  svgEl(sg,'circle',{cx:0,cy:0,r:hr.toFixed(3),fill:hubColor,opacity:0.9});
+  svgEl(sg,'circle',{cx:0,cy:0,r:Math.max(3.2,hr*0.42).toFixed(3),fill:'#1a1612',class:'axle'});
+  if (axle.gears.length>1) svgEl(sg,'circle',{cx:0,cy:0,r:(hr+4.2).toFixed(3),class:'compound-ring'});
+}
+
+function clearLayers() {
+  ['linksLayer','meshLayer','gearsLayer','labelsLayer'].forEach(id => {
+    document.getElementById(id).innerHTML = '';
   });
 }
 
-// ─── Animation loop ──────────────────────────────────────────────────────────
-function getAngle(g) {
-  // Use real wall-clock time for a live clock feel
+function createScene() {
+  clearLayers();
+  const LL = document.getElementById('linksLayer');
+  const ML = document.getElementById('meshLayer');
+  const GL = document.getElementById('gearsLayer');
+  const LabL = document.getElementById('labelsLayer');
+
+  axleRenderMap.clear();
+
+  // Dashed links between meshing centres
+  meshEdges.forEach(edge => {
+    const p=gearById.get(edge.from), c=gearById.get(edge.to);
+    svgEl(LL,'line',{x1:p.x,y1:p.y,x2:c.x,y2:c.y,class:'link'});
+    const psi=edge.angleDeg*Math.PI/180;
+    svgEl(ML,'circle',{
+      cx:(p.x+Math.cos(psi)*p.geometry.pitchRadius).toFixed(3),
+      cy:(p.y+Math.sin(psi)*p.geometry.pitchRadius).toFixed(3),
+      r:4.6, class:'mesh-dot'});
+  });
+
+  // Axles
+  axleMap.forEach(axle => {
+    const col = axle.featuredGear ? GEAR_COLORS[axle.featuredGear.id] : null;
+    const outer = svgEl(GL,'g',{transform:`translate(${axle.x.toFixed(3)} ${axle.y.toFixed(3)})`});
+
+    if (axle.featuredGear && col) {
+      const dr = axle.featuredGear.geometry.pitchRadius + 6.5;
+      svgEl(outer,'circle',{cx:0,cy:0,r:dr.toFixed(3),class:'time-dial',stroke:col.dial});
+      svgEl(outer,'path',{
+        d:`M 0 ${(-dr-8).toFixed(3)} L 4.5 ${(-dr-1.2).toFixed(3)} L -4.5 ${(-dr-1.2).toFixed(3)} Z`,
+        fill:col.idx});
+    }
+
+    const refGear  = axle.referenceGear;
+    const spinGroup = svgEl(outer,'g',{});
+    createAxleDecor(spinGroup, axle);
+
+    axle.gears.forEach(gear => {
+      const delta   = normDeg(gear.angularOffset - refGear.angularOffset);
+      const wrapper = svgEl(spinGroup,'g',{transform:`rotate(${delta.toFixed(3)})`});
+      svgEl(wrapper,'circle',{cx:0,cy:0,r:gear.geometry.pitchRadius.toFixed(3),class:'guide-circle'});
+      if (gear.featured && col) {
+        svgEl(wrapper,'path',{d:gear.outline,class:'gear-outline',fill:col.fill,stroke:col.stroke});
+        drawHand(wrapper, gear);
+      } else {
+        svgEl(wrapper,'path',{d:gear.outline,class:'gear-outline gear-helper'});
+      }
+    });
+
+    axleRenderMap.set(axle.id, {axle, spin:spinGroup, referenceGear:refGear});
+  });
+
+  // Labels
+  gearSpecs.filter(s=>s.featured).forEach(s => {
+    const col    = (GEAR_COLORS[s.id]||{}).stroke || '#f5f0e8';
+    const anchor = s.anchor || 'middle';
+    const lx=s.x+(s.labelDx||0), ly=s.y+(s.labelDy||0);
+    const la=Math.atan2(ly-s.y, lx-s.x);
+    const sr=s.geometry.pitchRadius+11;
+    const lex=lx-(anchor==='start'?10:anchor==='end'?-10:0);
+    svgEl(LabL,'line',{x1:(s.x+Math.cos(la)*sr).toFixed(3),y1:(s.y+Math.sin(la)*sr).toFixed(3),
+      x2:lex.toFixed(3),y2:(ly-4).toFixed(3),class:'label-line'});
+    const g=svgEl(LabL,'g',{transform:`translate(${lx.toFixed(3)} ${ly.toFixed(3)})`});
+    const t=svgEl(g,'text',{x:0,y:-6,class:'gear-label','text-anchor':anchor,fill:col});
+    t.textContent=s.title;
+    const sub=svgEl(g,'text',{x:0,y:10,class:'gear-sub','text-anchor':anchor,fill:col+'99'});
+    sub.textContent=s.subtitle;
+  });
+
+  // Tint the brand title to match the second gear's accent colour
+  document.getElementById('brandTitle').style.color = GEAR_COLORS['second'].stroke;
+}
+
+// ─── Timezone-aware clock ────────────────────────────────────────────────────
+// Elapsed = seconds since Sunday 00:00:00 in the selected timezone.
+// This positions all gears correctly for the local day-of-week, hour, minute, second.
+let currentTZ = 'America/Indiana/Indianapolis'; // Bloomington default
+
+function getRealElapsed() {
   const now = new Date();
-  const totalSec = now.getHours() * 3600 + now.getMinutes() * 60
-                 + now.getSeconds() + now.getMilliseconds() / 1000;
-  return g.dir * 2 * Math.PI * totalSec * g.freq;
+  // Use Intl.DateTimeFormat.formatToParts() — reliable across all browsers.
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: currentTZ,
+    weekday: 'short', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false
+  });
+  const parts = fmt.formatToParts(now);
+  const get = type => { const p = parts.find(q => q.type === type); return p ? parseInt(p.value, 10) : 0; };
+  const weekdayMap = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
+  const wdStr = (parts.find(q => q.type === 'weekday') || {}).value || 'Sun';
+  const wd = (weekdayMap[wdStr] !== undefined) ? weekdayMap[wdStr] : 0;
+  let h = get('hour'); if (h === 24) h = 0; // midnight edge-case
+  return wd * 86400 + h * 3600 + get('minute') * 60 + get('second') + now.getMilliseconds() / 1000;
 }
 
-function draw() {
-  const VW = canvas.width;
-  const VH = canvas.height;
-
-  // Dark background with subtle gradient
-  const grad = ctx.createRadialGradient(VW * 0.25, VH * 0.5, 0, VW * 0.5, VH * 0.5, VW * 0.8);
-  grad.addColorStop(0, '#221e1a');
-  grad.addColorStop(1, '#1a1612');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, VW, VH);
-
-  const now = Date.now();
-
-  // Draw gears back to front (small → large so hour gear sits on top)
-  // Actually draw large first so small gears appear in front
-  for (let i = 0; i < gearCache.length; i++) {
-    drawGear(gearCache[i], getAngle(GEARS[i]));
-  }
-
-  // Draw pitch circles + labels on top
-  for (let i = 0; i < gearCache.length; i++) {
-    drawLabel(gearCache[i], now);
-  }
-
-  drawConnectors();
-
-  requestAnimationFrame(draw);
+function tick() {
+  const elapsed    = getRealElapsed();
+  const driveAngle = (elapsed / ROOT_PERIOD) * 360;
+  axleRenderMap.forEach(({spin, referenceGear}) => {
+    const a = referenceGear.angularGain * driveAngle + referenceGear.angularOffset;
+    spin.setAttribute('transform', `rotate(${a.toFixed(2)})`);
+  });
+  requestAnimationFrame(tick);
 }
 
-draw();
+// ─── Controls ────────────────────────────────────────────────────────────────
+document.getElementById('paletteSelect').addEventListener('change', e => {
+  GEAR_COLORS = buildGearColors(e.target.value);
+  createScene();
+});
+
+document.getElementById('tzSelect').addEventListener('change', e => {
+  currentTZ = e.target.value;
+  // No rebuild needed — getRealElapsed() picks up the new TZ on next tick
+});
+
+// ─── Boot ────────────────────────────────────────────────────────────────────
+solveLayout();
+buildAxles();
+setViewBox();
+createScene();
+requestAnimationFrame(tick);
 </script>
-
 </body>
 </html>

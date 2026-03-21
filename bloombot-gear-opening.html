@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>bloombot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --ink: #1a1612; --amber: #d97706; --dim: rgba(255,255,255,0.38); }
+
+    html, body {
+      height: 100%; overflow: hidden;
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--ink); color: #fff;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem; height: 52px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      background: rgba(26,22,18,0.88);
+      backdrop-filter: blur(12px);
+    }
+    .nav-brand {
+      font-family: 'Space Mono', monospace; font-size: 1.05rem; font-weight: 700;
+      color: var(--amber); text-decoration: none; letter-spacing: -0.03em;
+    }
+    .nav-links { display: flex; gap: 0.25rem; list-style: none; }
+    .nav-links a {
+      font-family: 'Space Mono', monospace; font-size: 0.68rem;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--dim); text-decoration: none;
+      padding: 0.4rem 0.8rem; border-radius: 4px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .nav-links a:hover { color: #fff; background: rgba(255,255,255,0.07); }
+
+    /* ── CANVAS ── */
+    #gearCanvas {
+      position: fixed; inset: 0; z-index: 1;
+      width: 100vw; height: 100vh;
+    }
+
+    /* ── ENTER ── */
+    .enter-wrap {
+      position: fixed; bottom: 2.5rem; right: 2.5rem;
+      z-index: 20;
+      opacity: 0; animation: fadeUp 1s ease-out 0.8s forwards;
+    }
+    .enter-wrap a {
+      font-family: 'Space Mono', monospace; font-size: 0.75rem;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: rgba(255,255,255,0.38); text-decoration: none;
+      padding: 0.6rem 1.6rem;
+      border: 1px solid rgba(255,255,255,0.14); border-radius: 4px;
+      transition: all 0.3s ease; display: inline-block;
+    }
+    .enter-wrap a:hover {
+      color: var(--amber); border-color: var(--amber);
+      box-shadow: 0 0 24px rgba(217,119,6,0.18);
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="opening.html">bloombot</a>
+  <ul class="nav-links">
+    <li><a href="bloombot-home.html">Studio</a></li>
+    <li><a href="bloombot-modern.html">Teaching</a></li>
+  </ul>
+</nav>
+
+<canvas id="gearCanvas"></canvas>
+
+<div class="enter-wrap">
+  <a href="bloombot-home.html">Enter</a>
+</div>
+
+<script>
+// ─── Gear specs ──────────────────────────────────────────────────────────────
+// Each gear rotates once per its time unit.
+// freq = rotations per second
+// dir  = +1 (CW) or -1 (CCW) — alternates for external meshing
+// pos  = [cx, cy] in module units (m), defines gear center
+// The six gears are chained: each meshes with the next.
+// Meshing condition: dist(center_i, center_{i+1}) = R_i + R_{i+1}
+
+const GEARS = [
+  { N:80, label:'hour',      sub:'1 rev / hour',   freq:1/3600, dir:+1, color:'#d97706', pos:[44,   60  ] },
+  { N:40, label:'minute',    sub:'1 rev / min',    freq:1/60,   dir:-1, color:'#c4541a', pos:[96,   30  ] },
+  { N:24, label:'second',    sub:'1 rev / sec',    freq:1,      dir:+1, color:'#22c55e', pos:[128,  30  ] },
+  { N:16, label:'½ sec',     sub:'2 rev / sec',    freq:2,      dir:-1, color:'#3b82f6', pos:[142,  44  ] },
+  { N:10, label:'1/10 sec',  sub:'10 rev / sec',   freq:10,     dir:+1, color:'#a855f7', pos:[155,  44  ] },
+  { N:8,  label:'1/100 sec', sub:'100 rev / sec',  freq:100,    dir:-1, color:'#06b6d4', pos:[164,  44  ] },
+];
+
+// ─── Involute math ───────────────────────────────────────────────────────────
+const PHI = 20 * Math.PI / 180; // pressure angle
+function inv(a) { return Math.tan(a) - a; }
+
+function buildGearPoints(N, m) {
+  // Returns array of [x,y] points for one full gear outline (angle=0)
+  const pitchR = N * m / 2;
+  const baseR  = pitchR * Math.cos(PHI);
+  const outerR = pitchR + m;
+  const rootR  = Math.max(baseR * 0.97, pitchR - 1.25 * m);
+  const startR = Math.max(rootR, baseR);
+  const halfAtPitch = Math.PI / (2 * N);
+
+  function halfAtR(R) {
+    const alpha = Math.acos(Math.min(1, baseR / R));
+    return halfAtPitch + inv(PHI) - inv(alpha);
+  }
+
+  const toothAng = 2 * Math.PI / N;
+  const STEPS = Math.max(6, Math.round(80 / N));
+  const pts = [];
+
+  for (let k = 0; k < N; k++) {
+    const base  = k * toothAng;
+    const hS    = halfAtR(startR);
+    const hO    = halfAtR(outerR);
+
+    // Root right
+    pts.push([rootR * Math.cos(base - hS), rootR * Math.sin(base - hS)]);
+
+    // Radial up to involute start (when base circle > root)
+    if (startR > rootR + 0.01) {
+      pts.push([startR * Math.cos(base - hS), startR * Math.sin(base - hS)]);
+    }
+
+    // Right involute flank
+    for (let i = 1; i <= STEPS; i++) {
+      const R = startR + (outerR - startR) * i / STEPS;
+      const a = base - halfAtR(R);
+      pts.push([R * Math.cos(a), R * Math.sin(a)]);
+    }
+
+    // Tip arc
+    for (let i = 1; i <= 4; i++) {
+      const a = base - hO + 2 * hO * i / 4;
+      pts.push([outerR * Math.cos(a), outerR * Math.sin(a)]);
+    }
+
+    // Left involute flank (reversed)
+    for (let i = STEPS - 1; i >= 0; i--) {
+      const R = startR + (outerR - startR) * i / STEPS;
+      const a = base + halfAtR(R);
+      pts.push([R * Math.cos(a), R * Math.sin(a)]);
+    }
+
+    // Back to root
+    if (startR > rootR + 0.01) {
+      pts.push([startR * Math.cos(base + hS), startR * Math.sin(base + hS)]);
+    }
+    pts.push([rootR * Math.cos(base + toothAng - hS), rootR * Math.sin(base + toothAng - hS)]);
+  }
+
+  return { pts, pitchR, outerR, rootR };
+}
+
+// ─── Canvas setup ────────────────────────────────────────────────────────────
+const canvas = document.getElementById('gearCanvas');
+const ctx    = canvas.getContext('2d');
+const NAV_H  = 52;
+
+// Gear geometry cache (recomputed on resize)
+let gearCache = [];
+let m = 8; // module in px, set by resize
+
+function computeLayout() {
+  const VW = canvas.width;
+  const VH = canvas.height;
+
+  // Scale so the gear system fills the canvas.
+  // Bounding box in module-units: x: [4, 168], y: [10, 100]
+  const mByW = VW / 168;
+  const mByH = VH / 110;
+  m = Math.min(mByW, mByH);
+
+  gearCache = GEARS.map(g => {
+    const scale = m;
+    const cx    = g.pos[0] * scale;
+    const cy    = g.pos[1] * scale;
+    const geo   = buildGearPoints(g.N, scale);
+    const hubR  = scale * 2.6;
+    const dotR  = scale * 1.0;
+    return { ...g, cx, cy, scale, geo, hubR, dotR };
+  });
+}
+
+function resize() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  computeLayout();
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ─── Drawing ─────────────────────────────────────────────────────────────────
+function drawGear(gc, angle) {
+  const { cx, cy, geo, color, hubR, dotR } = gc;
+  const pts = geo.pts;
+  const cosA = Math.cos(angle), sinA = Math.sin(angle);
+
+  // Gear body
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(angle);
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  // Tooth edge highlight
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.lineWidth = 0.6;
+  ctx.stroke();
+
+  // Hub hole
+  ctx.beginPath();
+  ctx.arc(0, 0, hubR, 0, Math.PI * 2);
+  ctx.fillStyle = '#1a1612';
+  ctx.fill();
+
+  // Centre dot
+  ctx.beginPath();
+  ctx.arc(0, 0, dotR, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawLabel(gc, now) {
+  const { cx, cy, geo, color, label, sub, N, scale, freq } = gc;
+  const pitchR = geo.pitchR;
+
+  // Outer ring – pitch circle ghost
+  ctx.beginPath();
+  ctx.arc(cx, cy, pitchR, 0, Math.PI * 2);
+  ctx.strokeStyle = color + '22';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Label inside gear (non-rotating)
+  const fontSize = Math.max(8, Math.min(18, pitchR * 0.22));
+  const subSize  = Math.max(6, Math.min(11, pitchR * 0.13));
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Main label
+  ctx.font = `600 ${fontSize}px 'Space Grotesk', sans-serif`;
+  ctx.fillStyle = 'rgba(255,255,255,0.82)';
+  ctx.fillText(label, cx, cy - fontSize * 0.5);
+
+  // Sub label
+  ctx.font = `${subSize}px 'Space Mono', monospace`;
+  ctx.fillStyle = color + 'aa';
+  ctx.fillText(sub, cx, cy + fontSize * 0.7);
+}
+
+// ─── Meshing connectors (axle dots) ──────────────────────────────────────────
+function drawConnectors() {
+  GEARS.forEach(g => {
+    const gc = gearCache[GEARS.indexOf(g)];
+    ctx.beginPath();
+    ctx.arc(gc.cx, gc.cy, 2, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fill();
+  });
+}
+
+// ─── Animation loop ──────────────────────────────────────────────────────────
+function getAngle(g) {
+  // Use real wall-clock time for a live clock feel
+  const now = new Date();
+  const totalSec = now.getHours() * 3600 + now.getMinutes() * 60
+                 + now.getSeconds() + now.getMilliseconds() / 1000;
+  return g.dir * 2 * Math.PI * totalSec * g.freq;
+}
+
+function draw() {
+  const VW = canvas.width;
+  const VH = canvas.height;
+
+  // Dark background with subtle gradient
+  const grad = ctx.createRadialGradient(VW * 0.25, VH * 0.5, 0, VW * 0.5, VH * 0.5, VW * 0.8);
+  grad.addColorStop(0, '#221e1a');
+  grad.addColorStop(1, '#1a1612');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, VW, VH);
+
+  const now = Date.now();
+
+  // Draw gears back to front (small → large so hour gear sits on top)
+  // Actually draw large first so small gears appear in front
+  for (let i = 0; i < gearCache.length; i++) {
+    drawGear(gearCache[i], getAngle(GEARS[i]));
+  }
+
+  // Draw pitch circles + labels on top
+  for (let i = 0; i < gearCache.length; i++) {
+    drawLabel(gearCache[i], now);
+  }
+
+  drawConnectors();
+
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+
+</body>
+</html>

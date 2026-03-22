@@ -333,7 +333,7 @@ const gearSpecs = [
   { id:'slow2',           axle:'slow2',     N:64, featured:false },
   { id:'slow2Pin',        axle:'slow2',     N:16, featured:false },
   { id:'slowIdler',       axle:'slowIdler', N:24, featured:false },
-  { id:'minute',          axle:'minute',    N:60, featured:true,  title:'MINUTE',    subtitle:'1 rev = 1 min',    labelDx:142,   labelDy:-20, anchor:'start'  },
+  { id:'minute',          axle:'minute',    N:60, featured:true,  title:'MINUTE',    subtitle:'1 rev = 1 min',    labelDx:142,   labelDy:-60, anchor:'start'  },
   { id:'minutePin',       axle:'minute',    N:12, featured:false },
   { id:'hour1',           axle:'hour1',     N:48, featured:false },
   { id:'hour1Pin',        axle:'hour1',     N:16, featured:false },
@@ -353,12 +353,12 @@ const gearSpecs = [
   { id:'hourSlowPin',     axle:'hour',      N:12, featured:false },
   { id:'day1Big',         axle:'day1',      N:72, featured:false },
   { id:'day1Pin',         axle:'day1',      N:12, featured:false },
-  { id:'day',             axle:'day',       N:48, featured:true,  title:'24 HOURS',  subtitle:'1 rev = 24 hr',    labelDx:-138,  labelDy:164, anchor:'end' },
+  { id:'day',             axle:'day',       N:48, featured:true,  title:'24 HOURS',  subtitle:'1 rev = 24 hr',    labelDx:-38,  labelDy:194, anchor:'end' },
   // ── Week extension: day → [daySlowPin] → week ────────────────────────────
   // daySlowPin(N=12) coaxial with day → week(N=84)
   // Total ratio: 12/84 = 1/7  → period = 86400*7 = 604800s ✓
   { id:'daySlowPin',      axle:'day',       N:12, featured:false },
-  { id:'week',            axle:'week',      N:84, featured:true,  title:'WEEK',      subtitle:'1 rev = 7 days',   labelDx:-222,  labelDy:-15, anchor:'end' },
+  { id:'week',            axle:'week',      N:84, featured:true,  title:'WEEK',      subtitle:'1 rev = 7 days',   labelDx:-122,  labelDy:195, anchor:'end' },
 ];
 
 const coaxialEdges = [
@@ -373,7 +373,7 @@ const coaxialEdges = [
   { from:'hour1',       to:'hour1Pin',      phaseDeg: 20  },
   { from:'hour2',       to:'hour2Pin',      phaseDeg:-16  },
   // Extended chain
-  { from:'hour',        to:'hourSlowPin',   phaseDeg: 28  },
+  { from:'hour',        to:'hourSlowPin',   phaseDeg: 128  },
   { from:'hour',        to:'hourClockPin',  phaseDeg: 10  },
   { from:'hcRelay',     to:'hcRelayPin',    phaseDeg:-16  },
   { from:'day1Big',     to:'day1Pin',       phaseDeg:-22  },
@@ -396,18 +396,18 @@ const meshEdges = [
   // Slow side
   { from:'secondSlow',   to:'slow1',         angleDeg:235  },
   { from:'slow1Pin',     to:'slow2',         angleDeg:310  },
-  { from:'slow2Pin',     to:'slowIdler',     angleDeg:  8  },
-  { from:'slowIdler',    to:'minute',        angleDeg: 35  },
-  { from:'minutePin',    to:'hour1',         angleDeg:188  },
+  { from:'slow2Pin',     to:'slowIdler',     angleDeg:208  },
+  { from:'slowIdler',    to:'minute',        angleDeg:205  },
+  { from:'minutePin',    to:'hour1',         angleDeg:128  },
   { from:'hour1Pin',     to:'hour2',         angleDeg:222  },
   { from:'hour2Pin',     to:'hourIdler',     angleDeg:205  },
   { from:'hourIdler',    to:'hour',          angleDeg:240  },
   // Day/Week extension
-  { from:'hourClockPin', to:'hcRelay',        angleDeg: 35  },
-  { from:'hcRelayPin',   to:'clockHour',     angleDeg: 20  },
-  { from:'hourSlowPin',  to:'day1Big',       angleDeg:115  },
-  { from:'day1Pin',      to:'day',           angleDeg:250  },
-  { from:'daySlowPin',   to:'week',          angleDeg:200  },
+  { from:'hourClockPin', to:'hcRelay',        angleDeg: 5  },
+  { from:'hcRelayPin',   to:'clockHour',     angleDeg: -40  },
+  { from:'hourSlowPin',  to:'day1Big',       angleDeg:145  },
+  { from:'day1Pin',      to:'day',           angleDeg:180  },
+  { from:'daySlowPin',   to:'week',          angleDeg:180  },
 ];
 
 // ─── Layout solver ────────────────────────────────────────────────────────────

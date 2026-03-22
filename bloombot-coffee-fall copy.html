@@ -36,6 +36,8 @@
       z-index: 1;
     }
 
+    /* Surface is drawn on canvas now */
+
     .brand {
       position: absolute;
       bottom: 15%;
@@ -92,129 +94,6 @@
       border-color: var(--amber);
       box-shadow: 0 0 16px rgba(217,119,6,0.15);
     }
-
-    /* ── Grind control panel ── */
-    .grind-control {
-      position: absolute;
-      bottom: 8%;
-      right: 4.5rem;
-      z-index: 20;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.6rem;
-      opacity: 0;
-      transition: opacity 1s ease;
-      user-select: none;
-    }
-    .grind-control.visible { opacity: 1; }
-
-    .grind-label {
-      font-family: 'Space Mono', monospace;
-      font-size: .6rem;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      color: rgba(111,78,55,0.5);
-    }
-
-    /* ── Sliders ── */
-    .slider-block {
-      width: 180px;
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-    }
-    .slider-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      font-family: 'Space Mono', monospace;
-      font-size: 0.5rem;
-      letter-spacing: 0.12em;
-      color: rgba(111,78,55,0.45);
-    }
-    .slider-val {
-      color: rgba(217,119,6,0.65);
-      font-size: 0.55rem;
-      min-width: 2.2em;
-      text-align: right;
-    }
-    .grind-slider {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 100%;
-      height: 2px;
-      background: rgba(111,78,55,0.22);
-      border-radius: 1px;
-      outline: none;
-      cursor: pointer;
-    }
-    .grind-slider::-webkit-slider-runnable-track {
-      height: 2px;
-      background: rgba(111,78,55,0.22);
-      border-radius: 1px;
-    }
-    .grind-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #d97706;
-      border: 2px solid #131009;
-      box-shadow: 0 0 8px rgba(217,119,6,0.45);
-      cursor: pointer;
-      transition: box-shadow 0.15s ease;
-      margin-top: -6px;
-    }
-    .grind-slider::-webkit-slider-thumb:hover {
-      box-shadow: 0 0 16px rgba(217,119,6,0.65);
-    }
-    .grind-slider::-moz-range-thumb {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #d97706;
-      border: 2px solid #131009;
-      box-shadow: 0 0 8px rgba(217,119,6,0.45);
-      cursor: pointer;
-    }
-    .grind-slider::-moz-range-track {
-      height: 2px;
-      background: rgba(111,78,55,0.22);
-      border-radius: 1px;
-    }
-
-    .grind-divider {
-      width: 60%;
-      height: 1px;
-      background: rgba(111,78,55,0.18);
-      margin: 0.2rem 0;
-    }
-
-    .dispense-btn {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.6rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: rgba(111,78,55,0.5);
-      background: transparent;
-      border: 1px solid rgba(111,78,55,0.22);
-      border-radius: 3px;
-      padding: 0.45rem 1.1rem;
-      cursor: pointer;
-      transition: color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-      white-space: nowrap;
-    }
-    .dispense-btn:hover {
-      color: var(--amber);
-      border-color: rgba(217,119,6,0.4);
-      box-shadow: 0 0 12px rgba(217,119,6,0.12);
-    }
-    .dispense-btn:active {
-      color: #fff;
-      border-color: rgba(217,119,6,0.7);
-    }
-
   </style>
 </head>
 <body>
@@ -227,34 +106,13 @@
     <a href="bloombot - Coffee.html" class="diné" style="text-decoration:none; pointer-events:all; cursor:pointer; color:rgba(111,78,55,0.4); transition:color 0.25s;" onmouseover="this.style.color='rgba(111,78,55,0.75)'" onmouseout="this.style.color='rgba(111,78,55,0.4)'">coffee grind generator</a>
   </div>
 
-  <!-- Grind control -->
-  <div class="grind-control" id="grindControl">
-    <div class="grind-label">Grind</div>
-    <div class="slider-block">
-      <div class="slider-header">
-        <span>Size</span>
-        <span class="slider-val" id="sizeVal">24</span>
-      </div>
-      <input class="grind-slider" type="range" id="sizeSlider" min="2" max="30" value="24">
-    </div>
-    <div class="slider-block">
-      <div class="slider-header">
-        <span>Bump Length</span>
-        <span class="slider-val" id="bumpVal">5</span>
-      </div>
-      <input class="grind-slider" type="range" id="bumpSlider" min="2" max="30" value="5">
-    </div>
-    <div class="grind-divider"></div>
-    <button class="dispense-btn" id="dispenseBtn">Dispense</button>
-  </div>
-
   <div class="enter-link" id="enterLink">
     <a href="bloombot-home.html">Enter</a>
   </div>
 </div>
 
 <script>
-// ─── Coffee colors ───
+// ─── Coffee colors (from the coffee grounds generator) ───
 const coffeeColors = [
   '#b9731d','#b6711c','#b46f1b','#b16c19','#af6a18','#ac6817','#a96616','#a76315',
   '#a46114','#a15f13','#9e5d12','#9b5b11','#995810','#96560f','#93540e','#90520d',
@@ -263,37 +121,19 @@ const coffeeColors = [
   '#5a2e02','#572c02','#532a01','#502801','#4d2601','#492401','#462200','#422000'
 ];
 
-// ─── Coffee ground shape generator ───
+// ─── Coffee ground shape generator (from the turtle graphics algorithm) ───
 function generateGroundShape(size, numBumps, bumpVariance) {
   const points = [];
   for (let i = 0; i < numBumps; i++) {
     const angle = (i / numBumps) * Math.PI * 2;
     const radius = size + (Math.random() * bumpVariance);
-    points.push({ x: radius * Math.cos(angle), y: radius * Math.sin(angle) });
+    points.push({
+      x: radius * Math.cos(angle),
+      y: radius * Math.sin(angle)
+    });
   }
   return points;
 }
-
-// ─── Grind sliders ───
-const sizeSlider = document.getElementById('sizeSlider');
-const bumpSlider = document.getElementById('bumpSlider');
-
-function currentGrindSize()  { return parseInt(sizeSlider.value); }   // 10 → 100
-function currentGrindSpike() { return parseInt(bumpSlider.value); }    // 5 → 60
-function currentGrindBumps() { return 35; }                            // fixed
-
-function stopProp(e) { e.stopPropagation(); }
-[sizeSlider, bumpSlider].forEach(s => {
-  s.addEventListener('mousedown', stopProp);
-  s.addEventListener('touchstart', stopProp, { passive: true });
-});
-
-sizeSlider.addEventListener('input', () => {
-  document.getElementById('sizeVal').textContent = sizeSlider.value;
-});
-bumpSlider.addEventListener('input', () => {
-  document.getElementById('bumpVal').textContent = bumpSlider.value;
-});
 
 // ─── Physics simulation ───
 const canvas = document.getElementById('coffeeCanvas');
@@ -312,27 +152,37 @@ const GRAVITY = 0.15;
 const BOUNCE_DAMPING = 0.3;
 const FRICTION = 0.88;
 const ROTATION_DAMPING = 0.9;
-const RAMP_ANGLE = 15 * Math.PI / 180;
+const RAMP_ANGLE = 15 * Math.PI / 180; // 15 degrees
 
+// Surface geometry — computed on resize
 let surfaces = {};
 
 function computeSurfaces() {
-  const cy = H * 0.68;
-  const rampLen = W * 0.40;
-  const cupW = W * 0.10;
-  const cupH = H * 0.06;
+  const cy = H * 0.68; // base height for the ramps/cup
+  const rampLen = W * 0.40; // each ramp is 30% of width
+  const cupW = W * 0.10; // cup opening width
+  const cupH = H * 0.06; // cup depth
   const cupBottom = cy + cupH;
+  const cupWallThick = 4;
 
+  // Left ramp: starts at left edge, angles down toward center
   const leftRamp = {
-    x1: 0, y1: cy - Math.tan(RAMP_ANGLE) * rampLen,
-    x2: rampLen, y2: cy
-  };
-  const rightRamp = {
-    x1: W, y1: cy - Math.tan(RAMP_ANGLE) * rampLen,
-    x2: W - rampLen, y2: cy
+    x1: 0,
+    y1: cy - Math.tan(RAMP_ANGLE) * rampLen,
+    x2: rampLen,
+    y2: cy
   };
 
-  const cupLeft  = W / 2 - cupW / 2;
+  // Right ramp: starts at right edge, angles down toward center (mirrored)
+  const rightRamp = {
+    x1: W,
+    y1: cy - Math.tan(RAMP_ANGLE) * rampLen,
+    x2: W - rampLen,
+    y2: cy
+  };
+
+  // Cup: centered, a U-shape
+  const cupLeft = W / 2 - cupW / 2;
   const cupRight = W / 2 + cupW / 2;
 
   surfaces = {
@@ -351,22 +201,26 @@ function resize() {
   computeSurfaces();
 }
 
+// Get Y on a line segment at a given X (returns null if x is outside segment)
 function lineYatX(seg, x) {
   if (x < Math.min(seg.x1, seg.x2) || x > Math.max(seg.x1, seg.x2)) return null;
   const t = (x - seg.x1) / (seg.x2 - seg.x1);
   return seg.y1 + t * (seg.y2 - seg.y1);
 }
 
+// Normal vector of a line segment (pointing "up" / outward)
 function lineNormal(seg) {
   const dx = seg.x2 - seg.x1;
   const dy = seg.y2 - seg.y1;
   const len = Math.sqrt(dx * dx + dy * dy);
+  // Normal perpendicular, pointing upward (negative y)
   let nx = -dy / len;
   let ny = dx / len;
-  if (ny > 0) { nx = -nx; ny = -ny; }
+  if (ny > 0) { nx = -nx; ny = -ny; } // ensure upward
   return { nx, ny };
 }
 
+// Reflect velocity off a surface normal
 function reflect(vx, vy, nx, ny, damping) {
   const dot = vx * nx + vy * ny;
   return {
@@ -375,6 +229,7 @@ function reflect(vx, vy, nx, ny, damping) {
   };
 }
 
+// Draw the ramps and cup
 function drawSurfaces() {
   const s = surfaces;
   ctx.save();
@@ -382,16 +237,19 @@ function drawSurfaces() {
   ctx.lineWidth = 2;
   ctx.lineCap = 'round';
 
+  // Left ramp
   ctx.beginPath();
   ctx.moveTo(s.leftRamp.x1, s.leftRamp.y1);
   ctx.lineTo(s.leftRamp.x2, s.leftRamp.y2);
   ctx.stroke();
 
+  // Right ramp
   ctx.beginPath();
   ctx.moveTo(s.rightRamp.x1, s.rightRamp.y1);
   ctx.lineTo(s.rightRamp.x2, s.rightRamp.y2);
   ctx.stroke();
 
+  // Espresso cup — straight-walled U shape, no circles
   const cupL = s.cupLeft;
   const cupR = s.cupRight;
   const cupT = s.cupTop;
@@ -400,31 +258,33 @@ function drawSurfaces() {
   ctx.strokeStyle = 'rgba(111,78,55,0.5)';
   ctx.lineWidth = 2.5;
   ctx.beginPath();
+  // Left wall
   ctx.moveTo(cupL, cupT);
   ctx.lineTo(cupL, cupB);
+  // Flat bottom
   ctx.lineTo(cupR, cupB);
+  // Right wall
   ctx.lineTo(cupR, cupT);
   ctx.stroke();
+
+  // Saucer line under the cup — wider
+  // ctx.strokeStyle = 'rgba(111,78,55,0.25)';
+  // ctx.lineWidth = 1.5;
+  // ctx.beginPath();
+  // const saucerExtend = s.cupW * 1.2;
+  // ctx.moveTo(cupL - saucerExtend, cupB + 4);
+  // ctx.lineTo(cupR + saucerExtend, cupB + 4);
+  // ctx.stroke();
 
   ctx.restore();
 }
 
 class CoffeeGrind {
-  constructor(x, overrideSize, overrideSpike, overrideBumps) {
-    // Use dial-driven params if provided, otherwise random defaults
-    const baseSize = (overrideSize !== undefined)
-      ? overrideSize * (0.7 + Math.random() * 0.6)
-      : (4 + Math.random() * 10);
-    const spike = (overrideSpike !== undefined)
-      ? overrideSpike * (0.7 + Math.random() * 0.6)
-      : (1 + Math.random() * 3);
-    const bumps = (overrideBumps !== undefined)
-      ? overrideBumps
-      : (20 + Math.floor(Math.random() * 35));
-
-    this.size = Math.max(2, baseSize);
-    this.numBumps = bumps;
-    this.bumpVariance = Math.max(0.3, spike);
+  constructor(x) {
+    const baseSize = 4 + Math.random() * 10;
+    this.size = baseSize;
+    this.numBumps = 20 + Math.floor(Math.random() * 35);
+    this.bumpVariance = 1 + Math.random() * 3;
     this.shape = generateGroundShape(this.size, this.numBumps, this.bumpVariance);
     this.color = coffeeColors[Math.floor(Math.random() * coffeeColors.length)];
     this.strokeColor = '#3a1f0a';
@@ -452,31 +312,41 @@ class CoffeeGrind {
     const r = this.size;
     let hit = false;
 
+    // ── Check left ramp collision ──
     const leftY = lineYatX(s.leftRamp, this.x);
     if (leftY !== null && this.y + r >= leftY) {
       const n = lineNormal(s.leftRamp);
       const ref = reflect(this.vx, this.vy, n.nx, n.ny, BOUNCE_DAMPING);
-      this.vx = ref.vx; this.vy = ref.vy;
+      this.vx = ref.vx;
+      this.vy = ref.vy;
       this.y = leftY - r;
+      // Slide bias toward center
       this.vx += 0.3;
       this.angularVel *= ROTATION_DAMPING;
       hit = true;
     }
 
+    // ── Check right ramp collision ──
     const rightY = lineYatX(s.rightRamp, this.x);
     if (rightY !== null && this.y + r >= rightY) {
       const n = lineNormal(s.rightRamp);
       const ref = reflect(this.vx, this.vy, n.nx, n.ny, BOUNCE_DAMPING);
-      this.vx = ref.vx; this.vy = ref.vy;
+      this.vx = ref.vx;
+      this.vy = ref.vy;
       this.y = rightY - r;
+      // Slide bias toward center
       this.vx -= 0.3;
       this.angularVel *= ROTATION_DAMPING;
       hit = true;
     }
 
+    // ── Check cup collision ──
     if (this.x >= s.cupLeft - r && this.x <= s.cupRight + r) {
+      // Cup bottom (curved)
       const distFromCenter = this.x - s.cupCenterX;
       const cupRadius = s.cupW / 2;
+      // Approximate cup interior as a parabola
+      const cupFloorY = s.cupBottom - Math.sqrt(Math.max(0, cupRadius * cupRadius - distFromCenter * distFromCenter)) * (s.cupH / cupRadius) * 0.3;
       const effectiveCupBottom = Math.min(s.cupBottom, s.cupTop + s.cupH * 0.85);
 
       if (this.y + r >= effectiveCupBottom && this.x > s.cupLeft && this.x < s.cupRight) {
@@ -487,12 +357,14 @@ class CoffeeGrind {
         hit = true;
       }
 
+      // Cup left wall
       if (this.x - r < s.cupLeft && this.x + r > s.cupLeft && this.y > s.cupTop && this.y < s.cupBottom) {
         this.x = s.cupLeft + r;
         this.vx = Math.abs(this.vx) * BOUNCE_DAMPING;
         hit = true;
       }
 
+      // Cup right wall
       if (this.x + r > s.cupRight && this.x - r < s.cupRight && this.y > s.cupTop && this.y < s.cupBottom) {
         this.x = s.cupRight - r;
         this.vx = -Math.abs(this.vx) * BOUNCE_DAMPING;
@@ -500,21 +372,26 @@ class CoffeeGrind {
       }
     }
 
+    // ── Settle check ──
     if (hit) {
       if (Math.abs(this.vy) < 0.4 && Math.abs(this.vx) < 0.4) {
         this.settleCount++;
         if (this.settleCount > 4) {
-          this.vy = 0; this.vx = 0; this.angularVel = 0;
+          this.vy = 0;
+          this.vx = 0;
+          this.angularVel = 0;
           this.settled = true;
         }
       }
     }
 
+    // ── Fall off screen → remove (don't settle) ──
     if (this.y > H + 50) {
       this.settled = true;
       this.opacity = 0;
     }
 
+    // Walls
     if (this.x < r) { this.x = r; this.vx = Math.abs(this.vx) * 0.5; }
     if (this.x > W - r) { this.x = W - r; this.vx = -Math.abs(this.vx) * 0.5; }
   }
@@ -542,28 +419,12 @@ class CoffeeGrind {
   }
 }
 
-// ─── Dispense: spawn a small burst with current dial settings ───
-function dispenseGrinds() {
-  const s  = currentGrindSize();
-  const sp = currentGrindSpike();
-  const bm = currentGrindBumps();
-
-  const count = 3 + Math.floor(Math.random() * 6); // 3–9 grinds
-  for (let i = 0; i < count; i++) {
-    // Spread them narrowly above the cup area
-    const spread = W * 0.28;
-    const x = W / 2 + (Math.random() - 0.5) * spread * 2;
-    const g = new CoffeeGrind(x, s, sp, bm);
-    g.y = -g.size * 2 - Math.random() * 40; // start just above canvas
-    g.vy = 0.5 + Math.random() * 1.5;
-    grinds.push(g);
-  }
-}
-
 function spawnGrind() {
   if (totalSpawned >= maxGrinds) return;
+
   const batch = 1 + Math.floor(Math.random() * 3);
   for (let b = 0; b < batch && totalSpawned < maxGrinds; b++) {
+    // Spawn across the width but weighted toward center area above the cup
     const x = Math.random() * W * 0.6 + W * 0.2;
     grinds.push(new CoffeeGrind(x));
     totalSpawned++;
@@ -572,16 +433,25 @@ function spawnGrind() {
 
 function animate() {
   ctx.clearRect(0, 0, W, H);
+
+  // Draw surfaces behind everything
   drawSurfaces();
 
-  for (const g of settled) g.draw(ctx);
+  // Draw settled grinds
+  for (const g of settled) {
+    g.draw(ctx);
+  }
 
+  // Update and draw active grinds
   const stillActive = [];
   for (const g of grinds) {
     g.update();
     g.draw(ctx);
-    if (g.settled) settled.push(g);
-    else stillActive.push(g);
+    if (g.settled) {
+      settled.push(g);
+    } else {
+      stillActive.push(g);
+    }
   }
   grinds = stillActive;
 
@@ -595,14 +465,15 @@ function startSimulation() {
   grinds = [];
   settled = [];
   totalSpawned = 0;
-  maxGrinds = 30 + Math.floor(Math.random() * 80);
+  maxGrinds = 80 + Math.floor(Math.random() * 80);
 
+  // Show brand after a moment
   setTimeout(() => {
     document.getElementById('brand').classList.add('visible');
     document.getElementById('enterLink').classList.add('visible');
-    document.getElementById('grindControl').classList.add('visible');
   }, 1500);
 
+  // Spawn grinds in waves
   let spawnCount = 0;
   spawnTimer = setInterval(() => {
     spawnGrind();
@@ -610,6 +481,7 @@ function startSimulation() {
     if (totalSpawned >= maxGrinds) {
       clearInterval(spawnTimer);
       spawnTimer = null;
+      // Mark running as done after last grinds settle
       setTimeout(() => { isRunning = false; }, 2000);
     }
   }, 80 + Math.random() * 40);
@@ -618,29 +490,28 @@ function startSimulation() {
 }
 
 function resetAndRestart() {
+  // Cancel existing timers
   if (spawnTimer) { clearInterval(spawnTimer); spawnTimer = null; }
   if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
   isRunning = false;
 
+  // Fade out brand
   document.getElementById('brand').classList.remove('visible');
   document.getElementById('enterLink').classList.remove('visible');
-  document.getElementById('grindControl').classList.remove('visible');
 
+  // Clear canvas
   ctx.clearRect(0, 0, W, H);
-  setTimeout(() => { startSimulation(); }, 400);
+
+  // Short pause then restart
+  setTimeout(() => {
+    startSimulation();
+  }, 400);
 }
 
-// ─── Click to regenerate (exclude UI controls) ───
+// ─── Click to regenerate ───
 document.addEventListener('click', (e) => {
   if (e.target.closest('.enter-link')) return;
-  if (e.target.closest('.grind-control')) return;
   resetAndRestart();
-});
-
-// ─── Dispense button ───
-document.getElementById('dispenseBtn').addEventListener('click', (e) => {
-  e.stopPropagation();
-  dispenseGrinds();
 });
 
 // ─── Init ───

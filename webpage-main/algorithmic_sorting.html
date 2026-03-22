@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Algorithmic Sorting & Diffuse Harm</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  color: #e0e0e0;
+  min-height: 100vh;
+  padding: 14px;
+  font-size: 13px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 14px;
+  padding: 14px 20px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+header h1 { font-size: 1.4rem; color: #4ecdc4; margin-bottom: 3px; }
+header p  { font-size: 0.78rem; color: rgba(255,255,255,0.5); }
+header em { color: rgba(255,200,100,0.8); font-style: normal; }
+
+.main-layout {
+  display: grid;
+  grid-template-columns: 230px 1fr 270px;
+  gap: 14px;
+  margin-bottom: 14px;
+  align-items: start;
+}
+
+.panel {
+  background: rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.panel h3 {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #4ecdc4;
+  border-bottom: 1px solid rgba(78,205,196,0.25);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+
+/* Controls */
+.ctrl-row { margin-bottom: 13px; }
+.ctrl-row label {
+  display: block;
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.65);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.ctrl-row input[type="range"] {
+  width: 100%;
+  accent-color: #4ecdc4;
+  cursor: pointer;
+  height: 4px;
+}
+.range-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.3);
+  margin-top: 2px;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.75);
+}
+.toggle-switch { position: relative; width: 34px; height: 18px; display: inline-block; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.t-slider {
+  position: absolute; inset: 0;
+  background: #333; border-radius: 18px; cursor: pointer; transition: 0.2s;
+}
+.t-slider:before {
+  content: ''; position: absolute;
+  width: 12px; height: 12px; left: 3px; top: 3px;
+  background: white; border-radius: 50%; transition: 0.2s;
+}
+input:checked + .t-slider { background: #4ecdc4; }
+input:checked + .t-slider:before { transform: translateX(16px); }
+
+.feedback-note {
+  font-size: 0.66rem;
+  color: rgba(255,190,80,0.75);
+  line-height: 1.4;
+  margin-bottom: 10px;
+  display: none;
+  background: rgba(255,190,80,0.08);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.sect-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 6px;
+}
+
+.presets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+.preset-btn {
+  padding: 6px 4px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.7);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 0.67rem;
+  text-align: center;
+  transition: all 0.15s;
+  line-height: 1.3;
+}
+.preset-btn:hover { background: rgba(78,205,196,0.15); border-color: #4ecdc4; color: #4ecdc4; }
+.preset-btn.active { background: rgba(78,205,196,0.2); border-color: #4ecdc4; color: #4ecdc4; font-weight: 700; }
+
+.action-btn {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.78rem;
+  margin-bottom: 7px;
+  transition: all 0.15s;
+  letter-spacing: 0.02em;
+}
+.btn-primary { background: #4ecdc4; color: #0f2027; }
+.btn-primary:hover { background: #3bbdb4; }
+.btn-secondary {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.8);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.14); }
+.btn-accent { background: rgba(255,159,67,0.2); color: #ff9f43; border: 1px solid rgba(255,159,67,0.35); }
+.btn-accent:hover { background: rgba(255,159,67,0.3); }
+
+/* GROUP LEGEND */
+.group-legend { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.72rem; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* FUNNEL SVG */
+#funnel-svg { width: 100%; display: block; overflow: visible; }
+
+/* TRACE PANEL */
+.trace-panel {
+  display: none;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(78,205,196,0.25);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 12px;
+}
+.trace-panel.show { display: block; }
+.trace-header {
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.trace-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 0.72rem;
+}
+.trace-row:last-of-type { border-bottom: none; }
+.t-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.t-name { width: 110px; color: rgba(255,255,255,0.65); }
+.t-bar-bg {
+  flex: 1; height: 7px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px; overflow: hidden;
+}
+.t-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+.t-score { width: 32px; text-align: right; color: rgba(255,255,255,0.5); }
+.t-result { width: 48px; text-align: right; font-weight: 700; font-size: 0.68rem; }
+.trace-note {
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.3);
+  font-style: italic;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+/* STATS PANEL */
+.stat-block { margin-bottom: 14px; }
+.stat-block h4 {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 7px;
+}
+
+.outcome-row {
+  display: flex; align-items: center; gap: 7px;
+  margin-bottom: 5px; font-size: 0.75rem;
+}
+.o-label { width: 58px; font-weight: 600; }
+.o-bar-bg { flex: 1; height: 9px; background: rgba(255,255,255,0.09); border-radius: 5px; overflow: hidden; }
+.o-bar-fill { height: 100%; border-radius: 5px; transition: width 0.4s; }
+.o-pct { width: 36px; text-align: right; font-size: 0.7rem; color: rgba(255,255,255,0.55); }
+
+.di-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 9px; border-radius: 7px;
+  margin-bottom: 5px; font-size: 0.73rem;
+}
+.di-ok   { background: rgba(46,204,113,0.12); border: 1px solid rgba(46,204,113,0.3); }
+.di-warn { background: rgba(243,156,18,0.12); border: 1px solid rgba(243,156,18,0.3); }
+.di-fail { background: rgba(231,76,60,0.12);  border: 1px solid rgba(231,76,60,0.3); }
+.di-row .di-ratio { font-weight: 700; font-size: 0.82rem; }
+.di-row .di-verdict { font-size: 0.65rem; font-weight: 700; }
+
+.stage-tbl { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+.stage-tbl th {
+  text-align: center; padding: 3px 4px;
+  font-weight: 600; color: rgba(255,255,255,0.45);
+  font-size: 0.65rem;
+}
+.stage-tbl th:first-child { text-align: left; }
+.stage-tbl td { padding: 3px 4px; border-top: 1px solid rgba(255,255,255,0.06); text-align: center; }
+.stage-tbl td:first-child { text-align: left; color: rgba(255,255,255,0.55); }
+.rate-badge {
+  display: inline-block; padding: 2px 6px; border-radius: 4px;
+  font-weight: 700; font-size: 0.67rem;
+}
+.rg { background: rgba(46,204,113,0.2);  color: #2ecc71; }
+.rw { background: rgba(243,156,18,0.2);  color: #f39c12; }
+.rf { background: rgba(231,76,60,0.2);   color: #e74c3c; }
+
+.compound-box {
+  background: rgba(0,0,0,0.25); border-radius: 7px;
+  padding: 9px 11px; font-size: 0.73rem; line-height: 1.7;
+}
+
+/* EDUCATION */
+.edu-section { margin-top: 0; }
+.edu-tabs { display: flex; gap: 3px; flex-wrap: wrap; }
+.edu-tab {
+  padding: 7px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer; font-size: 0.72rem;
+  color: rgba(255,255,255,0.55); transition: all 0.15s;
+}
+.edu-tab:hover { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.8); }
+.edu-tab.active { background: rgba(255,255,255,0.08); color: #4ecdc4; border-color: rgba(78,205,196,0.35); }
+
+.edu-content {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 0 8px 8px 8px;
+  padding: 18px 20px; display: none;
+}
+.edu-content.active { display: block; }
+.edu-content p {
+  font-size: 0.8rem; line-height: 1.65;
+  color: rgba(255,255,255,0.78); margin-bottom: 10px;
+}
+.edu-content strong { color: #4ecdc4; font-weight: 700; }
+.edu-content em { color: rgba(255,200,100,0.85); font-style: normal; }
+
+.formula-box {
+  background: rgba(0,0,0,0.3);
+  border-left: 3px solid #4ecdc4;
+  padding: 10px 14px; border-radius: 0 6px 6px 0;
+  font-family: monospace; font-size: 0.76rem; line-height: 1.6;
+  margin: 10px 0; color: #a8e6cf;
+}
+
+.feat-tbl { width: 100%; border-collapse: collapse; font-size: 0.72rem; margin-top: 8px; }
+.feat-tbl th {
+  text-align: left; padding: 4px 8px;
+  color: rgba(255,255,255,0.4); font-weight: 600;
+  font-size: 0.65rem; text-transform: uppercase;
+}
+.feat-tbl td { padding: 5px 8px; border-top: 1px solid rgba(255,255,255,0.07); vertical-align: top; }
+.tag-legit { color: #4ecdc4; font-weight: 700; }
+.tag-proxy { color: #f39c12; font-weight: 700; }
+
+/* Iteration tracker */
+.iter-info {
+  font-size: 0.68rem;
+  color: rgba(255,200,80,0.7);
+  text-align: center;
+  margin-top: 4px;
+  min-height: 16px;
+}
+
+/* Responsive minimum */
+@media (max-width: 900px) {
+  .main-layout { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚖️ Algorithmic Sorting &amp; Diffuse Harm</h1>
+  <p>A Computational Social Science learning tool &nbsp;·&nbsp; Inspired by <em>Mobley v. Workday, Inc.</em> and disparate impact research</p>
+</header>
+
+<div class="main-layout">
+
+  <!-- ══ CONTROLS ══ -->
+  <div class="panel">
+    <h3>System Controls</h3>
+
+    <div class="ctrl-row">
+      <label>Population Size &nbsp;<strong id="popVal" style="color:#4ecdc4;">500</strong></label>
+      <input type="range" id="popSize" min="100" max="2000" step="50" value="500">
+    </div>
+
+    <div class="ctrl-row">
+      <label>🔍 Proxy Feature Influence &nbsp;<strong id="proxyVal" style="color:#4ecdc4;">50%</strong></label>
+      <input type="range" id="proxyWeight" min="0" max="100" value="50">
+      <div class="range-ends"><span>Skills only</span><span>Proxies only</span></div>
+    </div>
+
+    <div class="ctrl-row">
+      <label>Competition Level &nbsp;<strong id="compVal" style="color:#4ecdc4;">Medium</strong></label>
+      <input type="range" id="competition" min="1" max="3" step="1" value="2">
+      <div class="range-ends"><span>Few openings</span><span>Many openings</span></div>
+    </div>
+
+    <div class="toggle-row">
+      <span>🔄 Feedback Loop</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="feedbackToggle">
+        <span class="t-slider"></span>
+      </label>
+    </div>
+    <div class="feedback-note" id="feedbackNote">
+      Each run re-trains the algorithm on its own biased output. Watch Group C's numbers shrink over repeated runs.
+    </div>
+
+    <div class="sect-label">Scenario Presets</div>
+    <div class="presets">
+      <button class="preset-btn" data-proxy="0"  data-feedback="0">🎯 Skills Only</button>
+      <button class="preset-btn" data-proxy="30" data-feedback="0">📊 Low Proxy</button>
+      <button class="preset-btn active" data-proxy="50" data-feedback="0">⚖️ Baseline</button>
+      <button class="preset-btn" data-proxy="80" data-feedback="0">⚡ High Proxy</button>
+      <button class="preset-btn" data-proxy="50" data-feedback="1">🔄 + Feedback</button>
+      <button class="preset-btn" data-proxy="95" data-feedback="1">🚨 Worst Case</button>
+    </div>
+
+    <button class="action-btn btn-primary"    id="runBtn">▶ Run Simulation</button>
+    <button class="action-btn btn-secondary"  id="traceBtn">👤 Trace One Agent</button>
+    <button class="action-btn btn-accent"     id="iterBtn">⟳ Run Again (Feedback)</button>
+
+    <div class="iter-info" id="iterInfo"></div>
+  </div>
+
+  <!-- ══ FUNNEL VISUALIZATION ══ -->
+  <div class="panel">
+    <h3 id="funnelTitle">Hiring Pipeline</h3>
+
+    <div class="group-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#5dade2;"></div><span style="color:#5dade2;">Group A</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f39c12;"></div><span style="color:#f39c12;">Group B</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e74c3c;"></div><span style="color:#e74c3c;">Group C</span></div>
+      <div class="legend-item" style="margin-left:auto;font-size:0.65rem;color:rgba(255,255,255,0.3);">bars right = per-stage pass rate</div>
+    </div>
+
+    <svg id="funnel-svg"></svg>
+
+    <div class="trace-panel" id="tracePanel"></div>
+  </div>
+
+  <!-- ══ ANALYSIS ══ -->
+  <div class="panel">
+    <h3>Analysis</h3>
+
+    <div class="stat-block">
+      <h4>Overall Selection Rate (Pool → Hired)</h4>
+      <div id="overallRates"></div>
+    </div>
+
+    <div class="stat-block">
+      <h4>Disparate Impact (EEOC 4/5 Rule)</h4>
+      <div id="diRatios"></div>
+      <div style="font-size:0.65rem;color:rgba(255,255,255,0.3);margin-top:5px;line-height:1.4;">
+        Ratio ≥ 0.80 required to avoid adverse impact finding
+      </div>
+    </div>
+
+    <div class="stat-block">
+      <h4>Per-Stage Pass Rates</h4>
+      <table class="stage-tbl" id="stageTbl">
+        <tr>
+          <th>Stage</th>
+          <th style="color:#5dade2;">A</th>
+          <th style="color:#f39c12;">B</th>
+          <th style="color:#e74c3c;">C</th>
+        </tr>
+      </table>
+    </div>
+
+    <div class="stat-block">
+      <h4>Compounding Effect</h4>
+      <div class="compound-box" id="compoundBox"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ EDUCATION TABS ══ -->
+<div class="edu-section">
+  <div class="edu-tabs">
+    <div class="edu-tab active" data-tab="proxy">The Proxy Problem</div>
+    <div class="edu-tab" data-tab="compound">Compounding</div>
+    <div class="edu-tab" data-tab="climate">Weather vs. Climate</div>
+    <div class="edu-tab" data-tab="legal">Disparate Impact Law</div>
+    <div class="edu-tab" data-tab="features">Feature Structure</div>
+  </div>
+
+  <div class="edu-content active" data-content="proxy">
+    <p>A <strong>proxy feature</strong> is a characteristic that isn't a protected attribute (race, age, disability) but is statistically correlated with one. When a sorting algorithm uses proxy features, it can discriminate without ever directly "seeing" group membership.</p>
+    <p>In this simulation, proxy features include <strong>employment gap</strong>, <strong>school prestige score</strong>, <strong>zip code score</strong>, and <strong>name-based callback score</strong>. These don't measure ability — they measure social circumstance, which is correlated with group membership due to historical inequities. When fed to a sorting algorithm, they produce systematic group differences in outcomes.</p>
+    <div class="formula-box">
+      Final Score = (1 − proxyWeight) × LegitScore + proxyWeight × ProxyScore<br><br>
+      LegitScore = experience×0.40 + education×0.30 + skillTest×0.30<br>
+      ProxyScore = (noGap)×0.25 + schoolPrestige×0.30 + zipScore×0.25 + nameScore×0.20
+    </div>
+    <p>Try <strong>Skills Only</strong> preset (proxy = 0%) — groups reach similar outcomes. Slide to <strong>High Proxy</strong> — the algorithm never reads "group membership" but the proxies do its work.</p>
+  </div>
+
+  <div class="edu-content" data-content="compound">
+    <p>Even small per-stage pass-rate differences compound dramatically across multiple decision points. A system that feels "barely biased" at each step produces stark aggregate disparities at the end of the pipeline.</p>
+    <div class="formula-box">
+      If Group A passes each of 4 stages at 75% and Group C at 63%:<br>
+      Group A cumulative: 0.75⁴ ≈ 31.6% reach offers<br>
+      Group C cumulative: 0.63⁴ ≈ 15.8% reach offers<br>
+      Disparate impact ratio: 15.8 / 31.6 ≈ 0.50 — well below the 4/5 threshold (0.80)
+    </div>
+    <p>This is the core challenge for legal attribution: the harm is <strong>distributed across steps</strong>. No single decision can be identified as "the discriminatory one" — the discrimination emerges from the system's design, not from any individual act. This is precisely why single-cause reasoning fails for diffuse harm.</p>
+    <p>Watch the <strong>Per-Stage Pass Rates</strong> table as you move the proxy slider. Notice how each stage adds a small increment of disadvantage that accumulates into a large final gap.</p>
+  </div>
+
+  <div class="edu-content" data-content="climate">
+    <p>The weather/climate analogy is central to understanding diffuse harm. <strong>You can't attribute a single storm to climate change</strong> — but climate science shows statistically that warming makes certain storm types more frequent and intense. The individual event is noise; the population-level pattern is the signal.</p>
+    <p>In algorithmic discrimination, the same logic applies. <strong>You cannot prove that this algorithm decision discriminated against this specific applicant</strong> — their profile had many features, the threshold was opaque, perhaps they were close. But you can show that across thousands of applications, Group C applicants with equivalent true qualifications passed through at systematically lower rates. The individual path looks random. The aggregate is the evidence.</p>
+    <p>This is why <em>Mobley v. Workday</em> is legally difficult under current frameworks: courts remain calibrated to <strong>individual causation</strong> — "prove this decision was discriminatory" — rather than <strong>population attribution</strong> — "prove this system produces discriminatory outcomes." Computational social science provides tools for the second framing, but law has not fully caught up.</p>
+    <p>Use <strong>Trace One Agent</strong> to follow a single applicant's path. Their individual outcome looks contingent and hard to attribute. Then look at the aggregate funnel — that's the climate.</p>
+  </div>
+
+  <div class="edu-content" data-content="legal">
+    <p>The <strong>EEOC 4/5 Rule (80% Rule)</strong> is the primary U.S. legal standard for adverse impact in employment: if the selection rate for a protected group is less than 4/5ths (80%) of the rate for the highest-selected group, this is evidence of adverse impact.</p>
+    <div class="formula-box">
+      Disparate Impact Ratio = (Group C Selection Rate) / (Group A Selection Rate)<br>
+      If ratio &lt; 0.80 → potential adverse impact finding under EEOC guidelines
+    </div>
+    <p>In <em>Mobley v. Workday, Inc.</em> (N.D. Cal., filed 2022), plaintiff Derek Mobley — a Black man over 40 with disabilities — applied to 80+ jobs through Workday's ATS and was rejected from all. The central legal dispute: is Workday an "employment agency" subject to Title VII and the ADEA? The 9th Circuit partially revived the case in 2024.</p>
+    <p>The deeper structural issue: even if Workday is legally covered, proving systemic algorithmic discrimination under current doctrine requires either demonstrating <strong>disparate treatment</strong> (intentional discrimination) or <strong>disparate impact</strong> with a large enough plaintiff class and clean statistical evidence. Diffuse algorithmic harm — spread across many decisions, produced by proxy features, amplified by feedback — fits neither category cleanly.</p>
+    <p>This tool lets you generate the statistical evidence a CSS researcher would produce: aggregate selection rate differentials, per-stage pass-through gaps, and disparate impact ratios — the population-level evidence that current law struggles to act on.</p>
+  </div>
+
+  <div class="edu-content" data-content="features">
+    <p>All agents are generated with the same <strong>true qualification</strong> drawn from an identical random distribution (group-independent). Differences in outcomes are driven entirely by feature weighting — not underlying ability. This is a key design choice to make the model's causal mechanism transparent.</p>
+    <table class="feat-tbl">
+      <tr>
+        <th>Feature</th><th>Type</th><th>Group Correlation</th><th>Real-world basis</th>
+      </tr>
+      <tr>
+        <td>Experience</td><td class="tag-legit">Legitimate</td>
+        <td>A: +8%, C: −8%</td>
+        <td style="color:rgba(255,255,255,0.5);">Structural hiring history</td>
+      </tr>
+      <tr>
+        <td>Education</td><td class="tag-legit">Legitimate</td>
+        <td>A: +5%, C: −5%</td>
+        <td style="color:rgba(255,255,255,0.5);">Structural resource access</td>
+      </tr>
+      <tr>
+        <td>Skill Test</td><td class="tag-legit">Legitimate</td>
+        <td>None (±0%)</td>
+        <td style="color:rgba(255,255,255,0.5);">Group-independent by design</td>
+      </tr>
+      <tr>
+        <td>Employment Gap</td><td class="tag-proxy">Proxy</td>
+        <td>A: 15% gap rate, C: 35% gap rate</td>
+        <td style="color:rgba(255,255,255,0.5);">Caregiving burden, economic precarity</td>
+      </tr>
+      <tr>
+        <td>School Prestige</td><td class="tag-proxy">Proxy</td>
+        <td>A: +18%, C: −18%</td>
+        <td style="color:rgba(255,255,255,0.5);">Neighborhood school resources (Chetty et al.)</td>
+      </tr>
+      <tr>
+        <td>Zip Code Score</td><td class="tag-proxy">Proxy</td>
+        <td>A: +18%, C: −18%</td>
+        <td style="color:rgba(255,255,255,0.5);">Residential segregation (Massey &amp; Denton)</td>
+      </tr>
+      <tr>
+        <td>Name Score</td><td class="tag-proxy">Proxy</td>
+        <td>A: +15%, C: −15%</td>
+        <td style="color:rgba(255,255,255,0.5);">Callback audit studies (Bertrand &amp; Mullainathan 2004)</td>
+      </tr>
+    </table>
+    <p style="margin-top:10px;font-size:0.72rem;color:rgba(255,255,255,0.45);">
+      The <strong>Feedback Loop</strong> models what happens when an algorithm is retrained on its own biased output. The over-representation of Group A in the hired pool shifts the effective proxy weight upward in subsequent runs, demonstrating amplification of initial bias over time — a core concern in algorithmic fairness research (Barocas &amp; Selbst 2016; Obermeyer et al. 2019).
+    </p>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   UTILITY
+═══════════════════════════════════════════════════════════ */
+function gaussian(mean, std) {
+  let u = 0, v = 0;
+  while (!u) u = Math.random();
+  while (!v) v = Math.random();
+  return mean + std * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function pct(n, total) { return total > 0 ? n / total : 0; }
+function fmtPct(r) { return (r * 100).toFixed(1) + '%'; }
+
+/* ═══════════════════════════════════════════════════════════
+   AGENT
+═══════════════════════════════════════════════════════════ */
+class Agent {
+  constructor(id, group) {
+    this.id    = id;
+    this.group = group; // 0=A, 1=B, 2=C
+
+    // True qualification: group-independent (the ground truth of merit)
+    this.trueQual = Math.random();
+
+    // Legitimate features — slight structural bias from historical factors
+    const sb = [0.08, 0.0, -0.08][group];
+    this.experience = clamp(gaussian(0.52 + sb,       0.18), 0, 1);
+    this.education  = clamp(gaussian(0.50 + sb * 0.6, 0.18), 0, 1);
+    this.skillTest  = clamp(gaussian(0.50,             0.15), 0, 1); // truly independent
+
+    // Proxy features — stronger structural correlation
+    const pb = [0.18, 0.0, -0.18][group];
+    this.hasGap        = Math.random() < [0.15, 0.22, 0.35][group];
+    this.schoolPrestige = clamp(gaussian(0.50 + pb,        0.20), 0, 1);
+    this.zipScore       = clamp(gaussian(0.50 + pb * 0.90, 0.20), 0, 1);
+    this.nameScore      = clamp(gaussian(0.50 + pb * 0.85, 0.18), 0, 1);
+
+    // Tracking
+    this.stageScores  = [];
+    this.eliminated   = false;
+    this.eliminatedAt = -1;
+  }
+
+  score(proxyWeight, extraBoost) {
+    const pw = clamp(proxyWeight / 100 + (extraBoost || 0), 0, 1);
+    const legit = this.experience * 0.40 + this.education * 0.30 + this.skillTest * 0.30;
+    const proxy = (this.hasGap ? 0 : 1) * 0.25
+                + this.schoolPrestige * 0.30
+                + this.zipScore       * 0.25
+                + this.nameScore      * 0.20;
+    return clamp(legit * (1 - pw) + proxy * pw, 0, 1);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SIMULATION
+═══════════════════════════════════════════════════════════ */
+const STAGES = [
+  { name: 'Applicant Pool', emoji: '👥' },
+  { name: 'Résumé Screen',  emoji: '🤖' },
+  { name: 'Phone Screen',   emoji: '📞' },
+  { name: 'Interview',      emoji: '🏢' },
+  { name: 'Job Offer',      emoji: '✅' },
+];
+
+// Top-fraction kept per stage per competition level
+const PASS_FRACS = {
+  1: [0.82, 0.72, 0.65, 0.58],
+  2: [0.70, 0.55, 0.44, 0.34],
+  3: [0.58, 0.42, 0.32, 0.24],
+};
+
+class Simulation {
+  constructor() {
+    this.proxyWeight    = 50;
+    this.feedbackOn     = false;
+    this.populationSize = 500;
+    this.competition    = 2;
+    this.feedbackBoost  = 0;
+    this.runCount       = 0;
+    this.agents         = [];
+    this.results        = null;
+  }
+
+  generate() {
+    this.agents = [];
+    const proportions = [0.40, 0.35, 0.25];
+    let id = 0;
+    proportions.forEach((prop, g) => {
+      const n = Math.round(this.populationSize * prop);
+      for (let i = 0; i < n; i++) this.agents.push(new Agent(id++, g));
+    });
+    // Shuffle
+    for (let i = this.agents.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.agents[i], this.agents[j]] = [this.agents[j], this.agents[i]];
+    }
+  }
+
+  run() {
+    this.generate();
+    const fracs = PASS_FRACS[this.competition];
+    const results = [];
+    let active = [...this.agents];
+
+    // Stage 0: pool
+    results.push({
+      stage: 0, config: STAGES[0],
+      agents: [...active],
+      counts: this.groupCounts(active),
+      total: active.length, passRates: null,
+    });
+
+    for (let s = 1; s <= 4; s++) {
+      // Score & sort
+      const scored = active.map(a => ({ agent: a, sc: a.score(this.proxyWeight, this.feedbackBoost) }));
+      scored.sort((a, b) => b.sc - a.sc);
+      scored.forEach(({ agent, sc }) => agent.stageScores.push(sc));
+
+      const keepN  = Math.max(1, Math.round(active.length * fracs[s - 1]));
+      const passed = scored.slice(0, keepN).map(x => x.agent);
+      const failed = scored.slice(keepN).map(x => x.agent);
+
+      failed.forEach(a => {
+        if (!a.eliminated) { a.eliminated = true; a.eliminatedAt = s; }
+      });
+
+      results.push({
+        stage: s, config: STAGES[s],
+        agents: [...passed],
+        counts: this.groupCounts(passed),
+        total: passed.length,
+        passRates: this.groupPassRates(active, passed),
+      });
+
+      active = passed;
+    }
+
+    // Feedback: if on, adjust boost for next run
+    if (this.feedbackOn) {
+      const hired = results[4];
+      const fracA = hired.total > 0 ? hired.counts[0] / hired.total : 0.40;
+      const overrep = Math.max(0, fracA - 0.40);
+      this.feedbackBoost = Math.min(0.25, overrep * 1.8);
+    } else {
+      this.feedbackBoost = 0;
+    }
+
+    this.runCount++;
+    this.results = results;
+    return results;
+  }
+
+  groupCounts(agents) {
+    return [0, 1, 2].map(g => agents.filter(a => a.group === g).length);
+  }
+
+  groupPassRates(before, after) {
+    const bc = this.groupCounts(before);
+    const ac = this.groupCounts(after);
+    return ac.map((c, g) => bc[g] > 0 ? c / bc[g] : 0);
+  }
+
+  disparateImpact() {
+    if (!this.results) return null;
+    const pool  = this.results[0].counts;
+    const hired = this.results[4].counts;
+    const rates = hired.map((c, g) => pool[g] > 0 ? c / pool[g] : 0);
+    const maxR  = Math.max(...rates);
+    const ratios = rates.map(r => maxR > 0 ? r / maxR : 0);
+    return { rates, ratios };
+  }
+
+  randomAgent() {
+    return this.agents.length ? this.agents[Math.floor(Math.random() * this.agents.length)] : null;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FUNNEL VISUALIZATION (SVG)
+═══════════════════════════════════════════════════════════ */
+const GC = ['#5dade2', '#f39c12', '#e74c3c']; // group colors
+const GN = ['Group A', 'Group B', 'Group C'];
+
+class FunnelViz {
+  constructor() {
+    this.svg = document.getElementById('funnel-svg');
+  }
+
+  render(results) {
+    const svg = this.svg;
+    const W   = svg.clientWidth || 560;
+    const nStages = results.length;
+
+    const LABEL_W = 130;   // left label zone
+    const PR_W    = 80;    // right mini pass-rate zone
+    const BAR_ZONE = W - LABEL_W - PR_W - 20;
+    const BAR_H   = 42;
+    const STAGE_H = 88;
+    const TOP_PAD = 16;
+    const H       = TOP_PAD + nStages * STAGE_H + 20;
+
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.setAttribute('height', H);
+    svg.innerHTML = '';
+
+    const maxTotal = results[0].total;
+    const barX0    = LABEL_W;
+    const prX0     = LABEL_W + BAR_ZONE + 8;
+
+    results.forEach((stage, i) => {
+      const cy = TOP_PAD + i * STAGE_H;
+      const frac = maxTotal > 0 ? stage.total / maxTotal : 0;
+      const barW = frac * BAR_ZONE;
+
+      // ── Connecting trapezoid to next stage ──
+      if (i < results.length - 1) {
+        const nextStage = results[i + 1];
+        const nextFrac  = maxTotal > 0 ? nextStage.total / maxTotal : 0;
+        const nextBarW  = nextFrac * BAR_ZONE;
+        const y1 = cy + BAR_H;
+        const y2 = cy + STAGE_H;
+        const trap = this.el('polygon', {
+          points: `${barX0},${y1} ${barX0 + barW},${y1} ${barX0 + nextBarW},${y2} ${barX0},${y2}`,
+          fill: 'rgba(255,255,255,0.03)',
+          stroke: 'rgba(255,255,255,0.05)',
+          'stroke-width': '1',
+        });
+        svg.appendChild(trap);
+      }
+
+      // ── Label (left) ──
+      svg.appendChild(this.text(
+        stage.config.emoji + ' ' + stage.config.name,
+        barX0 - 6, cy + BAR_H / 2 + 4,
+        { 'text-anchor': 'end', 'font-size': '11', fill: 'rgba(255,255,255,0.7)', 'font-family': 'Arial,sans-serif' }
+      ));
+
+      // ── Count (right of bar) ──
+      svg.appendChild(this.text(
+        stage.total.toLocaleString(),
+        barX0 + barW + 5, cy + BAR_H / 2 + 4,
+        { 'text-anchor': 'start', 'font-size': '10', fill: 'rgba(255,255,255,0.45)', 'font-family': 'Arial,sans-serif' }
+      ));
+
+      // ── Stacked group bar ──
+      let xOff = barX0;
+      stage.counts.forEach((count, g) => {
+        if (count <= 0) return;
+        const segW = stage.total > 0 ? (count / stage.total) * barW : 0;
+        const isFirst = (xOff === barX0);
+        const isLast  = (g === 2 || (g < 2 && stage.counts.slice(g + 1).every(c => c === 0)));
+
+        const rect = this.el('rect', {
+          x: xOff, y: cy, width: segW, height: BAR_H,
+          fill: GC[g],
+          rx: isFirst ? '5' : '0',
+        });
+        svg.appendChild(rect);
+
+        // % label inside segment
+        if (segW > 28) {
+          const pctVal = Math.round((count / stage.total) * 100);
+          svg.appendChild(this.text(
+            pctVal + '%',
+            xOff + segW / 2, cy + BAR_H / 2 + 4,
+            { 'text-anchor': 'middle', 'font-size': '9', fill: 'rgba(255,255,255,0.92)', 'font-weight': 'bold', 'font-family': 'Arial,sans-serif' }
+          ));
+        }
+        xOff += segW;
+      });
+
+      // ── Mini pass-rate bars (right side) — stages 1-4 only ──
+      if (stage.passRates) {
+        const maxRate = Math.max(...stage.passRates);
+        stage.passRates.forEach((rate, g) => {
+          const by  = cy + g * 13 + 2;
+          const bw  = 56;
+          const bh  = 9;
+          const fillW = bw * rate;
+          const ratioToMax = maxRate > 0 ? rate / maxRate : 0;
+
+          // Background
+          svg.appendChild(this.el('rect', { x: prX0, y: by, width: bw, height: bh, fill: 'rgba(255,255,255,0.07)', rx: '3' }));
+          // Fill
+          const fillColor = ratioToMax >= 0.8 ? GC[g] : ratioToMax >= 0.65 ? '#f39c12' : '#e74c3c';
+          svg.appendChild(this.el('rect', { x: prX0, y: by, width: fillW, height: bh, fill: fillColor, rx: '3' }));
+          // 80% threshold line
+          svg.appendChild(this.el('line', {
+            x1: prX0 + bw * 0.8, y1: by - 1, x2: prX0 + bw * 0.8, y2: by + bh + 1,
+            stroke: 'rgba(255,255,255,0.2)', 'stroke-width': '1', 'stroke-dasharray': '2,2',
+          }));
+          // Label
+          svg.appendChild(this.text(
+            Math.round(rate * 100) + '%',
+            prX0 + bw + 4, by + bh - 1,
+            { 'text-anchor': 'start', 'font-size': '8', fill: GC[g], 'font-family': 'Arial,sans-serif' }
+          ));
+        });
+      }
+    });
+  }
+
+  el(tag, attrs) {
+    const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
+    return e;
+  }
+  text(str, x, y, attrs) {
+    const e = this.el('text', { x, y, ...attrs });
+    e.textContent = str;
+    return e;
+  }
+
+  renderTrace(agent, results) {
+    const panel = document.getElementById('tracePanel');
+    panel.classList.add('show');
+
+    const color = GC[agent.group];
+    const name  = GN[agent.group];
+
+    let html = `<div class="trace-header">
+      <div class="t-dot" style="background:${color};"></div>
+      <span style="color:${color};">${name}</span>
+      <span style="color:rgba(255,255,255,0.4);font-size:0.68rem;">
+        &nbsp;True Qualification: ${(agent.trueQual * 100).toFixed(0)}th percentile
+      </span>
+    </div>`;
+
+    // Stage 0: pool entry
+    html += `<div class="trace-row">
+      <div class="t-dot" style="background:${color};"></div>
+      <span class="t-name">${STAGES[0].emoji} ${STAGES[0].name}</span>
+      <span style="flex:1;font-size:0.68rem;color:rgba(255,255,255,0.4);">Enters hiring pipeline</span>
+      <span class="t-result" style="color:#4ecdc4;">✓ In</span>
+    </div>`;
+
+    // Stages 1-4
+    for (let s = 1; s <= 4; s++) {
+      const sc = agent.stageScores[s - 1];
+      if (sc === undefined) break; // didn't reach this stage
+
+      const isElim = agent.eliminatedAt === s;
+      const dotC   = isElim ? '#555' : color;
+      const barC   = isElim ? '#666' : color;
+
+      html += `<div class="trace-row" style="${isElim ? 'opacity:0.55;' : ''}">
+        <div class="t-dot" style="background:${dotC};"></div>
+        <span class="t-name">${STAGES[s].emoji} ${STAGES[s].name}</span>
+        <div class="t-bar-bg">
+          <div class="t-bar-fill" style="width:${(sc * 100).toFixed(1)}%;background:${barC};"></div>
+        </div>
+        <span class="t-score">${(sc * 100).toFixed(0)}</span>
+        <span class="t-result" style="color:${isElim ? '#e74c3c' : '#2ecc71'};">
+          ${isElim ? '✗ Out' : '✓'}
+        </span>
+      </div>`;
+    }
+
+    // Final outcome
+    if (!agent.eliminated) {
+      html += `<div style="margin-top:8px;font-size:0.75rem;color:#2ecc71;font-weight:700;">🎉 Received Job Offer</div>`;
+    } else {
+      html += `<div style="margin-top:8px;font-size:0.72rem;color:#e74c3c;">Eliminated at: ${STAGES[agent.eliminatedAt].name}</div>`;
+    }
+
+    html += `<div class="trace-note">This is one agent's path — contingent, noisy, hard to attribute. Now look at the funnel above. That's the climate, not the weather.</div>`;
+    panel.innerHTML = html;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STATS RENDERING
+═══════════════════════════════════════════════════════════ */
+function renderStats(results, sim) {
+  const di = sim.disparateImpact();
+
+  // Overall selection rates
+  const pool  = results[0].counts;
+  const hired = results[4].counts;
+  const rates = hired.map((c, g) => pool[g] > 0 ? c / pool[g] : 0);
+  const maxR  = Math.max(...rates);
+
+  let rHtml = '';
+  [0, 1, 2].forEach(g => {
+    const r = rates[g];
+    const barW = maxR > 0 ? (r / maxR) * 100 : 0;
+    rHtml += `<div class="outcome-row">
+      <span class="o-label" style="color:${GC[g]};">${GN[g]}</span>
+      <div class="o-bar-bg"><div class="o-bar-fill" style="width:${barW}%;background:${GC[g]};"></div></div>
+      <span class="o-pct">${fmtPct(r)}</span>
+    </div>`;
+  });
+  document.getElementById('overallRates').innerHTML = rHtml;
+
+  // Disparate impact
+  let diHtml = '';
+  if (di) {
+    const pairs = [[0, 1, 'A vs B'], [0, 2, 'A vs C'], [1, 2, 'B vs C']];
+    pairs.forEach(([ref, tgt, lbl]) => {
+      const ratio = di.rates[ref] > 0 ? di.rates[tgt] / di.rates[ref] : 0;
+      const cls   = ratio >= 0.80 ? 'di-ok' : ratio >= 0.60 ? 'di-warn' : 'di-fail';
+      const icon  = ratio >= 0.80 ? '✓' : '⚠';
+      const verdict = ratio >= 0.80 ? 'OK' : ratio >= 0.60 ? 'Marginal' : 'FAIL';
+      diHtml += `<div class="di-row ${cls}">
+        <span>${lbl}</span>
+        <span class="di-ratio">${ratio.toFixed(2)}</span>
+        <span class="di-verdict">${icon} ${verdict}</span>
+      </div>`;
+    });
+  }
+  document.getElementById('diRatios').innerHTML = diHtml || '—';
+
+  // Per-stage table
+  let tHtml = `<tr>
+    <th>Stage</th>
+    <th style="color:#5dade2;">A</th>
+    <th style="color:#f39c12;">B</th>
+    <th style="color:#e74c3c;">C</th>
+  </tr>`;
+  results.slice(1).forEach(stage => {
+    if (!stage.passRates) return;
+    const mx = Math.max(...stage.passRates);
+    tHtml += `<tr>
+      <td>${stage.config.emoji} ${stage.config.name.replace('Applicant ', '')}</td>
+      ${stage.passRates.map((r, g) => {
+        const ratio = mx > 0 ? r / mx : 1;
+        const cls   = ratio >= 0.80 ? 'rg' : ratio >= 0.65 ? 'rw' : 'rf';
+        return `<td><span class="rate-badge ${cls}">${Math.round(r * 100)}%</span></td>`;
+      }).join('')}
+    </tr>`;
+  });
+  document.getElementById('stageTbl').innerHTML = tHtml;
+
+  // Compounding effect
+  const rA = rates[0], rC = rates[2];
+  const ratio_overall = rA > 0 ? rC / rA : 0;
+  const perStageEstA = rA > 0 ? Math.pow(rA, 1/4) : 0;
+  const perStageEstC = rC > 0 ? Math.pow(rC, 1/4) : 0;
+  const feedBoost = sim.feedbackBoost > 0 ? `<br><span style="color:#f39c12;">⚡ Feedback boost active: +${(sim.feedbackBoost*100).toFixed(0)}% effective proxy</span>` : '';
+
+  document.getElementById('compoundBox').innerHTML = `
+    <span style="color:${GC[0]};">Group A</span>: <strong style="color:${GC[0]};">${fmtPct(rA)}</strong> reached offers<br>
+    <span style="color:${GC[2]};">Group C</span>: <strong style="color:${GC[2]};">${fmtPct(rC)}</strong> reached offers<br>
+    <span style="color:rgba(255,255,255,0.45);font-size:0.68rem;">
+      Avg per-stage rate: A ≈ ${fmtPct(perStageEstA)}, C ≈ ${fmtPct(perStageEstC)}<br>
+      Overall D.I. ratio: <strong style="color:${ratio_overall >= 0.8 ? '#2ecc71' : ratio_overall >= 0.6 ? '#f39c12' : '#e74c3c'};">${ratio_overall.toFixed(2)}</strong>
+      &nbsp;${ratio_overall >= 0.8 ? '✓ Meets 4/5 rule' : '⚠ Violates 4/5 rule'}
+      ${feedBoost}
+    </span>`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   APP INITIALIZATION & EVENTS
+═══════════════════════════════════════════════════════════ */
+const sim = new Simulation();
+const viz = new FunnelViz();
+
+function runAndRender() {
+  const results = sim.run();
+  viz.render(results);
+  renderStats(results, sim);
+  document.getElementById('tracePanel').classList.remove('show');
+
+  if (sim.feedbackOn && sim.runCount > 1) {
+    document.getElementById('iterInfo').textContent =
+      `Run ${sim.runCount} · Effective proxy boost: +${(sim.feedbackBoost * 100).toFixed(0)}%`;
+  } else {
+    document.getElementById('iterInfo').textContent = '';
+  }
+}
+
+// Controls
+document.getElementById('popSize').addEventListener('input', e => {
+  sim.populationSize = parseInt(e.target.value);
+  document.getElementById('popVal').textContent = e.target.value;
+});
+document.getElementById('proxyWeight').addEventListener('input', e => {
+  sim.proxyWeight = parseInt(e.target.value);
+  document.getElementById('proxyVal').textContent = e.target.value + '%';
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+});
+document.getElementById('competition').addEventListener('input', e => {
+  sim.competition = parseInt(e.target.value);
+  document.getElementById('compVal').textContent = ['Low', 'Medium', 'High'][parseInt(e.target.value) - 1];
+});
+document.getElementById('feedbackToggle').addEventListener('change', e => {
+  sim.feedbackOn = e.target.checked;
+  sim.feedbackBoost = 0;
+  sim.runCount = 0;
+  document.getElementById('feedbackNote').style.display = e.target.checked ? 'block' : 'none';
+  document.getElementById('iterInfo').textContent = '';
+});
+
+// Run
+document.getElementById('runBtn').addEventListener('click', () => {
+  sim.runCount = 0;
+  sim.feedbackBoost = 0;
+  runAndRender();
+});
+
+// Trace
+document.getElementById('traceBtn').addEventListener('click', () => {
+  if (!sim.results) runAndRender();
+  const agent = sim.randomAgent();
+  if (agent) viz.renderTrace(agent, sim.results);
+});
+
+// Iterate (run again with feedback)
+document.getElementById('iterBtn').addEventListener('click', () => {
+  if (!sim.feedbackOn) {
+    sim.feedbackOn = true;
+    document.getElementById('feedbackToggle').checked = true;
+    document.getElementById('feedbackNote').style.display = 'block';
+  }
+  runAndRender();
+});
+
+// Presets
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const proxy    = parseInt(btn.dataset.proxy);
+    const feedback = btn.dataset.feedback === '1';
+    sim.proxyWeight   = proxy;
+    sim.feedbackOn    = feedback;
+    sim.feedbackBoost = 0;
+    sim.runCount      = 0;
+    document.getElementById('proxyWeight').value = proxy;
+    document.getElementById('proxyVal').textContent = proxy + '%';
+    document.getElementById('feedbackToggle').checked = feedback;
+    document.getElementById('feedbackNote').style.display = feedback ? 'block' : 'none';
+    document.getElementById('iterInfo').textContent = '';
+    runAndRender();
+  });
+});
+
+// Education tabs
+document.querySelectorAll('.edu-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.edu-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.edu-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelector(`[data-content="${tab.dataset.tab}"]`).classList.add('active');
+  });
+});
+
+// Resize
+window.addEventListener('resize', () => { if (sim.results) viz.render(sim.results); });
+
+// Initial run
+window.addEventListener('load', () => setTimeout(runAndRender, 80));
+</script>
+</body>
+</html>

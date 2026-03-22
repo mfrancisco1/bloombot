@@ -101,7 +101,7 @@
       fill: rgba(217,119,6,0.10); stroke: rgba(217,119,6,0.22);
       stroke-width: 1; vector-effect: non-scaling-stroke;
     }
-    .gear-outline { stroke-width: 1.8; vector-effect: non-scaling-stroke; }
+    .gear-outline { stroke-width: .7; vector-effect: non-scaling-stroke; }
     .gear-helper  { fill: rgba(255,240,220,0.042); stroke: rgba(255,220,180,0.20); }
     .guide-circle {
       fill: none; stroke: rgba(255,220,180,0.11);
@@ -310,7 +310,7 @@ const gearSpecs = [
   // ── Fast outputs ──────────────────────────────────────
   { id:'second',          axle:'second',    N:44, featured:true,  title:'SECOND',    subtitle:'1 rev = 1 s',      labelDx:200,    labelDy:-12, anchor:'start' },
   { id:'secondSlow',      axle:'second',    N:20, featured:false },
-  { id:'half',            axle:'half',      N:22, featured:true,  title:'HALF',      subtitle:'1 rev = 0.5 s',    labelDx:44,   labelDy:224,   anchor:'start'  },
+  { id:'half',            axle:'half',      N:22, featured:true,  title:'HALF',      subtitle:'1 rev = 0.5 s',    labelDx:144,   labelDy:-4,   anchor:'start'  },
   { id:'halfHelper',      axle:'half',      N:50, featured:false },
   { id:'tenth',           axle:'tenth',     N:10, featured:true,  title:'TENTH',     subtitle:'1 rev = 0.1 s',    labelDx:120,   labelDy:8,    anchor:'start'  },
   { id:'tenthHelper',     axle:'tenth',     N:50, featured:false },
@@ -353,7 +353,7 @@ const gearSpecs = [
   { id:'hourSlowPin',     axle:'hour',      N:12, featured:false },
   { id:'day1Big',         axle:'day1',      N:72, featured:false },
   { id:'day1Pin',         axle:'day1',      N:12, featured:false },
-  { id:'day',             axle:'day',       N:48, featured:true,  title:'24 HOURS',  subtitle:'1 rev = 24 hr',    labelDx:-158,  labelDy:154, anchor:'end' },
+  { id:'day',             axle:'day',       N:48, featured:true,  title:'24 HOURS',  subtitle:'1 rev = 24 hr',    labelDx:-138,  labelDy:164, anchor:'end' },
   // ── Week extension: day → [daySlowPin] → week ────────────────────────────
   // daySlowPin(N=12) coaxial with day → week(N=84)
   // Total ratio: 12/84 = 1/7  → period = 86400*7 = 604800s ✓
@@ -390,7 +390,7 @@ const meshEdges = [
   { from:'tempoHub',     to:'andante',       angleDeg:125  },
   { from:'tempoHub',     to:'adagio',        angleDeg:175  },
   { from:'tempoHub',     to:'largo',         angleDeg:225  },
-  { from:'halfHelper',   to:'tenth',         angleDeg: 15  },
+  { from:'halfHelper',   to:'tenth',         angleDeg: 45  },
   { from:'tenthHelper',  to:'fastRelay',     angleDeg: 95  },
   { from:'fastRelayGear',to:'hundredth',     angleDeg: 35  },
   // Slow side

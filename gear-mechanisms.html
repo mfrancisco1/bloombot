@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bloombot — Gear Mechanisms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:     #1a1612;
+  --cream:   #f5f0e8;
+  --warm:    #e8dcc8;
+  --rust:    #c4541a;
+  --amber:   #d97706;
+  --forest:  #2d5a27;
+  --slate:   #64748b;
+  --border:  #d1c4aa;
+  --card-bg: #ffffff;
+  --shadow:  rgba(26,22,18,0.10);
+  --blue:    #1a6b9a;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background: var(--cream); color: var(--ink);
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+}
+
+/* ── NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--ink);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 2rem; height: 56px;
+  border-bottom: 3px solid var(--rust); flex-shrink: 0;
+}
+.nav-brand {
+  font-family: 'Space Mono', monospace;
+  font-size: 1.2rem; font-weight: 700;
+  color: var(--amber); text-decoration: none;
+  letter-spacing: -0.03em;
+}
+.nav-title { font-size: 0.82rem; color: rgba(255,255,255,0.6); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; }
+.nav-right { display: flex; gap: 0.5rem; align-items: center; }
+.nav-btn {
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.8); border-radius: 6px; padding: 0.35rem 0.8rem;
+  font-size: 0.75rem; font-family: 'Space Grotesk', sans-serif; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; text-decoration: none; display: inline-block;
+}
+.nav-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+/* ── LAYOUT ── */
+.layout { display: flex; flex: 1; overflow: hidden; }
+
+/* ── SIDEBAR ── */
+aside {
+  width: 296px; flex-shrink: 0; border-right: 1.5px solid var(--border);
+  overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem;
+  background: var(--cream);
+}
+aside::-webkit-scrollbar { width: 5px; }
+aside::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.section-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.60rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--slate);
+  margin-bottom: 0.1rem;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* Mechanism selector cards */
+.mech-card {
+  background: var(--card-bg); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 0.6rem 0.85rem;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; gap: 0.75rem;
+  flex-shrink: 0;
+}
+.mech-card:hover { border-color: var(--rust); background: #fff8f5; }
+.mech-card.active { border-color: var(--rust); background: #fff3ee; box-shadow: 0 0 0 3px rgba(196,84,26,0.09); }
+.mech-icon {
+  width: 34px; height: 34px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; flex-shrink: 0;
+}
+.mech-info { flex: 1; min-width: 0; }
+.mech-name { font-size: 0.80rem; font-weight: 600; color: var(--ink); }
+.mech-desc { font-size: 0.70rem; color: var(--slate); margin-top: 1px; line-height: 1.3; }
+
+/* Ratio card */
+.ratio-card {
+  background: var(--ink); border-radius: 10px; padding: 0.8rem 1rem;
+  text-align: center; flex-shrink: 0;
+}
+.ratio-label {
+  font-family: 'Space Mono', monospace; font-size: 0.58rem;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: rgba(255,255,255,0.4); margin-bottom: 0.25rem;
+}
+.ratio-value {
+  font-family: 'Space Mono', monospace; font-size: 1.4rem;
+  font-weight: 700; color: var(--amber); line-height: 1;
+}
+.ratio-sub {
+  font-size: 0.68rem; color: rgba(255,255,255,0.45); margin-top: 0.25rem;
+}
+
+/* Info card */
+.info-card {
+  background: var(--warm); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 0.8rem 1rem; flex-shrink: 0;
+}
+.info-card h3 {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--slate); margin-bottom: 0.5rem;
+}
+.info-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.76rem; padding: 3px 0;
+  border-bottom: 1px solid rgba(209,196,170,0.4);
+}
+.info-row:last-child { border-bottom: none; }
+.info-row .lbl { color: var(--slate); }
+.info-row .val { color: var(--ink); font-family: 'Space Mono', monospace; font-weight: 500; font-size: 0.70rem; }
+
+/* Concept note */
+.concept-note {
+  background: var(--card-bg); border: 1.5px solid var(--border);
+  border-left: 3px solid var(--rust);
+  border-radius: 0 10px 10px 0; padding: 0.7rem 0.9rem;
+  font-size: 0.76rem; color: var(--ink); line-height: 1.55;
+  flex-shrink: 0;
+}
+.concept-note strong { color: var(--rust); }
+
+/* Speed control */
+.ctrl-row {
+  display: flex; align-items: center; gap: 8px; font-size: 0.76rem;
+  flex-shrink: 0;
+}
+.ctrl-row label { color: var(--slate); font-weight: 500; white-space: nowrap; font-size: 0.74rem; }
+input[type="range"] {
+  -webkit-appearance: none; flex: 1; height: 4px;
+  background: var(--border); border-radius: 2px; outline: none; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px;
+  background: var(--rust); border-radius: 50%; cursor: pointer;
+  border: 2px solid var(--card-bg); box-shadow: 0 1px 3px var(--shadow);
+}
+.speed-val { font-family: 'Space Mono', monospace; font-size: 0.70rem; color: var(--ink); width: 26px; text-align: right; }
+
+/* ── MAIN CANVAS ── */
+main {
+  flex: 1; position: relative; overflow: hidden;
+  background: var(--card-bg);
+}
+#mechSvg { width: 100%; height: 100%; display: block; }
+
+/* Overlays */
+.mech-overlay {
+  position: absolute; top: 12px; left: 12px;
+  background: rgba(255,255,255,0.93); backdrop-filter: blur(8px);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 6px 12px; font-size: 0.70rem; color: var(--slate);
+  font-family: 'Space Mono', monospace; line-height: 1.55;
+  pointer-events: none;
+}
+.mech-overlay strong { color: var(--ink); }
+
+.play-btn {
+  position: absolute; bottom: 14px; right: 14px;
+  background: var(--ink); color: #fff;
+  border: none; border-radius: 8px; padding: 7px 16px;
+  font-size: 0.76rem; font-family: 'Space Grotesk', sans-serif; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: background 0.15s; letter-spacing: 0.02em;
+}
+.play-btn:hover { background: #2d2521; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="bloombot-modern.html">bloombot</a>
+  <span class="nav-title">Gear Mechanisms</span>
+  <div class="nav-right">
+    <a class="nav-btn" href="gear-anatomy.html">Tooth Anatomy</a>
+    <a class="nav-btn" href="gear-generator.html">Gear Generator</a>
+  </div>
+</nav>
+
+<div class="layout">
+  <aside id="sidebar">
+
+    <div class="section-label">Mechanisms</div>
+
+    <div class="mech-card active" onclick="selectMech(0)" id="card-0">
+      <div class="mech-icon" style="background:#fff3ee;">⚙️</div>
+      <div class="mech-info">
+        <div class="mech-name">Simple Gear Train</div>
+        <div class="mech-desc">Two gears meshing — speed vs. torque</div>
+      </div>
+    </div>
+
+    <div class="mech-card" onclick="selectMech(1)" id="card-1">
+      <div class="mech-icon" style="background:#f0f7f0;">🔗</div>
+      <div class="mech-info">
+        <div class="mech-name">Compound Gear Train</div>
+        <div class="mech-desc">Multiple stages, large ratios</div>
+      </div>
+    </div>
+
+    <div class="mech-card" onclick="selectMech(2)" id="card-2">
+      <div class="mech-icon" style="background:#fffbf0;">🔄</div>
+      <div class="mech-info">
+        <div class="mech-name">Idler Gear</div>
+        <div class="mech-desc">Preserves direction between shafts</div>
+      </div>
+    </div>
+
+    <div class="mech-card" onclick="selectMech(3)" id="card-3">
+      <div class="mech-icon" style="background:#f0f4ff;">➡️</div>
+      <div class="mech-info">
+        <div class="mech-name">Rack &amp; Pinion</div>
+        <div class="mech-desc">Rotary to linear motion</div>
+      </div>
+    </div>
+
+    <div class="section-label">Animation</div>
+    <div class="ctrl-row">
+      <label>Speed</label>
+      <input type="range" id="speedSlider" min="0.1" max="3" step="0.1" value="1" oninput="setSpeed(this.value)">
+      <span class="speed-val" id="speedVal">1×</span>
+    </div>
+
+    <div class="section-label">Stats</div>
+    <div class="ratio-card">
+      <div class="ratio-label">Gear Ratio</div>
+      <div class="ratio-value" id="ratioVal">1.5 : 1</div>
+      <div class="ratio-sub" id="ratioSub">Driver : Driven</div>
+    </div>
+
+    <div class="info-card">
+      <h3>Properties</h3>
+      <div id="infoRows"></div>
+    </div>
+
+    <div class="section-label">Key Concept</div>
+    <div class="concept-note" id="conceptNote"></div>
+
+  </aside>
+
+  <main>
+    <svg id="mechSvg" viewBox="0 0 820 480" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="mech-overlay" id="mechOverlay"></div>
+    <button class="play-btn" id="playBtn" onclick="togglePlay()">⏸ Pause</button>
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// SVG HELPERS
+// ═══════════════════════════════════════════════════════
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs = {}) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+  return e;
+}
+function txt(content, attrs = {}) {
+  const t = el('text', attrs);
+  t.textContent = content;
+  return t;
+}
+function append(parent, ...children) {
+  children.forEach(c => parent.appendChild(c));
+  return parent;
+}
+
+// ═══════════════════════════════════════════════════════
+// GEAR GEOMETRY
+// ═══════════════════════════════════════════════════════
+function gearPath(numTeeth, pitchR) {
+  const m      = (2 * pitchR) / numTeeth;
+  const addR   = pitchR + m;
+  const rootR  = Math.max(pitchR * 0.25, pitchR - 1.25 * m);
+  const ta     = (2 * Math.PI) / numTeeth;
+  const hTooth = ta * 0.29;   // half tooth width at pitch circle
+  const hRoot  = ta * 0.17;   // half root fillet
+
+  let d = '';
+  for (let i = 0; i < numTeeth; i++) {
+    const c = i * ta - Math.PI / 2;
+    const pts = [
+      [rootR, c - ta * 0.5 + hRoot * 0.4],
+      [rootR, c - hRoot],
+      [addR,  c - hTooth],
+      [addR,  c + hTooth],
+      [rootR, c + hRoot],
+      [rootR, c + ta * 0.5 - hRoot * 0.4],
+    ];
+    for (const [r, a] of pts) {
+      const x = (r * Math.cos(a)).toFixed(2);
+      const y = (r * Math.sin(a)).toFixed(2);
+      d += (d === '' ? 'M' : 'L') + ` ${x} ${y} `;
+    }
+  }
+  return d + 'Z';
+}
+
+function rackPath(numTeeth, pitch, addH, rootH) {
+  // Pitch line at y=0; teeth point UP (negative y)
+  const hTooth = pitch * 0.285;
+  const hBase  = pitch * 0.155;
+  const W = numTeeth * pitch;
+  let pts = [[0, rootH]];
+  for (let i = 0; i < numTeeth; i++) {
+    const x = (i + 0.5) * pitch;
+    pts.push([x - pitch * 0.5 + hBase, rootH]);
+    pts.push([x - hTooth, -addH]);
+    pts.push([x + hTooth, -addH]);
+    pts.push([x + pitch * 0.5 - hBase, rootH]);
+  }
+  pts.push([W, rootH], [W, rootH + 22], [0, rootH + 22]);
+  return 'M ' + pts.map(([x,y]) => `${x.toFixed(2)} ${y.toFixed(2)}`).join(' L ') + ' Z';
+}
+
+// ═══════════════════════════════════════════════════════
+// GEAR GROUP BUILDER
+// ═══════════════════════════════════════════════════════
+function makeGear(cx, cy, numTeeth, pitchR, color) {
+  const m    = (2 * pitchR) / numTeeth;
+  const addR = pitchR + m;
+  const g    = el('g', { transform: `translate(${cx},${cy})` });
+
+  // Gear body
+  append(g, el('path', {
+    d: gearPath(numTeeth, pitchR),
+    fill: color, stroke: 'white', 'stroke-width': '0.8', opacity: '0.93'
+  }));
+
+  // Pitch circle (dashed)
+  append(g, el('circle', {
+    cx: 0, cy: 0, r: pitchR,
+    fill: 'none', stroke: color, 'stroke-width': '1.3',
+    'stroke-dasharray': '5 4', opacity: '0.45'
+  }));
+
+  // Spokes
+  const spokeR = Math.min(pitchR * 0.55, pitchR - m * 2);
+  const hubR   = Math.max(pitchR * 0.12, 5);
+  if (spokeR > hubR + 4) {
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2;
+      append(g, el('line', {
+        x1: (hubR * Math.cos(a)).toFixed(2), y1: (hubR * Math.sin(a)).toFixed(2),
+        x2: (spokeR * Math.cos(a)).toFixed(2), y2: (spokeR * Math.sin(a)).toFixed(2),
+        stroke: color, 'stroke-width': '2.5', opacity: '0.35'
+      }));
+    }
+  }
+
+  // Hub
+  append(g,
+    el('circle', { cx: 0, cy: 0, r: hubR, fill: 'white', stroke: color, 'stroke-width': '2' }),
+    el('circle', { cx: 0, cy: 0, r: hubR * 0.38, fill: color })
+  );
+
+  return g;
+}
+
+// ═══════════════════════════════════════════════════════
+// ANNOTATION HELPERS
+// ═══════════════════════════════════════════════════════
+function makeTag(svg, cx, cy, line1, line2, color) {
+  const w = Math.max(line1.length, (line2||'').length) * 6.2 + 20;
+  const h = line2 ? 32 : 18;
+  const g = el('g');
+  append(g, el('rect', {
+    x: cx - w/2, y: cy - 13, width: w, height: h,
+    rx: 5, fill: 'rgba(255,255,255,0.93)', stroke: color, 'stroke-width': '1.2'
+  }));
+  append(g, txt(line1, {
+    x: cx, y: cy,
+    'text-anchor': 'middle', 'font-family': 'Space Mono,monospace',
+    'font-size': '10.5', 'font-weight': '700', fill: color
+  }));
+  if (line2) {
+    append(g, txt(line2, {
+      x: cx, y: cy + 14,
+      'text-anchor': 'middle', 'font-family': 'Space Grotesk,sans-serif',
+      'font-size': '9.5', fill: '#64748b'
+    }));
+  }
+  svg.appendChild(g);
+}
+
+function makeDimLine(svg, x1, y1, x2, y2, label, color = '#64748b') {
+  append(svg, el('line', { x1, y1, x2, y2, stroke: color, 'stroke-width': '1', 'stroke-dasharray': '4 3', opacity: '0.7' }));
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+  const t = txt(label, {
+    x: mx, y: my - 5,
+    'text-anchor': 'middle', 'font-family': 'Space Mono,monospace',
+    'font-size': '9', fill: color, opacity: '0.8'
+  });
+  svg.appendChild(t);
+}
+
+function makeDirArrow(svg, cx, cy, r, startDeg, sweepDeg, color) {
+  const ar = r * 1.44;
+  const s  = (startDeg - 90) * Math.PI / 180;
+  const e  = (startDeg + sweepDeg - 90) * Math.PI / 180;
+  const x1 = cx + ar * Math.cos(s), y1 = cy + ar * Math.sin(s);
+  const x2 = cx + ar * Math.cos(e), y2 = cy + ar * Math.sin(e);
+  const lg = Math.abs(sweepDeg) > 180 ? 1 : 0;
+  const sw = sweepDeg > 0 ? 1 : 0;
+  const id = 'arr-' + color.replace(/[^a-z0-9]/gi, '');
+  // Arrow marker
+  const defs = svg.querySelector('defs') || el('defs');
+  if (!svg.querySelector('#' + id)) {
+    const mk = el('marker', { id, markerWidth: '8', markerHeight: '6', refX: '8', refY: '3', orient: 'auto' });
+    mk.appendChild(el('polygon', { points: '0 0, 8 3, 0 6', fill: color }));
+    defs.appendChild(mk);
+    if (!svg.querySelector('defs')) svg.insertBefore(defs, svg.firstChild);
+  }
+  svg.appendChild(el('path', {
+    d: `M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${ar} ${ar} 0 ${lg} ${sw} ${x2.toFixed(1)} ${y2.toFixed(1)}`,
+    fill: 'none', stroke: color, 'stroke-width': '2.2',
+    'marker-end': `url(#${id})`, opacity: '0.7'
+  }));
+}
+
+// ═══════════════════════════════════════════════════════
+// MECHANISM RENDERERS
+// ═══════════════════════════════════════════════════════
+
+// 0 ── SIMPLE GEAR TRAIN ──────────────────────────────
+function drawSimple(svg, theta) {
+  const N1 = 24, R1 = 90;
+  const N2 = 16, R2 = R1 * N2 / N1;   // 60
+  const cd = R1 + R2;
+  const cx1 = 410 - cd / 2, cx2 = 410 + cd / 2, cy = 248;
+
+  // Center line
+  svg.appendChild(el('line', {
+    x1: cx1 - R1 * 1.5, y1: cy, x2: cx2 + R2 * 1.5, y2: cy,
+    stroke: '#d1c4aa', 'stroke-width': '1', 'stroke-dasharray': '9 5'
+  }));
+
+  // Center-distance dim
+  const dimY = cy - R1 * 1.7;
+  append(svg,
+    el('line', { x1: cx1, y1: dimY, x2: cx2, y2: dimY, stroke: '#64748b', 'stroke-width': '1', opacity: '0.6' }),
+    el('line', { x1: cx1, y1: dimY - 5, x2: cx1, y2: dimY + 5, stroke: '#64748b', 'stroke-width': '1', opacity: '0.6' }),
+    el('line', { x1: cx2, y1: dimY - 5, x2: cx2, y2: dimY + 5, stroke: '#64748b', 'stroke-width': '1', opacity: '0.6' }),
+    txt(`Centre distance = ${cd.toFixed(0)} px`, {
+      x: 410, y: dimY - 7,
+      'text-anchor': 'middle', 'font-family': 'Space Mono,monospace',
+      'font-size': '9', fill: '#64748b', opacity: '0.8'
+    })
+  );
+
+  // Pitch point marker
+  const ppx = (cx1 + cx2) / 2;
+  append(svg,
+    el('circle', { cx: ppx, cy, r: 4.5, fill: '#d97706', opacity: '0.85' }),
+    txt('PITCH POINT', {
+      x: ppx, y: cy + 17,
+      'text-anchor': 'middle', 'font-family': 'Space Mono,monospace',
+      'font-size': '8.5', fill: '#d97706', 'font-weight': '700', opacity: '0.85'
+    })
+  );
+
+  // Rotation angles
+  const rot1 = theta;
+  const rot2 = 180 - theta * (N1 / N2) + (360 / N2) / 2;
+
+  // Gears
+  const g1 = makeGear(cx1, cy, N1, R1, '#c4541a');
+  g1.setAttribute('transform', `translate(${cx1},${cy}) rotate(${rot1})`);
+  const g2 = makeGear(cx2, cy, N2, R2, '#2d5a27');
+  g2.setAttribute('transform', `translate(${cx2},${cy}) rotate(${rot2})`);
+  append(svg, g1, g2);
+
+  // Direction arrows
+  makeDirArrow(svg, cx1, cy, R1, -50, 140, '#c4541a');
+  makeDirArrow(svg, cx2, cy, R2, 230, -140, '#2d5a27');
+
+  // Labels
+  makeTag(svg, cx1, cy - R1 * 1.48, 'GEAR A', `${N1} teeth — Driver`, '#c4541a');
+  makeTag(svg, cx2, cy - R2 * 1.58, 'GEAR B', `${N2} teeth — Driven`, '#2d5a27');
+
+  // Direction labels below
+  append(svg,
+    txt('↺ input', {
+      x: cx1, y: cy + R1 + 28, 'text-anchor': 'middle',
+      'font-family': 'Space Mono,monospace', 'font-size': '10', fill: '#c4541a', 'font-weight': '700'
+    }),
+    txt('↻ faster', {
+      x: cx2, y: cy + R2 + 28, 'text-anchor': 'middle',
+      'font-family': 'Space Mono,monospace', 'font-size': '10', fill: '#2d5a27', 'font-weight': '700'
+    })
+  );
+}
+
+// 1 ── COMPOUND GEAR TRAIN ────────────────────────────
+// Stacked countershaft layout: two rows avoid gear overlap
+//   Lower row: G1 (input, small) → G2 (large)   [Stage 1, 3:1]
+//   Upper row: G4 (output, large) ← G3 (small)  [Stage 2, 3:1]
+//   G2 & G3 share a vertical countershaft at rightX
+function drawCompound(svg, theta) {
+  const N1=12, N2=36, N3=12, N4=36;
+  const R1=34, R2=102, R3=34, R4=102;
+  const leftX = 342, rightX = 478;   // horizontal columns (cd = R1+R2 = 136)
+  const lowerY = 318, upperY = 144;   // vertical rows
+
+  // ── Shafts ──────────────────────────────────────────
+  // Input shaft (bottom-left, goes down from G1)
+  append(svg,
+    el('line', { x1: leftX, y1: lowerY + R1 + 2, x2: leftX, y2: lowerY + R1 + 26,
+      stroke: '#1a1612', 'stroke-width': '5', 'stroke-linecap': 'round', opacity: '0.55' }),
+    el('line', { x1: leftX - 18, y1: lowerY + R1 + 26, x2: leftX + 18, y2: lowerY + R1 + 26,
+      stroke: '#d1c4aa', 'stroke-width': '2' })
+  );
+  // Output shaft (top-left, goes up from G4)
+  append(svg,
+    el('line', { x1: leftX, y1: upperY - R4 - 2, x2: leftX, y2: upperY - R4 - 26,
+      stroke: '#1a1612', 'stroke-width': '5', 'stroke-linecap': 'round', opacity: '0.55' }),
+    el('line', { x1: leftX - 18, y1: upperY - R4 - 26, x2: leftX + 18, y2: upperY - R4 - 26,
+      stroke: '#d1c4aa', 'stroke-width': '2' })
+  );
+  // Countershaft (right column, G2 to G3, vertical)
+  const shaftTopY = upperY + R3 + 2, shaftBotY = lowerY - R2 - 2;
+  append(svg,
+    el('line', { x1: rightX, y1: shaftTopY, x2: rightX, y2: shaftBotY,
+      stroke: '#1a1612', 'stroke-width': '6', 'stroke-linecap': 'round', opacity: '0.5' })
+  );
+
+  // ── Shaft labels ──────────────────────────────────────
+  append(svg,
+    txt('INPUT', { x: leftX, y: lowerY + R1 + 44, 'text-anchor': 'middle',
+      'font-family': 'Space Mono,monospace', 'font-size': '9', fill: '#64748b' }),
+    txt('OUTPUT', { x: leftX, y: upperY - R4 - 34, 'text-anchor': 'middle',
+      'font-family': 'Space Mono,monospace', 'font-size': '9', fill: '#64748b' }),
+    txt('COUNTERSHAFT', { x: rightX + 52, y: (lowerY + upperY) / 2,
+      'font-family': 'Space Mono,monospace', 'font-size': '8.5', fill: '#64748b',
+      transform: `rotate(-90, ${rightX + 52}, ${(lowerY + upperY) / 2})` })
+  );
+
+  // ── Stage ratio badges ────────────────────────────────
+  // Stage 1: midpoint between G1 and G2 (lower row)
+  const mid1x = (leftX + rightX) / 2, mid1y = lowerY;
+  append(svg,
+    el('rect', { x: mid1x - 24, y: mid1y - 11, width: 48, height: 22, rx: 11,
+      fill: '#fff3ee', stroke: '#c4541a', 'stroke-width': '1.3' }),
+    txt('3:1', { x: mid1x, y: mid1y + 5, 'text-anchor': 'middle',
+      'font-family': 'Space Mono,monospace', 'font-size': '11', 'font-weight': '700', fill: '#c4541a' })
+  );
+  // Stage 2: midpoint between G3 and G4 (upper row)
+  const mid2x = (leftX + rightX) / 2, mid2y = upperY;
+  append(svg,
+    el('rect', { x: mid2x - 24, y: mid2y - 11, width: 48, height: 22, rx: 11,
+      fill: '#f0f4ff', stroke: '#1a6b9a', 'stroke-width': '1.3' }),
+    txt('3:1', { x: mid2x, y: mid2y + 5, 'text-anchor': 'middle',
+      'font-family': 'Space Mono,monospace', 'font-size': '11', 'font-weight': '700', fill: '#1a6b9a' })
+  );
+
+  // ── Rotation math ──────────────────────────────────────
+  // G2 driven by G1 at contact on lower-right
+  const a2 = -theta * (N1 / N2);                   // G2: opposite G1, slower
+  // G3 is on same shaft as G2
+  const a3 = a2;
+  // G4 driven by G3 at contact on upper-left; G4 same direction as G1
+  const a4 = theta * (N1 * N3) / (N2 * N4);        // = theta / 9
+
+  const g1 = makeGear(leftX, lowerY, N1, R1, '#c4541a');
+  g1.setAttribute('transform', `translate(${leftX},${lowerY}) rotate(${theta})`);
+
+  const g2 = makeGear(rightX, lowerY, N2, R2, '#2d5a27');
+  g2.setAttribute('transform', `translate(${rightX},${lowerY}) rotate(${180 + a2 + (360/N2)/2})`);
+
+  const g3 = makeGear(rightX, upperY, N3, R3, '#d97706');
+  // G3 co-rotates with G2 (same shaft), offset for upper mesh
+  g3.setAttribute('transform', `translate(${rightX},${upperY}) rotate(${a3 + (360/N3)/2})`);
+
+  const g4 = makeGear(leftX, upperY, N4, R4, '#1a6b9a');
+  g4.setAttribute('transform', `translate(${leftX},${upperY}) rotate(${180 + a4 + (360/N4)/2})`);
+
+  append(svg, g1, g2, g3, g4);
+
+  // ── Gear labels ──────────────────────────────────────────
+  makeTag(svg, leftX - R1 - 38, lowerY, 'G1 INPUT', `${N1}T`, '#c4541a');
+  makeTag(svg, rightX + R2 + 40, lowerY, 'G2', `${N2}T`, '#2d5a27');
+  makeTag(svg, rightX + R3 + 40, upperY, 'G3', `${N3}T`, '#d97706');
+  makeTag(svg, leftX - R4 - 42, upperY, 'G4 OUTPUT', `${N4}T`, '#1a6b9a');
+
+  // ── "SAME SHAFT" label on countershaft ─────────────────
+  const ssY = (lowerY + upperY) / 2;
+  append(svg,
+    el('rect', { x: rightX - 50, y: ssY - 12, width: 100, height: 20, rx: 5,
+      fill: '#fffbf0', stroke: '#d97706', 'stroke-width': '1.2' }),
+    txt('SAME SHAFT', { x: rightX, y: ssY + 4, 'text-anchor': 'middle',
+      'font-family': 'Space Mono,monospace', 'font-size': '9', 'font-weight': '700', fill: '#d97706' })
+  );
+
+  // ── Overall ratio badge ──────────────────────────────────
+  append(svg,
+    el('rect', { x: 56, y: 50, width: 200, height: 76, rx: 10,
+      fill: '#1a1612', stroke: '#d97706', 'stroke-width': '1.5' }),
+    txt('OVERALL RATIO', { x: 156, y: 70, 'text-anchor': 'middle',
+      'font-family': 'Space Mono,monospace', 'font-size': '8.5',
+      fill: 'rgba(255,255,255,0.42)', 'letter-spacing': '0.10em' }),
+    txt('9 : 1', { x: 156, y: 104, 'text-anchor': 'middle',
+      'font-family': 'Space Mono,monospace', 'font-size': '30', 'font-weight': '700', fill: '#d97706' }),
+    txt('3 × 3 = 9', { x: 156, y: 120, 'text-anchor': 'middle',
+      'font-family': 'Space Mono,monospace', 'font-size': '9.5', fill: 'rgba(255,255,255,0.38)' })
+  );
+
+  // ── Direction indicators ────────────────────────────────
+  makeDirArrow(svg, leftX, lowerY, R1, -50, 140, '#c4541a');
+  makeDirArrow(svg, rightX, lowerY, R2, 230, -130, '#2d5a27');
+  makeDirArrow(svg, rightX, upperY, R3, 55, -140, '#d97706');
+  makeDirArrow(svg, leftX, upperY, R4, -230, 130, '#1a6b9a');
+}
+
+// 2 ── IDLER GEAR ─────────────────────────────────────
+function drawIdler(svg, theta) {
+  const N1=20, N2=14, N3=20;
+  const R1=72, R2=50.4, R3=72;
+  const cy = 248;
+  const cx1 = 410 - R1 - R2 - R3 / 2 + R1 / 2;
+  // Recalculate: center the group
+  const totalSpan = R1 + (R1 + R2) + (R2 + R3);  // full extent
+  const startX = 410 - (R1 + R2 + R2 + R3) / 2;
+  const cx1_ = startX + R1;
+  const cx2_ = cx1_ + R1 + R2;
+  const cx3_ = cx2_ + R2 + R3;
+
+  // Center line
+  svg.appendChild(el('line', {
+    x1: cx1_ - R1 * 1.4, y1: cy, x2: cx3_ + R3 * 1.4, y2: cy,
+    stroke: '#d1c4aa', 'stroke-width': '1', 'stroke-dasharray': '9 5'
+  }));
+
+  // Pitch point markers
+  const pp1x = (cx1_ + cx2_) / 2, pp2x = (cx2_ + cx3_) / 2;
+  for (const ppx of [pp1x, pp2x]) {
+    append(svg,
+      el('circle', { cx: ppx, cy, r: 4, fill: '#d97706', opacity: '0.8' }),
+      txt('●', { x: ppx, y: cy, 'text-anchor': 'middle', fill: '#d97706', opacity: '0', 'font-size': '1' })
+    );
+  }
+
+  // Rotation angles
+  const a2 = -theta * (N1 / N2);                   // Idler: opposite to G1
+  const a3 = theta * (N1 / N3);                    // G3: same dir as G1 (double reversal)
+
+  const g1 = makeGear(cx1_, cy, N1, R1, '#c4541a');
+  g1.setAttribute('transform', `translate(${cx1_},${cy}) rotate(${theta})`);
+
+  const g2 = makeGear(cx2_, cy, N2, R2, '#64748b');
+  g2.setAttribute('transform', `translate(${cx2_},${cy}) rotate(${180 + a2 + (360/N2)/2})`);
+
+  const g3 = makeGear(cx3_, cy, N3, R3, '#2d5a27');
+  g3.setAttribute('transform', `translate(${cx3_},${cy}) rotate(${180 + a3 + (360/N3)/2})`);
+
+  append(svg, g1, g2, g3);
+
+  // Direction arrows
+  makeDirArrow(svg, cx1_, cy, R1, -55, 140, '#c4541a');
+  makeDirArrow(svg, cx2_, cy, R2, 240, -130, '#64748b');
+  makeDirArrow(svg, cx3_, cy, R3, -55, 140, '#2d5a27');
+
+  // Labels
+  makeTag(svg, cx1_, cy - R1 * 1.5, 'DRIVER', `${N1}T`, '#c4541a');
+  makeTag(svg, cx2_, cy - R2 * 1.75, 'IDLER', `${N2}T`, '#64748b');
+  makeTag(svg, cx3_, cy - R3 * 1.5, 'DRIVEN', `${N3}T`, '#2d5a27');
+
+  // Direction labels below
+  const dirY = cy + Math.max(R1, R3) + 28;
+  append(svg,
+    txt('↺  CCW', { x: cx1_, y: dirY, 'text-anchor': 'middle', 'font-family': 'Space Mono,monospace', 'font-size': '10', fill: '#c4541a', 'font-weight': '700' }),
+    txt('↻  CW', { x: cx2_, y: dirY, 'text-anchor': 'middle', 'font-family': 'Space Mono,monospace', 'font-size': '10', fill: '#64748b', 'font-weight': '700' }),
+    txt('↺  CCW', { x: cx3_, y: dirY, 'text-anchor': 'middle', 'font-family': 'Space Mono,monospace', 'font-size': '10', fill: '#2d5a27', 'font-weight': '700' })
+  );
+
+  // "Same direction" callout
+  const sameY = cy - R1 * 1.9;
+  append(svg,
+    el('line', { x1: cx1_, y1: sameY, x2: cx3_, y2: sameY, stroke: '#2d5a27', 'stroke-width': '1.5', 'stroke-dasharray': '5 3', opacity: '0.5' }),
+    el('rect', { x: (cx1_ + cx3_)/2 - 58, y: sameY - 13, width: 116, height: 17, rx: 4, fill: '#f0f7f0', stroke: '#2d5a27', 'stroke-width': '1' }),
+    txt('Same direction — 1:1 ratio', {
+      x: (cx1_ + cx3_) / 2, y: sameY - 1,
+      'text-anchor': 'middle', 'font-family': 'Space Mono,monospace',
+      'font-size': '9', fill: '#2d5a27', 'font-weight': '700'
+    })
+  );
+}
+
+// 3 ── RACK & PINION ──────────────────────────────────
+function drawRackPinion(svg, theta) {
+  const N  = 16;
+  const R  = 62;                        // pitch radius
+  const m  = (2 * R) / N;              // module = 7.75
+  const rp = Math.PI * m;              // rack pitch = 24.35 px/tooth
+  const addH = m, rootH = 1.25 * m;   // rack tooth geometry
+
+  const pinCX = 410, pinCY = 192;
+  const pitchLineY = pinCY + R;         // = 254, rack pitch line
+
+  const thetaRad = theta * Math.PI / 180;
+  const linDisp  = thetaRad * R;       // px of rack movement
+
+  const numRackTeeth = 22;
+  const rackW = numRackTeeth * rp;
+  const rackStartX = 410 - rackW / 2 - (linDisp % rackW);
+
+  // Ground
+  const groundY = pitchLineY + rootH + 24;
+  append(svg,
+    el('rect', { x: 0, y: groundY, width: 820, height: 30, fill: '#e8dcc8' }),
+    el('line', { x1: 0, y1: groundY, x2: 820, y2: groundY, stroke: '#d1c4aa', 'stroke-width': '2' })
+  );
+
+  // Pitch line (horizontal)
+  append(svg,
+    el('line', {
+      x1: 60, y1: pitchLineY, x2: 760, y2: pitchLineY,
+      stroke: '#d97706', 'stroke-width': '1.3', 'stroke-dasharray': '8 5', opacity: '0.6'
+    }),
+    txt('PITCH LINE', {
+      x: 84, y: pitchLineY - 5,
+      'font-family': 'Space Mono,monospace', 'font-size': '8.5',
+      fill: '#d97706', 'font-weight': '700', opacity: '0.8'
+    })
+  );
+
+  // Clip path for rack
+  const defs = svg.querySelector('defs') || el('defs');
+  if (!svg.querySelector('defs')) svg.insertBefore(defs, svg.firstChild);
+  const clipId = 'rackClip';
+  let cp = svg.querySelector('#' + clipId);
+  if (!cp) {
+    cp = el('clipPath', { id: clipId });
+    cp.appendChild(el('rect', { x: 60, y: pitchLineY - addH - 10, width: 700, height: rootH + addH + 20 }));
+    defs.appendChild(cp);
+  }
+
+  // Rack (drawn with repeating tiles for smooth scroll)
+  const rackG = el('g', { 'clip-path': `url(#${clipId})` });
+  for (let rep = -1; rep <= 2; rep++) {
+    const rx = rackStartX + rep * rackW;
+    rackG.appendChild(el('path', {
+      d: rackPath(numRackTeeth, rp, addH, rootH),
+      transform: `translate(${rx.toFixed(1)},${pitchLineY.toFixed(1)})`,
+      fill: '#2d5a27', stroke: 'white', 'stroke-width': '0.5', opacity: '0.93'
+    }));
+  }
+  svg.appendChild(rackG);
+
+  // Rack body background
+  svg.appendChild(el('rect', {
+    x: 60, y: pitchLineY + rootH, width: 700, height: 6,
+    fill: '#2d5a27', opacity: '0.18'
+  }));
+
+  // Rack label
+  append(svg,
+    txt('RACK', {
+      x: 730, y: pitchLineY + rootH + 20,
+      'font-family': 'Space Mono,monospace', 'font-size': '11', fill: '#2d5a27', 'font-weight': '700'
+    })
+  );
+
+  // Linear displacement arrow
+  const arrowY = groundY + 16;
+  const arrowAmt = Math.abs(linDisp % 200);
+  const cx = 410;
+  if (arrowAmt > 2) {
+    append(svg,
+      el('path', {
+        d: `M ${cx} ${arrowY} L ${cx + 80} ${arrowY}`,
+        stroke: '#2d5a27', 'stroke-width': '2', 'marker-end': 'url(#rackArrow)', opacity: '0.7'
+      })
+    );
+  }
+
+  // Arrow marker
+  if (!svg.querySelector('#rackArrow')) {
+    const mk = el('marker', { id: 'rackArrow', markerWidth: '8', markerHeight: '6', refX: '8', refY: '3', orient: 'auto' });
+    mk.appendChild(el('polygon', { points: '0 0, 8 3, 0 6', fill: '#2d5a27', opacity: '0.7' }));
+    defs.appendChild(mk);
+  }
+
+  // Center line (vertical, through pinion center)
+  append(svg,
+    el('line', {
+      x1: pinCX, y1: 20, x2: pinCX, y2: pitchLineY,
+      stroke: '#d1c4aa', 'stroke-width': '1', 'stroke-dasharray': '7 5'
+    })
+  );
+
+  // Pinion
+  const pinG = makeGear(pinCX, pinCY, N, R, '#c4541a');
+  pinG.setAttribute('transform', `translate(${pinCX},${pinCY}) rotate(${theta})`);
+  svg.appendChild(pinG);
+
+  // Direction arrow on pinion
+  makeDirArrow(svg, pinCX, pinCY, R, -55, 145, '#c4541a');
+
+  // Pitch point
+  append(svg,
+    el('circle', { cx: pinCX, cy: pitchLineY, r: 5, fill: '#d97706', opacity: '0.85' })
+  );
+
+  // Labels
+  makeTag(svg, pinCX, pinCY - R * 1.52, 'PINION', `${N}T  ⌀${(2*R).toFixed(0)} px PCD`, '#c4541a');
+
+  // Formula banner
+  const disp = (thetaRad * R).toFixed(1);
+  append(svg,
+    el('rect', { x: 540, y: 50, width: 240, height: 78, rx: 10, fill: '#1a1612', stroke: '#c4541a', 'stroke-width': '1.5' }),
+    txt('FORMULA', { x: 660, y: 70, 'text-anchor': 'middle', 'font-family': 'Space Mono,monospace', 'font-size': '8.5', fill: 'rgba(255,255,255,0.35)', 'letter-spacing': '0.12em' }),
+    txt('d = θ × R', { x: 660, y: 95, 'text-anchor': 'middle', 'font-family': 'Space Mono,monospace', 'font-size': '22', 'font-weight': '700', fill: '#d97706' }),
+    txt(`d = ${disp} px`, { x: 660, y: 116, 'text-anchor': 'middle', 'font-family': 'Space Mono,monospace', 'font-size': '10', fill: 'rgba(255,255,255,0.45)' })
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// MECHANISM DATA
+// ═══════════════════════════════════════════════════════
+const mechData = [
+  {
+    ratio: '1.5 : 1', ratioSub: 'Driver : Driven',
+    rows: [
+      { l: 'Driver teeth', v: '24 T' },
+      { l: 'Driven teeth', v: '16 T' },
+      { l: 'Speed ratio', v: '1.5×' },
+      { l: 'Torque ratio', v: '0.67×' },
+      { l: 'Direction', v: 'Reversed' },
+    ],
+    concept: '<strong>Gear ratio</strong> = Driver teeth ÷ Driven teeth. A larger driver spinning a smaller driven gear <strong>increases speed</strong> but reduces torque by the same factor.',
+    overlay: ['Simple Gear Train', 'Driver: 24T  |  Driven: 16T  |  Ratio 1.5:1'],
+  },
+  {
+    ratio: '9 : 1', ratioSub: 'Overall ratio (3 × 3)',
+    rows: [
+      { l: 'Stage 1 ratio', v: '3 : 1' },
+      { l: 'Stage 2 ratio', v: '3 : 1' },
+      { l: 'Overall ratio', v: '9 : 1' },
+      { l: 'Torque gain', v: '9×' },
+      { l: 'Direction', v: 'Same as input' },
+    ],
+    concept: 'A <strong>compound train</strong> multiplies ratios across stages. Two 3:1 stages give 9:1 overall — a tiny input gear can deliver <strong>9× the torque</strong>.',
+    overlay: ['Compound Gear Train', 'Stage 1: 3:1  ×  Stage 2: 3:1  =  9:1 total'],
+  },
+  {
+    ratio: '1 : 1', ratioSub: 'Driver : Driven (same speed)',
+    rows: [
+      { l: 'Driver teeth', v: '20 T' },
+      { l: 'Idler teeth', v: '14 T' },
+      { l: 'Driven teeth', v: '20 T' },
+      { l: 'Speed ratio', v: '1 : 1' },
+      { l: 'Direction', v: 'Preserved' },
+    ],
+    concept: 'An <strong>idler gear</strong> reverses direction twice, so driver and driven rotate the <em>same</em> way. Tooth count of the idler doesn\'t affect the final ratio — only spacing.',
+    overlay: ['Idler Gear', 'Preserves direction  |  No ratio change  |  Any idler size works'],
+  },
+  {
+    ratio: '—', ratioSub: 'Rotary → Linear motion',
+    rows: [
+      { l: 'Pinion teeth', v: '16 T' },
+      { l: 'Module', v: '7.75 px' },
+      { l: 'Pitch diameter', v: '124 px' },
+      { l: 'Travel per rev', v: '≈ 389 px' },
+      { l: 'Application', v: 'Steering, CNC' },
+    ],
+    concept: 'A <strong>rack & pinion</strong> converts rotation into straight-line motion. Each full turn of the pinion moves the rack by its <strong>circumference</strong> (2π × pitch radius).',
+    overlay: ['Rack & Pinion', 'Rotary motion  →  Linear displacement  |  d = θ · R'],
+  },
+];
+
+// ═══════════════════════════════════════════════════════
+// ANIMATION ENGINE
+// ═══════════════════════════════════════════════════════
+let currentMech = 0;
+let animAngle   = 0;
+let animSpeed   = 1.0;
+let playing     = true;
+let lastTS      = null;
+
+function renderFrame() {
+  const svg = document.getElementById('mechSvg');
+  // Clear
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  // Background
+  svg.appendChild(el('rect', { x: 0, y: 0, width: 820, height: 480, fill: '#ffffff' }));
+
+  // Defs placeholder
+  const defs = el('defs');
+  svg.appendChild(defs);
+
+  switch (currentMech) {
+    case 0: drawSimple(svg, animAngle); break;
+    case 1: drawCompound(svg, animAngle); break;
+    case 2: drawIdler(svg, animAngle); break;
+    case 3: drawRackPinion(svg, animAngle); break;
+  }
+}
+
+function tick(ts) {
+  if (!lastTS) lastTS = ts;
+  const dt = Math.min((ts - lastTS) / 1000, 0.1);
+  lastTS = ts;
+  if (playing) animAngle = (animAngle + animSpeed * 36 * dt) % 360;
+  renderFrame();
+  requestAnimationFrame(tick);
+}
+
+// ═══════════════════════════════════════════════════════
+// UI CONTROLS
+// ═══════════════════════════════════════════════════════
+function selectMech(id) {
+  currentMech = id;
+  animAngle = 0;
+  document.querySelectorAll('.mech-card').forEach((c, i) => c.classList.toggle('active', i === id));
+
+  const d = mechData[id];
+  document.getElementById('ratioVal').textContent = d.ratio;
+  document.getElementById('ratioSub').textContent = d.ratioSub;
+  document.getElementById('conceptNote').innerHTML = d.concept;
+  document.getElementById('mechOverlay').innerHTML =
+    `<strong>${d.overlay[0]}</strong><br>${d.overlay[1]}`;
+  document.getElementById('infoRows').innerHTML = d.rows.map(r =>
+    `<div class="info-row"><span class="lbl">${r.l}</span><span class="val">${r.v}</span></div>`
+  ).join('');
+}
+
+function togglePlay() {
+  playing = !playing;
+  lastTS = null;
+  document.getElementById('playBtn').textContent = playing ? '⏸ Pause' : '▶ Play';
+}
+
+function setSpeed(v) {
+  animSpeed = parseFloat(v);
+  document.getElementById('speedVal').textContent = parseFloat(v).toFixed(1) + '×';
+}
+
+// ── Boot ────────────────────────────────────────────────
+selectMech(0);
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

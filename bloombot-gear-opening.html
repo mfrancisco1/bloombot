@@ -41,7 +41,7 @@
     }
     /* ── Bottom-left: controls ── */
     .controls-panel {
-      bottom: 1.6rem; left: 1.6rem;
+      bottom: 1.6rem; left: 12.0rem;
       display: flex; flex-direction: column; gap: 0.55rem;
       animation: fadeUp 0.9s ease-out 0.5s forwards;
     }
@@ -110,9 +110,9 @@
     }
     .time-dial  { fill: none; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
     .arm        { fill: rgba(255,220,180,0.055); stroke: rgba(255,220,180,0.17);
-                  stroke-width: 1; vector-effect: non-scaling-stroke; }
+                  stroke-width: .1; vector-effect: non-scaling-stroke; }
     .compound-ring { fill: none; stroke: rgba(255,220,180,0.24);
-                     stroke-width: 1; vector-effect: non-scaling-stroke; }
+                     stroke-width: .1; vector-effect: non-scaling-stroke; }
     .clock-hand    { stroke-linecap: round; vector-effect: non-scaling-stroke; }
     .label-line    { stroke: rgba(255,220,180,0.26); stroke-width: 1.1;
                      vector-effect: non-scaling-stroke; }
@@ -488,7 +488,7 @@ function setViewBox() {
 
 // Hands use near-white with a dark drop-shadow so they pop against any gear colour.
 const HAND_COLOR  = '#fef6e8';
-const HAND_SHADOW = 'drop-shadow(0 0 3px rgba(0,0,0,0.95)) drop-shadow(0 0 7px rgba(0,0,0,0.7))';
+const HAND_SHADOW = ``;//'drop-shadow(0 0 3px rgba(0,0,0,0.95)) drop-shadow(0 0 7px rgba(0,0,0,0.7))';
 
 function drawHand(wrapper, gear) {
   const r  = gear.geometry.pitchRadius;
@@ -512,9 +512,9 @@ function createAxleDecor(sg, axle) {
       class:'arm',transform:`rotate(${(360/spokes*i-8).toFixed(3)}) translate(0 ${(-r*0.08).toFixed(3)})`});
   }
   const hr=Math.max(6.4,r*0.12);
-  const hubColor = axle.featuredGear ? GEAR_COLORS[axle.featuredGear.id].stroke : '#f5f0e8';
-  svgEl(sg,'circle',{cx:0,cy:0,r:hr.toFixed(3),fill:hubColor,opacity:0.9});
-  svgEl(sg,'circle',{cx:0,cy:0,r:Math.max(3.2,hr*0.42).toFixed(3),fill:'#1a1612',class:'axle'});
+  const hubColor = axle.featuredGear ? GEAR_COLORS[axle.featuredGear.id].stroke : '#555555'; //'#f5f0e8';
+  // svgEl(sg,'circle',{cx:0,cy:0,r:hr.toFixed(3),fill:hubColor,opacity:0.9});
+  svgEl(sg,'circle',{cx:0,cy:0,r:Math.max(3.2,hr*0.12).toFixed(3),fill:'hubColor',opacity:0.8,class:'axle'});
   if (axle.gears.length>1) svgEl(sg,'circle',{cx:0,cy:0,r:(hr+4.2).toFixed(3),class:'compound-ring'});
 }
 

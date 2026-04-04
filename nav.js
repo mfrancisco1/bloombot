@@ -66,7 +66,9 @@
       id: 'scaffolds',
       label: 'Scaffolds',
       href: 'bloombot-scaffolds.html',
-      items: [],
+      items: [
+        { label: 'Code Curriculum', href: 'bloombot-curriculum.html' },
+      ],
     },
     {
       id: 'about',

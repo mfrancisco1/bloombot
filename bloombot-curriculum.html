@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bloombot Code Curriculum — 10-Unit Self-Study Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink:     #1a1612;
+      --cream:   #f5f0e8;
+      --warm:    #e8dcc8;
+      --rust:    #c4541a;
+      --amber:   #d97706;
+      --forest:  #2d5a27;
+      --slate:   #64748b;
+      --border:  #d1c4aa;
+      --card-bg: #ffffff;
+      --shadow:  rgba(26,22,18,0.10);
+      --c101:    #1d4ed8;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--cream); color: var(--ink);
+      line-height: 1.7;
+    }
+
+    /* ── NAV ── */
+    .top-nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--ink);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem; height: 56px;
+      border-bottom: 3px solid var(--rust);
+    }
+    .nav-brand {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.2rem; font-weight: 700;
+      color: var(--amber); text-decoration: none;
+      letter-spacing: -0.03em;
+    }
+    .nav-subtitle {
+      font-size: 0.78rem; color: rgba(255,255,255,0.5);
+      font-weight: 400; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, var(--ink) 0%, #2a2520 100%);
+      color: #fff; padding: 4rem 2rem 3.5rem;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background:
+        repeating-linear-gradient(0deg, transparent, transparent 39px,
+          rgba(255,255,255,0.03) 39px, rgba(255,255,255,0.03) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px,
+          rgba(255,255,255,0.03) 39px, rgba(255,255,255,0.03) 40px);
+    }
+    .hero-inner { max-width: 900px; margin: 0 auto; position: relative; }
+    .hero-eyebrow {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--amber);
+      margin-bottom: 0.75rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 700; line-height: 1.1;
+      letter-spacing: -0.04em; margin-bottom: 1.25rem;
+    }
+    .hero h1 span { color: var(--amber); }
+    .hero-desc {
+      font-size: 1rem; color: rgba(255,255,255,0.7);
+      max-width: 640px; line-height: 1.8;
+    }
+    .hero-meta {
+      margin-top: 2rem; display: flex; flex-wrap: wrap; gap: 1.5rem;
+    }
+    .hero-meta-item {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem; letter-spacing: 0.1em;
+      text-transform: uppercase; color: rgba(255,255,255,0.4);
+    }
+    .hero-meta-item strong {
+      display: block; font-size: 1rem; color: #fff;
+      letter-spacing: -0.02em; margin-top: 0.2rem;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    /* ── TOC ── */
+    .toc-band { background: var(--warm); border-bottom: 1.5px solid var(--border); }
+    .toc-inner {
+      max-width: 900px; margin: 0 auto; padding: 2rem;
+    }
+    .toc-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--slate);
+      margin-bottom: 1rem;
+    }
+    .toc-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 0.6rem;
+    }
+    .toc-item {
+      display: flex; align-items: baseline; gap: 0.6rem;
+      text-decoration: none; color: var(--ink);
+      padding: 0.5rem 0.75rem; border-radius: 6px;
+      transition: background 0.15s;
+    }
+    .toc-item:hover { background: rgba(196,84,26,0.08); }
+    .toc-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem; font-weight: 700;
+      color: var(--rust); min-width: 2rem;
+    }
+    .toc-title { font-size: 0.88rem; font-weight: 600; }
+    .toc-sub { font-size: 0.74rem; color: var(--slate); margin-left: 0.4rem; }
+
+    /* ── UNIT SECTIONS ── */
+    .unit {
+      max-width: 900px; margin: 0 auto;
+      padding: 3rem 2rem 1.5rem;
+    }
+    .unit + .unit { border-top: 1.5px solid var(--border); }
+    .unit-header {
+      display: flex; align-items: baseline; gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .unit-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.9rem; font-weight: 700;
+      color: var(--rust); white-space: nowrap;
+    }
+    .unit h2 {
+      font-size: 1.5rem; font-weight: 700;
+      letter-spacing: -0.03em; line-height: 1.2;
+    }
+    .unit-subtitle {
+      font-size: 0.88rem; color: var(--slate);
+      margin-bottom: 1.5rem; line-height: 1.6;
+      max-width: 700px;
+    }
+
+    /* content blocks */
+    .block {
+      background: var(--card-bg); border: 1.5px solid var(--border);
+      border-radius: 10px; margin-bottom: 1rem; overflow: hidden;
+    }
+    .block-header {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.85rem 1.1rem; cursor: pointer;
+      border-bottom: 1px solid transparent;
+      transition: background 0.15s;
+    }
+    .block-header:hover { background: rgba(245,240,232,0.5); }
+    .block.open .block-header { border-bottom-color: var(--border); }
+    .block-icon { font-size: 1rem; }
+    .block-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.62rem; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--slate);
+    }
+    .block-title { font-size: 0.9rem; font-weight: 600; flex: 1; }
+    .chevron {
+      font-size: 0.65rem; color: var(--slate);
+      transition: transform 0.2s;
+    }
+    .block.open .chevron { transform: rotate(90deg); }
+    .block-body {
+      display: none; padding: 1rem 1.25rem 1.25rem;
+      font-size: 0.88rem; line-height: 1.75;
+    }
+    .block.open .block-body { display: block; }
+
+    .block-body h4 {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.68rem; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--rust);
+      margin: 1.25rem 0 0.5rem;
+    }
+    .block-body h4:first-child { margin-top: 0; }
+
+    .block-body p { margin-bottom: 0.75rem; }
+
+    .block-body ul, .block-body ol {
+      margin: 0.5rem 0 0.75rem 1.5rem;
+    }
+    .block-body li {
+      margin-bottom: 0.4rem;
+      font-size: 0.85rem;
+    }
+
+    .file-ref {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.78rem; background: #f1ede5;
+      padding: 0.15rem 0.45rem; border-radius: 4px;
+      color: var(--rust); white-space: nowrap;
+    }
+
+    .code-block {
+      background: #1e293b; color: #e2e8f0;
+      padding: 1rem; border-radius: 8px;
+      overflow-x: auto; font-size: 0.78rem;
+      font-family: 'Space Mono', monospace;
+      line-height: 1.6; margin: 0.75rem 0;
+    }
+    .code-block .comment { color: #64748b; }
+    .code-block .keyword { color: #c084fc; }
+    .code-block .string { color: #86efac; }
+    .code-block .tag { color: #7dd3fc; }
+
+    .concept-chip {
+      display: inline-block;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem; letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem; border-radius: 4px;
+      margin: 0.15rem 0.2rem 0.15rem 0;
+    }
+    .chip-code { background: rgba(29,78,216,0.1); color: var(--c101); border: 1px solid rgba(29,78,216,0.2); }
+    .chip-arch { background: rgba(109,40,217,0.1); color: #6d28d9; border: 1px solid rgba(109,40,217,0.2); }
+    .chip-pm { background: rgba(196,84,26,0.1); color: var(--rust); border: 1px solid rgba(196,84,26,0.2); }
+    .chip-test { background: rgba(45,90,39,0.1); color: var(--forest); border: 1px solid rgba(45,90,39,0.2); }
+
+    /* footer */
+    footer {
+      background: var(--ink); color: rgba(255,255,255,0.4);
+      text-align: center; padding: 2.5rem 2rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72rem; letter-spacing: 0.06em; line-height: 2;
+    }
+    footer a { color: var(--amber); text-decoration: none; }
+
+    @media (max-width: 680px) {
+      .toc-grid { grid-template-columns: 1fr; }
+      .hero-meta { flex-direction: column; gap: 1rem; }
+      .unit { padding: 2rem 1.25rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav class="top-nav">
+  <a class="nav-brand" href="bloombot-modern.html">bloombot</a>
+  <span class="nav-subtitle">Code Curriculum</span>
+</nav>
+
+<!-- ── HERO ── -->
+<header class="hero">
+  <div class="hero-inner">
+    <p class="hero-eyebrow">Self-Study Guide</p>
+    <h1>Learning to Code Through<br><span>Bloombot</span></h1>
+    <p class="hero-desc">
+      A 10-unit curriculum for an information science student who wants to systematically understand an AI-generated codebase while building real skills in web development, software architecture, project management, and testing.
+    </p>
+    <div class="hero-meta">
+      <div class="hero-meta-item">Units<strong>10</strong></div>
+      <div class="hero-meta-item">Repository<strong>bloombot.com</strong></div>
+      <div class="hero-meta-item">Stack<strong>HTML / CSS / JS / Python</strong></div>
+      <div class="hero-meta-item">Approach<strong>Read first, then build</strong></div>
+    </div>
+  </div>
+</header>
+
+<!-- ── TABLE OF CONTENTS ── -->
+<section class="toc-band">
+  <div class="toc-inner">
+    <p class="toc-label">Units at a Glance</p>
+    <div class="toc-grid">
+      <a class="toc-item" href="#unit1"><span class="toc-num">01</span><span class="toc-title">Orienting to the Codebase<span class="toc-sub">— repo anatomy</span></span></a>
+      <a class="toc-item" href="#unit2"><span class="toc-num">02</span><span class="toc-title">HTML &amp; the Document<span class="toc-sub">— structure &amp; semantics</span></span></a>
+      <a class="toc-item" href="#unit3"><span class="toc-num">03</span><span class="toc-title">CSS &amp; Visual Design Systems<span class="toc-sub">— tokens &amp; layout</span></span></a>
+      <a class="toc-item" href="#unit4"><span class="toc-num">04</span><span class="toc-title">JavaScript Fundamentals<span class="toc-sub">— DOM &amp; interactivity</span></span></a>
+      <a class="toc-item" href="#unit5"><span class="toc-num">05</span><span class="toc-title">Architecture &amp; Code Reuse<span class="toc-sub">— nav.js &amp; patterns</span></span></a>
+      <a class="toc-item" href="#unit6"><span class="toc-num">06</span><span class="toc-title">Data Visualization with D3<span class="toc-sub">— networks &amp; forces</span></span></a>
+      <a class="toc-item" href="#unit7"><span class="toc-num">07</span><span class="toc-title">3D Graphics &amp; ES Modules<span class="toc-sub">— Three.js &amp; STL</span></span></a>
+      <a class="toc-item" href="#unit8"><span class="toc-num">08</span><span class="toc-title">Testing, Auditing &amp; Quality<span class="toc-sub">— security &amp; a11y</span></span></a>
+      <a class="toc-item" href="#unit9"><span class="toc-num">09</span><span class="toc-title">Dev Tooling &amp; Deployment<span class="toc-sub">— Git, Python, Pages</span></span></a>
+      <a class="toc-item" href="#unit10"><span class="toc-num">10</span><span class="toc-title">Capstone: Ship a Feature<span class="toc-sub">— plan, build, test, deploy</span></span></a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     UNIT 1
+     ═══════════════════════════════════════════════════════════════════ -->
+<section class="unit" id="unit1">
+  <div class="unit-header">
+    <span class="unit-num">Unit 01</span>
+    <h2>Orienting to the Codebase</h2>
+  </div>
+  <p class="unit-subtitle">
+    Before reading a single line of code, learn how professional developers approach an unfamiliar project. You'll map the repository's file system, identify naming conventions, and build a mental model of how the pieces connect.
+  </p>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">📖</span>
+      <span class="block-label">Concepts</span>
+      <span class="block-title">What you'll learn</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <span class="concept-chip chip-arch">Software Architecture</span>
+      <span class="concept-chip chip-pm">Project Management</span>
+      <span class="concept-chip chip-code">Coding</span>
+
+      <h4>Key ideas</h4>
+      <p>Every codebase tells a story through its file structure. Bloombot is a <strong>static site</strong> — there is no database and no server-side rendering. Every page is a self-contained HTML file that the browser opens directly. This is the simplest possible web architecture, and understanding <em>why</em> it works (and where it breaks down) is your first architectural lesson.</p>
+      <p>You'll also encounter the concept of <strong>naming conventions</strong>. Notice that Bloombot uses two patterns: hyphenated names (<span class="file-ref">bloombot-modern.html</span>) for "structural" pages, and descriptive names with spaces (<span class="file-ref">bloombot - Lightning.html</span>) for "content" pages. This is a design choice — and arguably a mistake — that has real consequences for URLs and command-line usage.</p>
+
+      <h4>Files to explore</h4>
+      <ul>
+        <li><span class="file-ref">.gitignore</span> — What's being hidden and why? Note the comment about "embedded API keys" in the original Google Sites export.</li>
+        <li><span class="file-ref">CNAME</span> — A single line: <code>bloombot.com</code>. This tells GitHub Pages which custom domain to serve.</li>
+        <li><span class="file-ref">app.py</span> — The local development server. Just 41 lines of Python, but it introduces inheritance (<code>class Handler</code> extends <code>SimpleHTTPRequestHandler</code>), port binding, and the concept of a dev server vs. production hosting.</li>
+        <li><span class="file-ref">webpage-main/</span> — The artifact library. Run <code>ls webpage-main/</code> and count the files. Each <code>.html</code> file is a standalone interactive tool. Each <code>.stl</code> file is a 3D model.</li>
+      </ul>
+
+      <h4>Architecture concept: Static vs. Dynamic sites</h4>
+      <p>Bloombot has no backend logic. When a user visits <code>bloombot.com/bloombot-i101.html</code>, GitHub's servers simply hand them the file. Contrast this with a dynamic site like Twitter, where every page load triggers server-side code that queries a database and assembles HTML on the fly. Static sites trade <em>interactivity limitations</em> for <em>simplicity, speed, and free hosting</em>.</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">🛠️</span>
+      <span class="block-label">Exercise</span>
+      <span class="block-title">Map the repository</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <h4>Task</h4>
+      <ol>
+        <li>Clone the repo (or open the folder). Run <code>ls -la</code> in your terminal to see all files, including hidden ones like <code>.git/</code> and <code>.gitignore</code>.</li>
+        <li>Create a hand-drawn or digital diagram that groups the files into categories: structural pages, content pages, artifacts, assets, configuration files, and support scripts.</li>
+        <li>Open <span class="file-ref">app.py</span> and start the local server. Visit <code>localhost:8000</code> in your browser. Click through several pages and note which URLs load.</li>
+        <li>Write a one-paragraph "project brief" as if you were describing this project to a new teammate. Include: the purpose, the tech stack, the deployment method, and the approximate size.</li>
+      </ol>
+      <h4>Stretch goal</h4>
+      <p>Run <code>find . -name "*.html" | wc -l</code> to count all HTML files. Then run <code>wc -l *.html webpage-main/*.html</code> to count total lines of code. How big is this project compared to what you expected?</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     UNIT 2
+     ═══════════════════════════════════════════════════════════════════ -->
+<section class="unit" id="unit2">
+  <div class="unit-header">
+    <span class="unit-num">Unit 02</span>
+    <h2>HTML &amp; the Document</h2>
+  </div>
+  <p class="unit-subtitle">
+    Read the HTML of Bloombot's pages closely. Understand how a document is structured, what semantic tags communicate, and how the browser turns markup into a rendered page.
+  </p>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">📖</span>
+      <span class="block-label">Concepts</span>
+      <span class="block-title">Document structure &amp; semantics</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <span class="concept-chip chip-code">Coding</span>
+
+      <h4>The anatomy of a Bloombot page</h4>
+      <p>Open <span class="file-ref">bloombot-modern.html</span> in a text editor. The first line — <code>&lt;!DOCTYPE html&gt;</code> — is a declaration that tells the browser to use modern HTML5 parsing rules. Everything else lives inside the <code>&lt;html&gt;</code> root element, split into two children: <code>&lt;head&gt;</code> (metadata the user never sees) and <code>&lt;body&gt;</code> (everything visible).</p>
+
+      <p>Inside the <code>&lt;head&gt;</code>, study these elements:</p>
+      <ul>
+        <li><code>&lt;meta charset="UTF-8"&gt;</code> — character encoding. Without this, special characters can break.</li>
+        <li><code>&lt;meta name="viewport"&gt;</code> — responsive design instruction for mobile browsers.</li>
+        <li><code>&lt;link&gt;</code> tags — loading Google Fonts externally. Notice how <code>rel="preconnect"</code> tells the browser to start the network handshake early, before the font file is actually needed.</li>
+        <li><code>&lt;style&gt;</code> — all CSS is inline rather than in a separate <code>.css</code> file. This is an architectural choice worth questioning.</li>
+      </ul>
+
+      <h4>Semantic HTML vs. div soup</h4>
+      <p>Bloombot uses <code>&lt;header&gt;</code>, <code>&lt;nav&gt;</code>, <code>&lt;section&gt;</code>, and <code>&lt;footer&gt;</code> — semantic tags that carry meaning for screen readers and search engines. Compare this to a page built entirely from <code>&lt;div&gt;</code> tags: the structure would look identical visually but would be meaningless to assistive technology.</p>
+
+      <h4>File to study</h4>
+      <p><span class="file-ref">bloombot-i101.html</span> is the richest page to study. It has a hero section, a metadata band, eight topic sections, artifact card grids, a slides callout band, and a footer — all within a single HTML document.</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">🛠️</span>
+      <span class="block-label">Exercise</span>
+      <span class="block-title">Annotate and extend a page</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <h4>Task</h4>
+      <ol>
+        <li>Open <span class="file-ref">bloombot-i101.html</span>. Using your browser's DevTools (right-click → Inspect), collapse each major section of the <code>&lt;body&gt;</code>. Sketch an outline of the document's block structure: nav → hero → context band → topic sections → slides band → footer.</li>
+        <li>Find the "Networks" topic section. Study how an artifact card (<code>.acard</code>) is built: the top accent bar, the icon, the title, the description, and the footer tag. Each card is an <code>&lt;a&gt;</code> tag wrapping the whole thing — making the entire card clickable.</li>
+        <li><strong>Build something:</strong> Add a ninth topic section called "Sustainability" at the bottom of the page. Create three artifact cards linking to placeholder pages. Match the existing HTML structure exactly.</li>
+        <li>Validate your new HTML at <a href="https://validator.w3.org/" style="color:var(--c101);">validator.w3.org</a>. Fix any errors.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     UNIT 3
+     ═══════════════════════════════════════════════════════════════════ -->
+<section class="unit" id="unit3">
+  <div class="unit-header">
+    <span class="unit-num">Unit 03</span>
+    <h2>CSS &amp; Visual Design Systems</h2>
+  </div>
+  <p class="unit-subtitle">
+    Bloombot has a sophisticated visual identity built entirely with CSS custom properties. Learn how design tokens, the box model, and CSS Grid create a consistent, maintainable look.
+  </p>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">📖</span>
+      <span class="block-label">Concepts</span>
+      <span class="block-title">Design tokens &amp; layout systems</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <span class="concept-chip chip-code">Coding</span>
+      <span class="concept-chip chip-arch">Architecture</span>
+
+      <h4>CSS custom properties as design tokens</h4>
+      <p>At the top of every Bloombot page, you'll find a <code>:root</code> block defining the site's visual vocabulary:</p>
+      <div class="code-block"><span class="keyword">:root</span> {
+  <span class="comment">/* Neutral palette */</span>
+  --ink:     <span class="string">#1a1612</span>;
+  --cream:   <span class="string">#f5f0e8</span>;
+  --warm:    <span class="string">#e8dcc8</span>;
+  --rust:    <span class="string">#c4541a</span>;
+  --amber:   <span class="string">#d97706</span>;
+
+  <span class="comment">/* Per-course accent colors */</span>
+  --c101:  <span class="string">#1d4ed8</span>;  <span class="comment">/* blue — informatics */</span>
+  --c341:  <span class="string">#b45309</span>;  <span class="comment">/* amber — electronics */</span>
+  --c549:  <span class="string">#6d28d9</span>;  <span class="comment">/* violet — prototyping */</span>
+}</div>
+      <p>In professional design systems, these are called <strong>design tokens</strong> — named values that encode visual decisions in one place so they can be changed globally. If you wanted to rebrand the site from warm cream to cool gray, you'd change about six lines.</p>
+
+      <h4>CSS Grid and responsive design</h4>
+      <p>The artifact card grid in <span class="file-ref">bloombot-i101.html</span> uses a single powerful line:</p>
+      <div class="code-block"><span class="keyword">grid-template-columns</span>: repeat(auto-fill, minmax(<span class="string">220px</span>, <span class="string">1fr</span>));</div>
+      <p>This says: "Fill the row with as many columns as will fit, where each column is at least 220px wide and stretches equally to fill remaining space." This single declaration handles responsiveness — from 4 columns on desktop to 1 on mobile — without a single media query.</p>
+
+      <h4>The architectural problem: duplicated styles</h4>
+      <p>Every HTML file in Bloombot contains its own <code>&lt;style&gt;</code> block, and many of them repeat the same CSS. This is a direct consequence of the "every page is self-contained" architecture. Compare this to a shared <code>styles.css</code> file that every page links to. What are the trade-offs of each approach?</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">🛠️</span>
+      <span class="block-label">Exercise</span>
+      <span class="block-title">Extract and refactor the design system</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <h4>Task</h4>
+      <ol>
+        <li>Open 3 different pages (<span class="file-ref">bloombot-modern.html</span>, <span class="file-ref">bloombot-i101.html</span>, <span class="file-ref">gear-generator.html</span>). Compare their <code>:root</code> blocks side by side. List which variables appear in all three and which are unique.</li>
+        <li><strong>Refactor:</strong> Create a new file called <code>bloombot-tokens.css</code>. Move all shared custom properties into it. Then modify one page to use <code>&lt;link rel="stylesheet" href="bloombot-tokens.css"&gt;</code> instead of defining its own <code>:root</code>. Verify it still looks correct.</li>
+        <li>In DevTools, experiment with changing <code>--cream</code> to <code>#0d1117</code> (a dark background) and <code>--ink</code> to <code>#e6edf3</code> (light text). How much of a "dark mode" do you get for free from the design token system? What breaks?</li>
+        <li>Study the responsive breakpoint at the bottom of <span class="file-ref">bloombot-i101.html</span>: <code>@media (max-width:680px)</code>. What three things change? Resize your browser window to see them in action.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     UNIT 4
+     ═══════════════════════════════════════════════════════════════════ -->
+<section class="unit" id="unit4">
+  <div class="unit-header">
+    <span class="unit-num">Unit 04</span>
+    <h2>JavaScript Fundamentals</h2>
+  </div>
+  <p class="unit-subtitle">
+    Move from reading static markup to understanding how JavaScript brings pages to life. Study real event listeners, DOM manipulation, and state management in Bloombot's interactive artifacts.
+  </p>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">📖</span>
+      <span class="block-label">Concepts</span>
+      <span class="block-title">DOM manipulation &amp; event-driven programming</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <span class="concept-chip chip-code">Coding</span>
+
+      <h4>The simplest JavaScript in Bloombot</h4>
+      <p>Look at the <span class="file-ref">security-audit-2026-03-01.html</span> file. It has a collapsible findings UI built with minimal JavaScript:</p>
+      <div class="code-block">document.querySelectorAll(<span class="string">'.finding-header'</span>).forEach(<span class="keyword">function</span>(header) {
+  header.addEventListener(<span class="string">'click'</span>, <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.parentElement.classList.toggle(<span class="string">'open'</span>);
+  });
+});</div>
+      <p>This pattern — <strong>select elements, attach listeners, toggle classes</strong> — is the bread and butter of vanilla JavaScript. The CSS does the visual work (showing/hiding via <code>.open .finding-body { display: block; }</code>), and the JavaScript just flips a switch. This separation of concerns is a core architectural principle.</p>
+
+      <h4>A richer example: the password analyzer</h4>
+      <p>Open <span class="file-ref">webpage-main/password_analyzer.html</span>. This artifact takes user input (a password), calculates entropy, checks for common patterns, and renders a strength meter — all in real time, all client-side. Study how:</p>
+      <ul>
+        <li>An <code>input</code> event fires on every keystroke (not just when the user presses Enter).</li>
+        <li>Multiple functions each assess one aspect of password strength.</li>
+        <li>The results are composed together and the DOM is updated.</li>
+      </ul>
+
+      <h4>Understanding scope and closures</h4>
+      <p>In <span class="file-ref">nav.js</span>, the entire script is wrapped in <code>(function() { ... })();</code> — an Immediately Invoked Function Expression (IIFE). This creates a private scope so that variables like <code>menus</code> and <code>prefix</code> don't leak into the global namespace and conflict with other scripts. This is a foundational JavaScript pattern worth understanding deeply.</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">🛠️</span>
+      <span class="block-label">Exercise</span>
+      <span class="block-title">Build an interactive component</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <h4>Task</h4>
+      <ol>
+        <li>Open <span class="file-ref">webpage-main/password_analyzer.html</span> in your browser and your editor simultaneously. Type different passwords and watch what changes in the UI. Then read the JavaScript to find <em>exactly</em> which function calculates the entropy score.</li>
+        <li>Open <span class="file-ref">webpage-main/unicode_binary.html</span>. This converts text to binary representations. Study how the conversion logic works — how does it turn a character into its binary form?</li>
+        <li><strong>Build something:</strong> Create a new file called <code>bloombot-quiz.html</code> that implements a simple 5-question quiz about informatics. Use the Bloombot design tokens for styling. It should: display one question at a time, track the score in a JavaScript variable, show results at the end.</li>
+        <li>Add a "Show Answer" toggle to each question using the same <code>classList.toggle</code> pattern from the security audit page.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     UNIT 5
+     ═══════════════════════════════════════════════════════════════════ -->
+<section class="unit" id="unit5">
+  <div class="unit-header">
+    <span class="unit-num">Unit 05</span>
+    <h2>Architecture &amp; Code Reuse</h2>
+  </div>
+  <p class="unit-subtitle">
+    Zoom out from individual pages and study how the codebase handles (and fails to handle) shared concerns. The navigation system is a case study in practical code architecture.
+  </p>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">📖</span>
+      <span class="block-label">Concepts</span>
+      <span class="block-title">The nav.js pattern &amp; DRY principle</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <span class="concept-chip chip-arch">Architecture</span>
+      <span class="concept-chip chip-code">Coding</span>
+      <span class="concept-chip chip-pm">Project Management</span>
+
+      <h4>Single source of truth</h4>
+      <p><span class="file-ref">nav.js</span> is the most architecturally important file in the repo. It solves a real problem: if you have 60+ HTML files and you want to add a navigation link, you shouldn't have to edit every single file. Instead, each page just declares:</p>
+      <div class="code-block"><span class="tag">&lt;nav</span> id=<span class="string">"main-nav"</span> data-active=<span class="string">"i101"</span><span class="tag">&gt;&lt;/nav&gt;</span>
+<span class="tag">&lt;script</span> src=<span class="string">"nav.js"</span><span class="tag">&gt;&lt;/script&gt;</span></div>
+      <p>The <code>data-active</code> attribute tells nav.js which menu item to highlight. The script auto-detects its own depth (is it loaded as <code>nav.js</code> or <code>../nav.js</code>?) and prefixes all links accordingly. This is a <strong>convention-over-configuration</strong> pattern — the system infers context from file location rather than requiring explicit setup.</p>
+
+      <h4>What nav.js doesn't solve</h4>
+      <p>Notice that nav.js only handles the <em>navigation bar</em>. The CSS for the nav is still duplicated in every file's <code>&lt;style&gt;</code> block. The footer is also repeated everywhere. This is a textbook case of <strong>technical debt</strong> — it works, but future changes require editing many files. In a framework like React, you'd have a <code>&lt;Layout&gt;</code> component that wraps every page. Without a framework, what are your options?</p>
+
+      <h4>Architectural patterns to recognize</h4>
+      <ul>
+        <li><strong>Data-driven rendering:</strong> nav.js defines a <code>menus</code> array (data) and a rendering function (logic). Changing the menu means changing data, not rewriting HTML. This is the same principle that powers React, D3, and every data-driven UI.</li>
+        <li><strong>IIFE encapsulation:</strong> The entire file is wrapped in <code>(function() { ... })();</code>, creating a private scope. No globals leak out.</li>
+        <li><strong>Graceful degradation:</strong> The <code>if (!nav) return;</code> guard at line 10 means the script silently does nothing if a page forgets to include the nav element, rather than crashing.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">🛠️</span>
+      <span class="block-label">Exercise</span>
+      <span class="block-title">Extend the shared architecture</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <h4>Task</h4>
+      <ol>
+        <li>Read <span class="file-ref">nav.js</span> line by line. For every variable and function, write a comment explaining what it does. Pay special attention to the <code>prefix</code> detection logic — trace through what happens when a page in <code>webpage-main/</code> loads nav.js as <code>../nav.js</code>.</li>
+        <li>Add a new top-level menu item to the <code>menus</code> array in nav.js — perhaps "Curriculum" pointing to your new curriculum page. Reload three different pages and verify the new link appears everywhere.</li>
+        <li><strong>Build something:</strong> Create a <code>footer.js</code> file following the same pattern as nav.js. It should inject a consistent footer into any page that includes <code>&lt;footer id="main-footer"&gt;&lt;/footer&gt;</code> and the script. Test it on two pages.</li>
+        <li><strong>Architectural analysis:</strong> Write a half-page comparing the nav.js "inject from JavaScript" approach against three alternatives: (a) a shared CSS file with <code>&lt;link&gt;</code>, (b) a static site generator like Jekyll or Hugo, (c) a component framework like React. What would you gain and lose with each?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     UNIT 6
+     ═══════════════════════════════════════════════════════════════════ -->
+<section class="unit" id="unit6">
+  <div class="unit-header">
+    <span class="unit-num">Unit 06</span>
+    <h2>Data Visualization with D3.js</h2>
+  </div>
+  <p class="unit-subtitle">
+    Bloombot uses D3.js for its most complex artifacts — force-directed network graphs, topology visualizations, and interactive data displays. Learn to read and modify data-driven graphics.
+  </p>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">📖</span>
+      <span class="block-label">Concepts</span>
+      <span class="block-title">Data binding, selections &amp; force simulations</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <span class="concept-chip chip-code">Coding</span>
+      <span class="concept-chip chip-arch">Architecture</span>
+
+      <h4>D3's mental model</h4>
+      <p>D3 (Data-Driven Documents) doesn't draw charts for you — it binds data to DOM elements and lets you describe transformations. Open <span class="file-ref">spatial-network-viz.html</span> (953 lines) and find the force simulation setup. D3's force layout follows these steps:</p>
+      <ol>
+        <li>Define <strong>nodes</strong> (entities) and <strong>links</strong> (relationships) as data arrays.</li>
+        <li>Create a <strong>simulation</strong> with forces: charge (repulsion), centering, link distance, and collision avoidance.</li>
+        <li>On each simulation <strong>tick</strong>, update SVG element positions to match the calculated coordinates.</li>
+        <li>Add <strong>drag behavior</strong> so users can interact with nodes.</li>
+      </ol>
+
+      <h4>SVG as the rendering target</h4>
+      <p>Unlike the HTML-based pages, the network visualizations render into <code>&lt;svg&gt;</code> — Scalable Vector Graphics. SVG elements (<code>&lt;circle&gt;</code>, <code>&lt;line&gt;</code>, <code>&lt;text&gt;</code>) are part of the DOM and can be styled with CSS and manipulated with JavaScript, but they use a coordinate system rather than the document flow model.</p>
+
+      <h4>Files to study</h4>
+      <ul>
+        <li><span class="file-ref">spatial-network-viz.html</span> — The most complex D3 artifact. Includes a legend, detail panel, category-based coloring, and pinning behavior.</li>
+        <li><span class="file-ref">webpage-main/topology.html</span> — Network topology visualization.</li>
+        <li><span class="file-ref">webpage-main/network_analysis.html</span> — Analytical view of network structures.</li>
+        <li><span class="file-ref">webpage-main/network_strategic_link.html</span> — Strategic link analysis.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">🛠️</span>
+      <span class="block-label">Exercise</span>
+      <span class="block-title">Read and modify a D3 visualization</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <h4>Task</h4>
+      <ol>
+        <li>Open <span class="file-ref">spatial-network-viz.html</span> in your browser. Interact with it — drag nodes, click on them, observe the detail panel. Then open the source code and identify: Where is the data defined? Where is the simulation created? Where does the tick function update positions?</li>
+        <li>Find the color scale that assigns colors to different node categories. Change one of the colors and reload. This gives you a feel for how data maps to visual encoding.</li>
+        <li>Study the <code>drag</code> behavior. How does D3 handle the start, during, and end of a drag gesture? Why does it "reheat" the simulation on drag start?</li>
+        <li><strong>Build something:</strong> Create a minimal force-directed graph from scratch: 5 nodes connected by 5 edges. Use the D3 CDN (<code>https://d3js.org/d3.v7.min.js</code>). Apply Bloombot's color tokens to your nodes. It doesn't need to be fancy — the goal is to understand the simulation lifecycle.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     UNIT 7
+     ═══════════════════════════════════════════════════════════════════ -->
+<section class="unit" id="unit7">
+  <div class="unit-header">
+    <span class="unit-num">Unit 07</span>
+    <h2>3D Graphics &amp; ES Modules</h2>
+  </div>
+  <p class="unit-subtitle">
+    Bloombot includes a 3D model viewer built with Three.js. This unit introduces WebGL rendering, ES module imports, and the scene/camera/renderer pattern used across all 3D web applications.
+  </p>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">📖</span>
+      <span class="block-label">Concepts</span>
+      <span class="block-title">Three.js architecture &amp; ES modules</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <span class="concept-chip chip-code">Coding</span>
+      <span class="concept-chip chip-arch">Architecture</span>
+
+      <h4>The scene graph pattern</h4>
+      <p>Open <span class="file-ref">webpage-main/stlM2.html</span>. Every Three.js application follows the same architecture:</p>
+      <ol>
+        <li><strong>Scene</strong> — the container for all 3D objects, lights, and cameras. Think of it as the stage.</li>
+        <li><strong>Camera</strong> — defines the viewpoint (perspective vs. orthographic, field of view, near/far clipping planes).</li>
+        <li><strong>Renderer</strong> — takes the scene and camera, and draws pixels to a <code>&lt;canvas&gt;</code> element using WebGL.</li>
+        <li><strong>Animation loop</strong> — a recursive <code>requestAnimationFrame</code> call that re-renders the scene every frame (~60 times per second).</li>
+      </ol>
+
+      <h4>ES Modules vs. script tags</h4>
+      <p>The 3D viewer uses <code>import</code> statements:</p>
+      <div class="code-block"><span class="keyword">import</span> * <span class="keyword">as</span> THREE <span class="keyword">from</span> <span class="string">'./three.module.js'</span>;
+<span class="keyword">import</span> { STLLoader } <span class="keyword">from</span> <span class="string">'./STLLoader.js'</span>;
+<span class="keyword">import</span> { OrbitControls } <span class="keyword">from</span> <span class="string">'./OrbitControls.js'</span>;</div>
+      <p>This is the ES Module system — JavaScript's native way to share code between files. It requires a <code>&lt;script type="module"&gt;</code> tag, and crucially, <strong>it only works when served over HTTP</strong> (not when double-clicking the file). This is exactly why <span class="file-ref">app.py</span> exists — to provide a local HTTP server for development.</p>
+
+      <h4>Why does the 3D viewer need a server?</h4>
+      <p>Browsers block ES module imports from <code>file://</code> URLs for security reasons (CORS policy). The STL loader also uses <code>fetch()</code> to load 3D model files, which has the same restriction. This is a real-world constraint you'll encounter in many web projects.</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">🛠️</span>
+      <span class="block-label">Exercise</span>
+      <span class="block-title">Explore the 3D pipeline</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <h4>Task</h4>
+      <ol>
+        <li>Start the local server (<code>python app.py</code>) and open the 3D model viewer. Load several models from different categories and use OrbitControls to rotate, zoom, and pan.</li>
+        <li>In the source code, find where the STL files are loaded. How does the code handle the asynchronous loading process? Look for callback functions or <code>.then()</code> chains.</li>
+        <li>Find the lighting setup. What types of lights are used? What happens if you remove the ambient light? (Try it.) What happens if you change the directional light's position?</li>
+        <li>Study the model catalog — how are the available models organized in the code? Is it a data structure (like nav.js's menus array), or is it hardcoded HTML?</li>
+        <li><strong>Build something:</strong> Add a new STL model to the viewer (you can download a free one from Thingiverse). Register it in the model catalog, give it a category, and verify it loads correctly.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     UNIT 8
+     ═══════════════════════════════════════════════════════════════════ -->
+<section class="unit" id="unit8">
+  <div class="unit-header">
+    <span class="unit-num">Unit 08</span>
+    <h2>Testing, Auditing &amp; Quality Assurance</h2>
+  </div>
+  <p class="unit-subtitle">
+    Bloombot has no automated test suite — which is itself a lesson. Learn about the testing strategies that should exist, study the security audit that does, and think about what "quality" means for a static educational site.
+  </p>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">📖</span>
+      <span class="block-label">Concepts</span>
+      <span class="block-title">Testing levels, security audits &amp; accessibility</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <span class="concept-chip chip-test">Testing</span>
+      <span class="concept-chip chip-pm">Project Management</span>
+
+      <h4>The testing gap</h4>
+      <p>Bloombot has zero automated tests. No unit tests, no integration tests, no end-to-end tests. For a solo educational project, this is understandable — but it means any change could silently break something. The <strong>testing pyramid</strong> is a useful mental model:</p>
+      <ul>
+        <li><strong>Unit tests</strong> — test individual functions in isolation. For Bloombot, this might mean testing that the password entropy calculation in <span class="file-ref">webpage-main/password_analyzer.html</span> returns correct values for known inputs.</li>
+        <li><strong>Integration tests</strong> — test that components work together. Does nav.js correctly generate links for pages at different directory depths?</li>
+        <li><strong>End-to-end tests</strong> — test the full user experience. Does clicking the "Networks" link on the course page actually navigate to the right section?</li>
+      </ul>
+
+      <h4>The security audit as a testing artifact</h4>
+      <p>Open <span class="file-ref">security-audit-2026-03-01.html</span>. This is a manual audit organized by severity (Critical, High, Medium, Low, Info, Pass). Study its structure — each finding has a title, severity level, description, and recommended fix. This is a real-world security review format. Notice how it flags issues like:</p>
+      <ul>
+        <li>Missing Content Security Policy headers</li>
+        <li>Inline scripts (which a strict CSP would block)</li>
+        <li>External resource loading without integrity checks</li>
+      </ul>
+      <p>For a GitHub Pages static site, many server-side security headers aren't configurable — but the audit is still valuable for understanding what <em>would</em> matter on a real server.</p>
+
+      <h4>Accessibility as a quality dimension</h4>
+      <p>Run a browser accessibility audit (Chrome DevTools → Lighthouse → Accessibility) on <span class="file-ref">bloombot-i101.html</span>. How does it score? Bloombot uses semantic HTML (good), but it may lack ARIA labels, alt text, and sufficient color contrast ratios in some areas.</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">🛠️</span>
+      <span class="block-label">Exercise</span>
+      <span class="block-title">Write tests and audit the site</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <h4>Task</h4>
+      <ol>
+        <li>Read <span class="file-ref">security-audit-2026-03-01.html</span> thoroughly. For each "Medium" or higher finding, write one sentence explaining whether the risk is real for a GitHub Pages static site, or whether it's more relevant to a server-rendered application.</li>
+        <li>Run a Lighthouse audit on three different Bloombot pages. Compare their scores across Performance, Accessibility, Best Practices, and SEO. Which page scores best? Why?</li>
+        <li><strong>Build something:</strong> Create a file called <code>test-nav.html</code> that acts as a manual test harness for nav.js. It should load nav.js and then use JavaScript to verify:
+          <ul>
+            <li>The nav element is populated (not empty)</li>
+            <li>All expected menu items are present</li>
+            <li>The <code>data-active</code> attribute correctly highlights the right item</li>
+            <li>Links are properly prefixed for the page's directory depth</li>
+          </ul>
+          Display results as green (pass) or red (fail) indicators on the page.
+        </li>
+        <li><strong>Stretch:</strong> Write a simple Node.js script (using <code>node:fs</code>) that scans every HTML file in the repo and reports which ones are missing: (a) a <code>&lt;meta name="viewport"&gt;</code> tag, (b) a <code>&lt;title&gt;</code> tag, (c) a nav element, (d) a <code>lang</code> attribute on <code>&lt;html&gt;</code>.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     UNIT 9
+     ═══════════════════════════════════════════════════════════════════ -->
+<section class="unit" id="unit9">
+  <div class="unit-header">
+    <span class="unit-num">Unit 09</span>
+    <h2>Dev Tooling &amp; Deployment</h2>
+  </div>
+  <p class="unit-subtitle">
+    Understand the tools and workflows that take code from your editor to a live website. Git version control, the Python dev server, GitHub Pages hosting, and the decisions that shaped this project's toolchain.
+  </p>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">📖</span>
+      <span class="block-label">Concepts</span>
+      <span class="block-title">Git, local servers &amp; static hosting</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <span class="concept-chip chip-pm">Project Management</span>
+      <span class="concept-chip chip-arch">Architecture</span>
+
+      <h4>Git as project memory</h4>
+      <p>Run <code>git log --oneline</code> in the Bloombot repo. Each commit is a snapshot of the entire project at a point in time. Notice the commit messages — they tell a story of the project's evolution. Good commit messages are a form of documentation that the <code>.gitignore</code> is a form of security: it prevents the original Google Sites export (which contained embedded API keys) from ever being pushed to GitHub.</p>
+
+      <h4>The deployment pipeline (or lack thereof)</h4>
+      <p>Bloombot's deployment is as simple as it gets: push to the <code>main</code> branch on GitHub, and GitHub Pages automatically serves the files at <code>bloombot.com</code>. The <span class="file-ref">CNAME</span> file tells GitHub which custom domain to use. There is no build step, no compilation, no bundling. This is the ultimate "what you see is what you deploy" workflow.</p>
+      <p>Compare this to a modern web project that might require: installing dependencies (<code>npm install</code>), running a build (<code>npm run build</code>), running tests (<code>npm test</code>), and only deploying if all checks pass. That's a <strong>CI/CD pipeline</strong> (Continuous Integration / Continuous Deployment). Bloombot's simplicity is a feature — but it also means there's no safety net between "git push" and "live on the internet."</p>
+
+      <h4>The local server: app.py in depth</h4>
+      <p><span class="file-ref">app.py</span> is 41 lines of Python that teaches several concepts:</p>
+      <ul>
+        <li><strong>Class inheritance:</strong> <code>Handler</code> extends <code>SimpleHTTPRequestHandler</code>, overriding just one method (<code>log_message</code>) to suppress non-error output. This is the Open/Closed Principle in action — extending behavior without modifying the base class.</li>
+        <li><strong>Port binding:</strong> <code>TCPServer(("", PORT), Handler)</code> tells the operating system to listen on port 8000 for HTTP connections.</li>
+        <li><strong>Context manager:</strong> The <code>with</code> statement ensures the server is properly cleaned up even if an error occurs.</li>
+        <li><strong>Developer ergonomics:</strong> <code>webbrowser.open(url)</code> automatically opens the browser — a small but thoughtful touch.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">🛠️</span>
+      <span class="block-label">Exercise</span>
+      <span class="block-title">Master the toolchain</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <h4>Task</h4>
+      <ol>
+        <li>Run <code>git log --oneline --graph</code> to see the project history. Then run <code>git diff HEAD~3..HEAD</code> to see what changed in the last three commits. Practice reading diffs — what was added (green), removed (red), and modified?</li>
+        <li>Create a new branch (<code>git checkout -b my-experiment</code>), make a small change to any page, commit it, then switch back to <code>main</code>. Verify your change disappeared. Switch back to <code>my-experiment</code> — it's back. This is the fundamental Git workflow for safe experimentation.</li>
+        <li>Modify <span class="file-ref">app.py</span> to serve on port 3000 instead of 8000, and to open <code>bloombot-i101.html</code> instead of <code>bloombot-modern.html</code>. Test that it works. Then revert your changes with <code>git checkout app.py</code>.</li>
+        <li><strong>Research &amp; write:</strong> Write a one-page proposal for adding a CI/CD pipeline to Bloombot using GitHub Actions. Your pipeline should: run an HTML validator on all HTML files, check that all internal links resolve to real files, and deploy to GitHub Pages only if both checks pass. You don't need to implement it — just describe the <code>.github/workflows/deploy.yml</code> file you'd create and what each step would do.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     UNIT 10
+     ═══════════════════════════════════════════════════════════════════ -->
+<section class="unit" id="unit10">
+  <div class="unit-header">
+    <span class="unit-num">Unit 10</span>
+    <h2>Capstone: Ship a Feature</h2>
+  </div>
+  <p class="unit-subtitle">
+    Everything comes together. Choose a real improvement to Bloombot, plan it like a software project, build it using the skills from Units 1–9, test it, and prepare it for deployment. This is what professional software development feels like.
+  </p>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">📖</span>
+      <span class="block-label">Concepts</span>
+      <span class="block-title">The full software development lifecycle</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <span class="concept-chip chip-pm">Project Management</span>
+      <span class="concept-chip chip-arch">Architecture</span>
+      <span class="concept-chip chip-code">Coding</span>
+      <span class="concept-chip chip-test">Testing</span>
+
+      <h4>Planning: scope a feature</h4>
+      <p>Professional developers don't just start typing. They write a brief plan that covers: what the feature does, who it's for, what files need to change, what new files are needed, how to test it, and what could go wrong. This is sometimes called a "technical design document" or an "RFC" (Request for Comments).</p>
+
+      <h4>Choose your capstone project</h4>
+      <p>Select one of these features to implement (or propose your own of similar scope):</p>
+      <ol>
+        <li><strong>Dark mode toggle</strong> — Add a button to the nav that switches between light and dark themes using the existing CSS custom property system. Persist the choice in <code>localStorage</code>. Requires modifying: nav.js, every page's CSS tokens, and potentially creating a new <code>theme.js</code>.</li>
+        <li><strong>Search page</strong> — Create a search page that lets users find artifacts by keyword. Build a JSON index of all artifacts (title, description, category, URL) and filter it on the client side as the user types. This exercises data structures, DOM manipulation, and UX design.</li>
+        <li><strong>Artifact usage tracker</strong> — Add a small analytics system that records which artifacts are opened and displays the data on a dashboard page using D3.js. Store counts in <code>localStorage</code>. This combines D3, JavaScript events, and data management.</li>
+        <li><strong>Shared CSS extraction</strong> — Refactor the duplicated CSS across all main pages into a single <code>bloombot.css</code> file. Update every page to reference it. Verify nothing breaks visually. This is a pure architecture and quality task.</li>
+      </ol>
+
+      <h4>The project management arc</h4>
+      <p>Your capstone should follow these stages, each producing a deliverable:</p>
+      <ul>
+        <li><strong>Planning</strong> — A written plan (1 page) describing the feature, affected files, and approach.</li>
+        <li><strong>Implementation</strong> — The actual code changes on a Git branch.</li>
+        <li><strong>Testing</strong> — A manual test checklist (at minimum) or automated tests that verify the feature works. Run Lighthouse before and after.</li>
+        <li><strong>Code review</strong> — Write a self-review: What decisions did you make? What trade-offs? What would you do differently?</li>
+        <li><strong>Documentation</strong> — Update or create any necessary documentation (a README section, inline code comments, or a changelog entry).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">🛠️</span>
+      <span class="block-label">Exercise</span>
+      <span class="block-title">Plan, build, test, reflect</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <h4>Task</h4>
+      <ol>
+        <li><strong>Plan (Day 1):</strong> Write your technical plan. Include: feature description, list of files to create or modify, risks or unknowns, and a definition of "done." Share this plan with a classmate or mentor before starting to build.</li>
+        <li><strong>Branch &amp; build (Days 2–4):</strong> Create a feature branch. Commit early and often with clear messages. Aim for small, reviewable commits rather than one giant commit at the end.</li>
+        <li><strong>Test (Day 5):</strong> Run your manual test checklist. Run Lighthouse on affected pages. Run the HTML validator. If you wrote automated tests, run those too. Fix anything that's broken.</li>
+        <li><strong>Review &amp; reflect (Day 6):</strong> Write a self-review (1 page) answering:
+          <ul>
+            <li>What was harder than expected?</li>
+            <li>What did the AI-generated code do well, and where did its patterns create friction?</li>
+            <li>If you were starting this project from scratch, what architectural choices would you make differently?</li>
+            <li>What would you want to learn next?</li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+
+<!-- ── FOOTER ── -->
+<footer>
+  <p>bloombot code curriculum — a self-study guide for information science students</p>
+  <p>Built from the <a href="bloombot-modern.html">bloombot</a> repository &middot; 2026</p>
+</footer>
+
+<script>
+  // Open first block in each unit by default for discoverability
+  document.querySelectorAll('.unit').forEach(function(unit) {
+    var firstBlock = unit.querySelector('.block');
+    if (firstBlock) firstBlock.classList.add('open');
+  });
+</script>
+
+</body>
+</html>

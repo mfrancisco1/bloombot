@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bloombot Code Curriculum — 10-Unit Self-Study Guide</title>
+  <title>Bloombot Code Curriculum — 12-Unit Self-Study Guide</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -227,6 +227,7 @@
     .chip-arch { background: rgba(109,40,217,0.1); color: #6d28d9; border: 1px solid rgba(109,40,217,0.2); }
     .chip-pm { background: rgba(196,84,26,0.1); color: var(--rust); border: 1px solid rgba(196,84,26,0.2); }
     .chip-test { background: rgba(45,90,39,0.1); color: var(--forest); border: 1px solid rgba(45,90,39,0.2); }
+    .chip-hci { background: rgba(219,39,119,0.1); color: #db2777; border: 1px solid rgba(219,39,119,0.2); }
 
     /* footer */
     footer {
@@ -258,10 +259,10 @@
     <p class="hero-eyebrow">Self-Study Guide</p>
     <h1>Learning to Code Through<br><span>Bloombot</span></h1>
     <p class="hero-desc">
-      A 10-unit curriculum for an information science student who wants to systematically understand an AI-generated codebase while building real skills in web development, software architecture, project management, and testing.
+      A 12-unit curriculum for an information science student who wants to systematically understand an AI-generated codebase while building real skills in web development, software architecture, project management, HCI, and testing.
     </p>
     <div class="hero-meta">
-      <div class="hero-meta-item">Units<strong>10</strong></div>
+      <div class="hero-meta-item">Units<strong>12</strong></div>
       <div class="hero-meta-item">Repository<strong>bloombot.com</strong></div>
       <div class="hero-meta-item">Stack<strong>HTML / CSS / JS / Python</strong></div>
       <div class="hero-meta-item">Approach<strong>Read first, then build</strong></div>
@@ -284,6 +285,8 @@
       <a class="toc-item" href="#unit8"><span class="toc-num">08</span><span class="toc-title">Testing, Auditing &amp; Quality<span class="toc-sub">— security &amp; a11y</span></span></a>
       <a class="toc-item" href="#unit9"><span class="toc-num">09</span><span class="toc-title">Dev Tooling &amp; Deployment<span class="toc-sub">— Git, Python, Pages</span></span></a>
       <a class="toc-item" href="#unit10"><span class="toc-num">10</span><span class="toc-title">Project: Ship a Feature<span class="toc-sub">— plan, build, test, deploy</span></span></a>
+      <a class="toc-item" href="#unit11"><span class="toc-num">11</span><span class="toc-title">Human-Computer Interaction<span class="toc-sub">— design principles &amp; heuristics</span></span></a>
+      <a class="toc-item" href="#unit12"><span class="toc-num">12</span><span class="toc-title">User Testing &amp; Evaluation<span class="toc-sub">— usability studies &amp; iteration</span></span></a>
     </div>
   </div>
 </section>
@@ -943,6 +946,154 @@
             <li>What would you want to learn next?</li>
           </ul>
         </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     UNIT 11
+     ═══════════════════════════════════════════════════════════════════ -->
+<section class="unit" id="unit11">
+  <div class="unit-header">
+    <span class="unit-num">Unit 11</span>
+    <h2>Human-Computer Interaction</h2>
+  </div>
+  <p class="unit-subtitle">
+    Bloombot is ultimately something people use — which makes it a user interface. Step back from the code and study the design principles, mental models, and heuristics that determine whether a page actually works for its audience.
+  </p>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">📖</span>
+      <span class="block-label">Concepts</span>
+      <span class="block-title">Design heuristics, affordances &amp; mental models</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <span class="concept-chip chip-hci">HCI</span>
+      <span class="concept-chip chip-arch">Architecture</span>
+
+      <h4>What is HCI?</h4>
+      <p>Human-Computer Interaction is the study of how people interact with technology and how to design systems that are effective, efficient, and satisfying to use. For Bloombot, this means asking: Can a student actually navigate the site, find what they need, and learn from the content — or does the interface get in the way?</p>
+
+      <h4>Nielsen's 10 usability heuristics</h4>
+      <p>Jakob Nielsen's heuristics are the most widely used framework for evaluating interface design. Apply each one to Bloombot:</p>
+      <ul>
+        <li><strong>Visibility of system status</strong> — Does Bloombot tell users where they are? The <code>data-active</code> attribute in nav.js highlights the current section, but is it visually obvious enough?</li>
+        <li><strong>Match between system and real world</strong> — Does the vocabulary make sense to an information science student? Or does it assume too much prior coding knowledge?</li>
+        <li><strong>User control and freedom</strong> — Can a user easily undo or go back? Is there always a clear way home?</li>
+        <li><strong>Consistency and standards</strong> — Do all pages follow the same layout pattern? Check whether the collapsible blocks in <span class="file-ref">bloombot-i101.html</span> behave the same way as those in <span class="file-ref">bloombot-scaffolds.html</span>.</li>
+        <li><strong>Error prevention</strong> — For interactive elements (like the gear generator), does the interface prevent invalid inputs, or does it fail silently?</li>
+        <li><strong>Recognition rather than recall</strong> — Are navigation options visible, or do users have to remember URLs?</li>
+        <li><strong>Flexibility and efficiency of use</strong> — Are there shortcuts for experienced users? Could there be?</li>
+        <li><strong>Aesthetic and minimalist design</strong> — Does every visual element serve a purpose, or is there unnecessary decoration?</li>
+        <li><strong>Help users recognize, diagnose, and recover from errors</strong> — When something doesn't load or a link is broken, what does the user see?</li>
+        <li><strong>Help and documentation</strong> — Is there any guidance for first-time visitors on how to use the site?</li>
+      </ul>
+
+      <h4>Affordances and signifiers</h4>
+      <p>An <strong>affordance</strong> is what an element allows a user to do; a <strong>signifier</strong> is the visual cue that communicates that affordance. In Bloombot, the collapsible blocks use a chevron (<code>▶</code>) as a signifier for "click to expand." But look at the block headers — is the entire bar clickable, or just the chevron? Test it. If the affordance is broader than the signifier suggests, that's a design gap.</p>
+
+      <h4>Mental models</h4>
+      <p>Users arrive with expectations about how websites work. A student coming from Canvas or Blackboard has a mental model of "course → modules → content." Does Bloombot's structure match that model? Open <span class="file-ref">bloombot-i101.html</span> and map its information architecture: how many clicks does it take to get from the homepage to a specific artifact?</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">🛠️</span>
+      <span class="block-label">Exercise</span>
+      <span class="block-title">Heuristic evaluation of Bloombot</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <h4>Task</h4>
+      <ol>
+        <li>Conduct a <strong>heuristic evaluation</strong> of three Bloombot pages: the homepage (<span class="file-ref">bloombot-home.html</span>), the course page (<span class="file-ref">bloombot-i101.html</span>), and one artifact page of your choice. For each page, score it against all 10 of Nielsen's heuristics on a 0–4 severity scale (0 = no problem, 4 = usability catastrophe). Document your findings in a table.</li>
+        <li><strong>Affordance audit:</strong> List every interactive element on <span class="file-ref">bloombot-i101.html</span> (links, buttons, collapsible sections, hover effects). For each one, identify its affordance, its signifier, and whether the signifier clearly communicates the affordance. Are there any "mystery meat" navigation elements — things that are clickable but don't look it?</li>
+        <li><strong>Build something:</strong> Pick the two lowest-scoring heuristics from your evaluation. Design and implement a concrete fix for each one. For example, if "visibility of system status" scored poorly, you might add breadcrumb navigation or a progress indicator. Create your improved version as a modified copy of the page.</li>
+        <li><strong>Reflection:</strong> Write a half-page on how the AI-generated nature of Bloombot's code affects its HCI. Do AI-generated sites tend to prioritize visual polish over interaction design? What patterns did you notice?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     UNIT 12
+     ═══════════════════════════════════════════════════════════════════ -->
+<section class="unit" id="unit12">
+  <div class="unit-header">
+    <span class="unit-num">Unit 12</span>
+    <h2>User Testing &amp; Evaluation</h2>
+  </div>
+  <p class="unit-subtitle">
+    Heuristic evaluation tells you what experts think — user testing tells you what actually happens. Learn to plan, conduct, and analyze usability studies, then use the findings to drive real improvements to Bloombot.
+  </p>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">📖</span>
+      <span class="block-label">Concepts</span>
+      <span class="block-title">Usability testing methods &amp; think-aloud protocol</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <span class="concept-chip chip-hci">HCI</span>
+      <span class="concept-chip chip-test">Testing</span>
+      <span class="concept-chip chip-pm">Project Management</span>
+
+      <h4>Why test with real users?</h4>
+      <p>You can read every HCI textbook and still be surprised by what users actually do. Usability testing reveals the gap between what you <em>designed</em> and what people <em>experience</em>. Even testing with 5 participants uncovers roughly 80% of usability problems (Nielsen &amp; Landauer, 1993). For a site like Bloombot, where the audience is students encountering technical content for the first time, this gap can be enormous.</p>
+
+      <h4>Think-aloud protocol</h4>
+      <p>The most common usability testing method is the <strong>think-aloud protocol</strong>: ask a participant to perform tasks while narrating their thought process. As the facilitator, you observe and take notes — you don't help, explain, or lead. Key rules:</p>
+      <ul>
+        <li><strong>Write task scenarios, not instructions.</strong> Say "You want to find the artifact about network security" — not "Click on the Networks link in the nav bar."</li>
+        <li><strong>Recruit representative users.</strong> For Bloombot, this means information science students who have minimal web development experience — not your CS friends.</li>
+        <li><strong>Record everything.</strong> With permission, screen-record the session. Note timestamps when users hesitate, express confusion, or take unexpected paths.</li>
+        <li><strong>Debrief after, not during.</strong> Save your questions for the post-task interview. Interrupting the think-aloud disrupts the data.</li>
+      </ul>
+
+      <h4>Other evaluation methods</h4>
+      <p>Think-aloud testing is just one tool. A complete evaluation toolkit includes:</p>
+      <ul>
+        <li><strong>Task completion analysis</strong> — Can users complete key tasks? How long does it take? What's the error rate?</li>
+        <li><strong>System Usability Scale (SUS)</strong> — A standardized 10-question survey that produces a score from 0–100. A SUS score above 68 is considered above average. Administer it after each test session.</li>
+        <li><strong>A/B testing</strong> — Show different versions of a page to different users and measure which performs better. Even without server infrastructure, you can do manual A/B tests by alternating which version participants see.</li>
+        <li><strong>Analytics review</strong> — If Bloombot had analytics (it doesn't by default), you could study page views, bounce rates, and navigation paths to identify where users get lost.</li>
+      </ul>
+
+      <h4>From findings to action</h4>
+      <p>Raw usability data is useless without analysis. After testing, organize your findings by severity and frequency. A problem that affects every user on every task is critical; a minor annoyance noticed by one person is low priority. Create an <strong>issue log</strong> with columns: finding, severity, frequency, affected page(s), and recommended fix. This is the document that drives your next iteration.</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="block-icon">🛠️</span>
+      <span class="block-label">Exercise</span>
+      <span class="block-title">Plan and run a usability study</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="block-body">
+      <h4>Task</h4>
+      <ol>
+        <li><strong>Write a test plan.</strong> Define 4–5 realistic task scenarios for Bloombot (e.g., "Find and open the artifact about coffee chemistry," "Navigate from the homepage to the security audit," "Locate the gear generator and create a gear with 24 teeth"). For each task, define what "success" looks like and what you'll measure (completion, time, errors, satisfaction).</li>
+        <li><strong>Run 3–5 think-aloud sessions.</strong> Recruit classmates or friends who are not familiar with Bloombot. Follow the think-aloud protocol. Take detailed notes or screen-record (with permission). After each session, have the participant fill out the System Usability Scale.</li>
+        <li><strong>Analyze and report.</strong> Create a usability findings report that includes:
+          <ul>
+            <li>A summary of participant demographics and experience level</li>
+            <li>Task completion rates and average times</li>
+            <li>SUS scores (individual and average)</li>
+            <li>A ranked list of usability issues with severity ratings</li>
+            <li>Top 3 recommended improvements with justification</li>
+          </ul>
+        </li>
+        <li><strong>Build something:</strong> Implement your top-priority fix from the usability findings. This should be a real code change — modifying HTML, CSS, or JavaScript in the Bloombot codebase. Before and after, run the same task scenario with a new participant to see if the fix actually helped.</li>
+        <li><strong>Reflection:</strong> Compare your heuristic evaluation findings (Unit 11) with your user testing findings (Unit 12). Which method found more issues? Were there problems that only real users revealed? Write a half-page on when you'd use each method and why both matter.</li>
       </ol>
     </div>
   </div>

@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Triage Ethics Simulation — The Ventilator Dilemma</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --accent:#06b6d4; --muted:#94a3b8; --glass: rgba(255,255,255,0.04);
+      --success:#10b981; --danger:#ef4444; --panel:#071024;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    html,body{height:100%;}
+    body{margin:0;background:linear-gradient(180deg,var(--bg),#031226);color:#e6eef6;}
+    .app{max-width:1100px;margin:28px auto;padding:24px;}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+    .grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr; /* three equal columns */
+  gap: 18px;
+}
+    .panel{background:linear-gradient(180deg,var(--card),var(--panel));border-radius:12px;padding:16px;box-shadow:0 6px 18px rgba(2,6,23,0.6);}
+    .patients{display:grid;gap:12px}
+    .card{background:var(--glass);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;gap:12px;align-items:center}
+    .avatar{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,#0ea5a4,#06b6d4);display:flex;align-items:center;justify-content:center;font-weight:700}
+    .meta{flex:1}
+    .meta h3{margin:0;font-size:15px}
+    .meta p{margin:4px 0 0;color:var(--muted);font-size:13px}
+    .controls{display:flex;gap:8px;flex-direction:column}
+    button{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 10px;border-radius:8px;color:inherit;cursor:pointer}
+    button.primary{background:linear-gradient(90deg,var(--accent),#60a5fa);border:none;color:#021124}
+    .selected{outline:3px solid rgba(6,182,212,0.12)}
+    .pill{display:inline-block;padding:6px 8px;border-radius:999px;background:rgba(255,255,255,0.03);font-size:12px;color:var(--muted)}
+    .principles{display:flex;gap:8px;flex-wrap:wrap}
+    .principle{padding:10px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);min-width:160px}
+    .footer-actions{display:flex;gap:8px;align-items:center;margin-top:12px}
+    .results{background:linear-gradient(180deg,#021226, #031a2b);padding:12px;border-radius:10px}
+    .small{font-size:13px;color:var(--muted)}
+    .score{font-weight:700;font-size:18px}
+    .toggle{display:flex;align-items:center;gap:8px}
+    .legend{display:flex;gap:8px;align-items:center}
+    .badge{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.02);font-size:13px}
+    .export{margin-left:auto}
+    textarea{width:100%;height:120px;background:#021327;border:1px solid rgba(255,255,255,0.03);color:var(--muted);padding:10px;border-radius:8px}
+    .hint{font-size:12px;color:var(--muted);}
+    @media (max-width:900px){.grid{grid-template-columns:1fr;}.app{padding:12px}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>The Ventilator Dilemma — Interactive Triage Simulation</h1>
+        <p class="lead">Adapted from Daugherty-Biddison et al. (2014). Experiment with allocation principles, deliberate, and export your group's reasoning.</p>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <div class="pill">Ventilators available: <strong id="slots">4</strong></div>
+        <div class="pill">Select up to 4 patients</div>
+      </div>
+      <div class="pill">
+      Scenario: 
+      <select id="scenarioSelect" style="background:#021327;color:#e6eef6;border:1px solid rgba(255,255,255,0.2);border-radius:6px;padding:2px 6px">
+        <option value="default" selected>Default</option>
+        <option value="geriatric">Geriatric Ward</option>        
+        <option value="picu">Pediatric ICU</option>
+      </select>
+    </div>
+        </header>
+
+    <div class="grid">
+      <div class="panel">
+        <h2 style="margin-top:0">Patients</h2>
+        <div class="patients" id="patientList">
+          <!-- patient cards injected here -->
+        </div>
+      </div>
+      <div class="panel">
+        <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+          <button id="autoScore" class="primary">Score by Principles</button>
+          <button id="lotteryBtn">Run Lottery</button>
+          <button id="resetBtn">Reset</button>
+          <div style="margin-left:auto" class="small">Selected: <span id="selectedCount">0</span></div>
+        </div>
+
+        <hr style="border:none;height:1px;background:rgba(255,255,255,0.03);margin:12px 0" />
+
+        <div>
+          <h3 style="margin:0 0 8px 0">Scenario Tools</h3>
+          <div class="small hint">Toggle ethical principles and weight them (0-3). The app will compute a composite score for each patient.</div>
+
+          <div style="margin-top:10px" id="principleControls" class="principles"></div>
+
+          <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+            <label class="toggle"><input type="checkbox" id="allowWithdraw"> Allow withdrawal of ventilator (reallocation)</label>
+            <div style="margin-left:auto" class="legend"><span class="badge">Paper: Daugherty‑Biddison et al., Ann Am Thorac Soc (2014)</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="panel">
+        <h2 style="margin-top:0">Selected / Results</h2>
+        <div class="results" id="resultsArea">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div>
+              <div class="small">Composite scoring method:</div>
+              <div class="small">weights × principle applicability → score</div>
+            </div>
+            <div class="export">
+              <button id="exportJSON">Export JSON</button>
+              <button id="exportCSV">Export CSV</button>
+            </div>
+          </div>
+
+          <div style="margin-top:12px" id="ranking"></div>
+
+          <hr style="border:none;height:1px;background:rgba(255,255,255,0.03);margin:12px 0" />
+
+          <h3 style="margin:6px 0">Facilitator Notes & Debrief Prompts</h3>
+          <ul>
+            <li class="small">Ask groups why they gave certain weights—what values were prioritized?</li>
+            <li class="small">Discuss who is disadvantaged by each principle.</li>
+            <li class="small">If withdrawal is allowed, explore emotional and trust consequences.</li>
+            <li class="small">How would community context change your choices? (See paper: differences across Baltimore vs. Howard County.)</li>
+          </ul>
+
+          <h4 style="margin:8px 0">Group Reflection Log</h4>
+          <textarea id="groupLog" placeholder="Paste your group's notes or type reflections here..."></textarea>
+          <div id="equationBox" style="margin-top:20px;padding:12px;background:#021327;border:1px solid rgba(255,255,255,0.2);border-radius:8px">
+          <h3 style="margin:0 0 8px 0">Your Algorithm (Equation)</h3>
+          <div id="equation" class="small"></div>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <footer style="margin-top:18px;display:flex;gap:8px;align-items:center">
+      <div class="small">Made for teaching & community engagement. Cite: Daugherty‑Biddison et al., 2014.</div>
+      <div style="margin-left:auto"><button id="guideBtn">Facilitator's Guide</button></div>
+    </footer>
+  </div>
+
+  <template id="patientTpl">
+    <div class="card" data-id="">
+      <div class="avatar">AB</div>
+      <div class="meta">
+        <h3 class="name">Name</h3>
+        <p class="desc">Description</p>
+        <div class="small">Health notes: <span class="health"></span></div>
+      </div>
+      <div class="controls">
+        <div class="pill score-pill">Score: <span class="scoreVal">0</span></div>
+        <button class="selectBtn">Select</button>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    // Default set (your original) — add arrival
+const patients_default = [
+  {id:'p1', name:'Mr. Allen', age:72, role:'retired teacher', notes:'moderate heart disease', special:[], shortTermSurvival:0.45, lifeYears:8, arrival:1},
+  {id:'p2', name:'Ms. Brown', age:28, role:'nurse (pregnant)', notes:'frontline worker, 7 months pregnant', special:['frontline'], shortTermSurvival:0.6, lifeYears:52, arrival:2},
+  {id:'p3', name:'Mr. Chen', age:40, role:'undocumented immigrant', notes:'father of 3, no major comorbidity', special:[], shortTermSurvival:0.55, lifeYears:35, arrival:3},
+  {id:'p4', name:'Ms. Davis', age:55, role:'CEO (logistics)', notes:'critical supply chain role', special:['value'], shortTermSurvival:0.5, lifeYears:20, arrival:4},
+  {id:'p5', name:'Mr. Edwards', age:19, role:'college student', notes:'healthy, deteriorating quickly', special:[], shortTermSurvival:0.65, lifeYears:60, arrival:5},
+  {id:'p6', name:'Ms. Flores', age:63, role:'grandmother', notes:'diabetes, primary caregiver for grandchildren', special:['caregiver'], shortTermSurvival:0.4, lifeYears:12, arrival:6},
+  {id:'p7', name:'Mr. Green', age:45, role:'firefighter', notes:'recent exposure; healthy', special:['frontline'], shortTermSurvival:0.6, lifeYears:20, arrival:7},
+  {id:'p8', name:'Ms. Hill', age:33, role:'vaccine scientist', notes:'asthma but working on vaccine effort', special:['value'], shortTermSurvival:0.55, lifeYears:45, arrival:8},
+  {id:'p9', name:'Mr. Iqbal', age:60, role:'incarcerated (armed robbery)', notes:'hypertension', special:[], shortTermSurvival:0.35, lifeYears:10, arrival:9},
+  {id:'p10', name:'Ms. Johnson', age:8, role:'child with leukemia (stable)', notes:'pediatric oncology, dependent care', special:['young'], shortTermSurvival:0.5, lifeYears:70, arrival:10}
+];
+
+// Geriatric Ward
+const patients_geriatric = [
+  {id:'g1', name:'Mr. Anderson', age:82, role:'retired engineer', notes:'mild dementia', special:[], shortTermSurvival:0.35, lifeYears:5, arrival:1},
+  {id:'g2', name:'Mrs. Kim', age:76, role:'grandmother', notes:'diabetes, lives alone', special:['caregiver'], shortTermSurvival:0.4, lifeYears:7, arrival:2},
+  {id:'g3', name:'Mr. Lopez', age:89, role:'retired farmer', notes:'frailty, heart condition', special:[], shortTermSurvival:0.25, lifeYears:3, arrival:3},
+  {id:'g4', name:'Mrs. Singh', age:70, role:'community volunteer', notes:'healthy, active senior', special:['value'], shortTermSurvival:0.55, lifeYears:12, arrival:4},
+  {id:'g5', name:'Mr. White', age:78, role:'former firefighter', notes:'COPD', special:[], shortTermSurvival:0.3, lifeYears:6, arrival:5},
+  {id:'g6', name:'Mrs. Jones', age:81, role:'retired nurse', notes:'hypertension', special:['frontline'], shortTermSurvival:0.45, lifeYears:8, arrival:6},
+  {id:'g7', name:'Mr. Patel', age:74, role:'grandfather', notes:'primary caregiver for wife with dementia', special:['caregiver'], shortTermSurvival:0.4, lifeYears:9, arrival:7},
+  {id:'g8', name:'Mrs. Garcia', age:87, role:'widow', notes:'frailty, osteoporosis', special:[], shortTermSurvival:0.2, lifeYears:4, arrival:8},
+  {id:'g9', name:'Mr. Brown', age:79, role:'church elder', notes:'healthy, respected leader', special:['value'], shortTermSurvival:0.5, lifeYears:10, arrival:9},
+  {id:'g10', name:'Mrs. Nguyen', age:83, role:'retired teacher', notes:'arthritis, otherwise healthy', special:[], shortTermSurvival:0.45, lifeYears:7, arrival:10}
+];
+
+// Pediatric ICU
+const patients_picu = [
+  {id:'picu1', name:'Isabella', age:3, role:'toddler', notes:'congenital heart disease', special:['young'], shortTermSurvival:0.4, lifeYears:72, arrival:1},
+  {id:'picu2', name:'Mateo', age:6, role:'elementary child', notes:'cystic fibrosis', special:['young'], shortTermSurvival:0.35, lifeYears:60, arrival:2},
+  {id:'picu3', name:'Ava', age:11, role:'student', notes:'healthy, accident trauma', special:['young'], shortTermSurvival:0.7, lifeYears:65, arrival:3},
+  {id:'picu4', name:'Noah', age:14, role:'teenager', notes:'healthy, recovering from pneumonia', special:['young'], shortTermSurvival:0.6, lifeYears:55, arrival:4},
+  {id:'picu5', name:'Mia', age:8, role:'child with autism', notes:'otherwise healthy', special:['young'], shortTermSurvival:0.65, lifeYears:67, arrival:5},
+  {id:'picu6', name:'Lucas', age:16, role:'high schooler', notes:'asthma, sports injury', special:['young'], shortTermSurvival:0.55, lifeYears:50, arrival:6},
+  {id:'picu7', name:'Nurse Patel', age:34, role:'pediatric nurse', notes:'frontline worker', special:['frontline'], shortTermSurvival:0.6, lifeYears:42, arrival:7},
+  {id:'picu8', name:'Mr. Gomez', age:39, role:'janitor at children’s hospital', notes:'diabetes', special:['value'], shortTermSurvival:0.45, lifeYears:30, arrival:8},
+  {id:'picu9', name:'Dr. Chen', age:48, role:'pediatric intensivist', notes:'critical hospital role', special:['value'], shortTermSurvival:0.55, lifeYears:25, arrival:9},
+  {id:'picu10', name:'Grandfather Smith', age:72, role:'grandfather, caregiver', notes:'COPD, caregiver for children', special:['caregiver'], shortTermSurvival:0.3, lifeYears:12, arrival:10}
+];
+
+
+      let patients = patients_default;
+      // resetWeights();
+
+    const principleDefs = [
+      {key:'fcfs', title:'First-come / First-served', desc:'Order of arrival; continuation of standard practice',fn: (p)=> 1 - (p.arrival / 10) } ,
+      {key:'lottery', title:'Lottery', desc:'Random chance – equal opportunity', fn: (p)=>Math.random()},
+      {key:'survival', title:'Prioritize most likely to survive', desc:'Short-term survival probability', fn: (p)=>p.shortTermSurvival},
+      {key:'lifeyears', title:'Prioritize most years left', desc:'Estimate of future life-years', fn: (p)=>p.lifeYears/100},
+      {key:'lifecycle', title:'Life-cycle / Fair innings', desc:'Prioritize younger people who have not lived full life stages', fn: (p)=> (1 - (p.age/100)) },
+      {key:'value', title:'Value to others in a pandemic', desc:'Frontline workers, vaccine developers, etc.', fn: (p)=> (p.special.includes('frontline') || p.special.includes('value') ? 1 : 0) }
+    ];
+
+    const state = {selected: new Set(), weights: {}, slots:4, allowWithdraw:false};
+
+    // Initialize weights
+    principleDefs.forEach(pd=> state.weights[pd.key]= (pd.key==='survival' || pd.key==='value') ? 2 : 1 );
+    resetWeights();
+    // Render patients
+    const patientList = document.getElementById('patientList');
+    const tpl = document.getElementById('patientTpl');
+    function renderPatients(){
+      patientList.innerHTML='';
+      patients.forEach(p=>{
+        const node = tpl.content.cloneNode(true);
+        const card = node.querySelector('.card');
+        card.dataset.id = p.id;
+        node.querySelector('.avatar').textContent = p.name.split(' ').map(n=>n[0]).slice(0,2).join('');
+        node.querySelector('.name').textContent = p.name + `, ${p.age}`;
+        node.querySelector('.desc').textContent = p.role + ' — ' + p.notes;
+        node.querySelector('.health').textContent = p.notes;
+        const btn = node.querySelector('.selectBtn');
+        const scoreEl = node.querySelector('.scoreVal');
+        btn.addEventListener('click', ()=> toggleSelect(p.id, card, scoreEl));
+        patientList.appendChild(node);
+      });
+      updateUI();
+    }
+
+    function toggleSelect(id, cardEl, scoreEl){
+      if(state.selected.has(id)){
+        state.selected.delete(id);
+      } else {
+        if(state.selected.size >= state.slots){
+          alert('You have reached the ventilator capacity. Deselect someone first or change slots.');
+          return;
+        }
+        state.selected.add(id);
+      }
+      updateUI();
+    }
+
+    function updateUI(){
+      document.querySelectorAll('.card').forEach(card=>{
+        const id = card.dataset.id;
+        if(state.selected.has(id)) card.classList.add('selected'); else card.classList.remove('selected');
+        const scoreSpan = card.querySelector('.scoreVal');
+        const p = patients.find(x=>x.id===id);
+        scoreSpan.textContent = computeScore(p).toFixed(2);
+      });
+      document.getElementById('selectedCount').textContent = state.selected.size;
+      document.getElementById('slots').textContent = state.slots;
+      renderRanking();
+    }
+
+    // Render principle controls
+    const principleControls = document.getElementById('principleControls');
+    function renderPrinciples(){
+      principleControls.innerHTML='';
+      principleDefs.forEach(pd=>{
+        const el = document.createElement('div'); el.className='principle';
+        el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><strong>${pd.title}</strong><div class="pill">weight <input data-key="${pd.key}" type="range" min="0" max="3" value="${state.weights[pd.key]}" style="vertical-align:middle;margin-left:8px" /></div></div><div class="small" style="margin-top:6px">${pd.desc}</div>`;
+        principleControls.appendChild(el);
+      });
+      principleControls.querySelectorAll('input[type=range]').forEach(r=>{
+        r.addEventListener('input', (e)=>{state.weights[e.target.dataset.key]=Number(e.target.value); updateUI();});
+      });
+    }
+
+document.getElementById('scenarioSelect').addEventListener('change', (e)=>{
+  const choice = e.target.value;
+  
+  // Swap dataset
+  if(choice==='default') patients = patients_default;
+  if(choice==='geriatric') patients = patients_geriatric;
+  if(choice==='picu') patients = patients_picu;
+  
+  // Reset state completely
+  state.selected.clear();
+  state.weights = {}; 
+  principleDefs.forEach(pd=> state.weights[pd.key]= (pd.key==='survival' || pd.key==='value') ? 2 : 1 );
+  
+  // Re-render everything
+  resetWeights();
+  renderPrinciples();
+  renderPatients();
+  updateUI();
+  
+});
+
+    function computeScore(p){
+      // normalize: sum(weights * fn)
+      let total=0, wtSum=0;
+      principleDefs.forEach(pd=>{
+        const w = state.weights[pd.key]||0; wtSum += w;
+        const val = pd.fn(p)||0; total += w * val;
+      });
+      return wtSum>0 ? total/wtSum : 0;
+    }
+
+    function renderRanking(){
+      const out = document.getElementById('ranking');
+      const scored = patients.map(p=>({p, score:computeScore(p)})).sort((a,b)=>b.score - a.score);
+      out.innerHTML = '<ol style="padding-left:18px">' + scored.map(s=>`<li style="margin-bottom:8px"><strong>${s.p.name}</strong> — score: <span class="score">${s.score.toFixed(2)}</span> <div class="small">(${s.p.role})</div></li>`).join('') + '</ol>';
+      // show selected prominently
+      const selectedSection = '<div style="margin-top:8px"><strong>Selected for ventilator</strong><div class="small">(based on slots and selection)</div><ul>' + Array.from(state.selected).map(id=>{const p=patients.find(x=>x.id===id);return `<li>${p.name} (${p.age})</li>`}).join('') + '</ul></div>';
+      out.innerHTML += selectedSection;
+    }
+
+
+
+
+    // Buttons
+    document.getElementById('autoScore').addEventListener('click', ()=>{
+      // auto-select top N by score
+      const sorted = patients.map(p=>({p,score:computeScore(p)})).sort((a,b)=>b.score-a.score);
+      state.selected.clear();
+      for(let i=0;i<state.slots && i<sorted.length;i++) state.selected.add(sorted[i].p.id);
+      updateUI();
+    });
+
+    document.getElementById('lotteryBtn').addEventListener('click', ()=>{
+      // lottery among all patients or optionally among interested
+      const pool = [...patients];
+      const picks = shuffle(pool).slice(0,state.slots).map(p=>p.id);
+      state.selected.clear(); picks.forEach(id=>state.selected.add(id));
+      updateUI();
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      state.selected.clear(); principleDefs.forEach(pd=> state.weights[pd.key]= (pd.key==='survival' || pd.key==='value') ? 2 : 1 );
+      renderPrinciples(); updateUI();
+    });
+
+    document.getElementById('exportJSON').addEventListener('click', ()=>{
+      const data = exportData();
+      download('triage_export.json', JSON.stringify(data, null, 2));
+    });
+    document.getElementById('exportCSV').addEventListener('click', ()=>{
+      const data = exportData();
+      const csv = toCSV(data.ranking.map(r=>({name:r.name,age:r.age,score:r.score,selected:r.selected}))); download('triage_export.csv', csv);
+    });
+
+    document.getElementById('guideBtn').addEventListener('click', ()=>{
+      alert('Facilitator\'s Guide:\n\n1) Start with individual ranking.\n2) Let groups discuss weights.\n3) Run auto-score and lottery to see differences.\n4) Debrief using the prompts in the UI.\n\nThe simulation is adapted from Daugherty-Biddison et al., Ann Am Thorac Soc (2014) which used deliberative democracy to surface community values about allocation of scarce lifesaving resources.');
+    });
+
+    function resetWeights(){
+  principleDefs.forEach(pd=>{
+    state.weights[pd.key] = (pd.key === 'fcfs') ? 1 : 0;
+  });
+}
+
+
+     function renderEquation(){
+    const w = state.weights;
+    const terms = [];
+    if(w.fcfs) terms.push(`${w.fcfs}×(1 - A_order(p))`);
+    if(w.lottery) terms.push(`${w.lottery}×random()`);
+    if(w.survival) terms.push(`${w.survival}×S_short(p)`);
+    if(w.lifeyears) terms.push(`${w.lifeyears}×L(p)/100`);
+    if(w.lifecycle) terms.push(`${w.lifecycle}×(1 - A(p)/100)`);
+    if(w.value) terms.push(`${w.value}×V(p)`);
+
+    const numerator = terms.join(" + ");
+    const denom = Object.values(w).reduce((a,b)=>a+b,0) || 1;
+    document.getElementById('equation').innerHTML = 
+      `Score(p) = (${numerator}) / (${denom})`;
+  }
+
+  // Call renderEquation whenever weights change or reset
+  function updateUI(){
+    document.querySelectorAll('.card').forEach(card=>{
+      const id = card.dataset.id;
+      if(state.selected.has(id)) card.classList.add('selected'); else card.classList.remove('selected');
+      const scoreSpan = card.querySelector('.scoreVal');
+      const p = patients.find(x=>x.id===id);
+      scoreSpan.textContent = computeScore(p).toFixed(2);
+    });
+    document.getElementById('selectedCount').textContent = state.selected.size;
+    document.getElementById('slots').textContent = state.slots;
+    renderRanking();
+    renderEquation();   // <--- NEW
+  }
+
+    function exportData(){
+      const ranking = patients.map(p=>({name:p.name,age:p.age,role:p.role,score:computeScore(p),selected: state.selected.has(p.id)})).sort((a,b)=>b.score-a.score);
+      return {timestamp: new Date().toISOString(), slots: state.slots, allowWithdraw:state.allowWithdraw, weights: {...state.weights}, ranking, groupLog: document.getElementById('groupLog').value};
+    }
+
+    // Utility
+    function shuffle(arr){
+      const a = arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a;
+    }
+    function download(fname, data){
+      const blob = new Blob([data], {type:'application/octet-stream'});
+      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download=fname; a.click(); URL.revokeObjectURL(url);
+    }
+    function toCSV(rows){
+      if(!rows.length) return '';
+      const keys = Object.keys(rows[0]);
+      const esc = v=>('"'+String(v).replace(/"/g,'""')+'"');
+      return keys.join(',') + '\n' + rows.map(r=> keys.map(k=>esc(r[k])).join(',')).join('\n');
+    }
+
+    // initial render
+    renderPrinciples(); renderPatients();
+
+    // allow withdraw toggle
+    document.getElementById('allowWithdraw').addEventListener('change',(e)=>{state.allowWithdraw = e.target.checked});
+
+  </script>
+</body>
+</html>

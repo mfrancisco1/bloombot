@@ -434,6 +434,13 @@ let particles  = [];
 let splashParticles = [];
 let time = 0;
 
+// ── Overload easter egg: max pressure + wide-open hole rips the wheel off its axle ──
+const wheelFly = { flying: false, gone: false, x: 0, y: 0, vx: 0, vy: 0, spin: 0 };
+function isOverload() { return waterLevel >= 0.97 && holeSize >= 0.9; }
+function wheelAttached() { return !wheelFly.flying && !wheelFly.gone; }
+// The load only converts flow to light while the wheel is on its axle
+function getEffectiveCurrent() { return wheelAttached() ? getCurrent() : 0; }
+
 // ── Geometry constants ──
 const TANK = { x: 80, y: 60, w: 200, h: 340, wallThick: 6 };
 const HOLE_Y = TANK.y + TANK.h - 40;
@@ -461,6 +468,8 @@ const COL = {
   label:     '#64748b',
   bg:        '#f5f0e8',
   pipe:      '#4b5563',
+  ink:       '#1a1612',
+  danger:    '#dc2626',
 };
 
 // ── Particle class ──
@@ -642,15 +651,35 @@ function drawHole() {
 }
 
 function drawWheel() {
-  const { cx, cy, r } = WHEEL;
-  const current = getCurrent();
+  const { r } = WHEEL;
+  const current = getEffectiveCurrent();
   const spokes = 8;
 
-  // Wheel housing (background)
+  // Wheel housing (background) — stays on the mount even if the wheel doesn't
   ctx.fillStyle = 'rgba(120,113,108,0.15)';
   ctx.beginPath();
-  ctx.arc(cx, cy, r + 14, 0, Math.PI * 2);
+  ctx.arc(WHEEL.cx, WHEEL.cy, r + 14, 0, Math.PI * 2);
   ctx.fill();
+
+  // Wheel gone: bare axle + a note, then bail
+  if (wheelFly.gone) {
+    ctx.fillStyle = COL.wheelHub;
+    ctx.beginPath();
+    ctx.arc(WHEEL.cx, WHEEL.cy, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = COL.danger;
+    ctx.font = '700 10px "Space Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('WHEEL LOST', WHEEL.cx, WHEEL.cy + r + 28);
+    ctx.fillStyle = COL.label;
+    ctx.font = '500 9px "Space Mono", monospace';
+    ctx.fillText('ease off the sliders to reinstall', WHEEL.cx, WHEEL.cy + r + 40);
+    return;
+  }
+
+  // Draw at the mount, or wherever the wheel currently is flying
+  const cx = wheelFly.flying ? wheelFly.x : WHEEL.cx;
+  const cy = wheelFly.flying ? wheelFly.y : WHEEL.cy;
 
   // Wheel rim
   ctx.strokeStyle = COL.wheel;
@@ -701,8 +730,8 @@ function drawWheel() {
   ctx.arc(cx, cy, 5, 0, Math.PI * 2);
   ctx.fill();
 
-  // Direction arrow (when spinning)
-  if (current > 0.05) {
+  // Direction arrow (when spinning, attached)
+  if (current > 0.05 && !wheelFly.flying) {
     ctx.save();
     ctx.globalAlpha = Math.min(current * 1.5, 0.7);
     ctx.fillStyle = COL.label;
@@ -712,25 +741,36 @@ function drawWheel() {
     ctx.restore();
   }
 
-  // Label
-  ctx.fillStyle = COL.label;
-  ctx.font = '700 10px "Space Grotesk", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('WATER WHEEL', cx, cy + r + 28);
-  ctx.font = '500 9px "Space Mono", monospace';
-  ctx.fillStyle = '#fbbf24';
-  ctx.fillText('= Load / Motor', cx, cy + r + 40);
+  if (!wheelFly.flying) {
+    // Label
+    ctx.fillStyle = COL.label;
+    ctx.font = '700 10px "Space Grotesk", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('WATER WHEEL', cx, cy + r + 28);
+    ctx.font = '500 9px "Space Mono", monospace';
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillText('= Load / Motor', cx, cy + r + 40);
 
-  // Splash at wheel
-  if (current > 0.05 && Math.random() < current * 2) {
-    splashParticles.push(new SplashDrop(cx - r + 10, cy - 10));
+    // Splash at wheel
+    if (current > 0.05 && Math.random() < current * 2) {
+      splashParticles.push(new SplashDrop(cx - r + 10, cy - 10));
+    }
+  } else {
+    ctx.fillStyle = COL.danger;
+    ctx.font = '700 11px "Space Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.globalAlpha = 0.5 + 0.5 * Math.sin(time * 12);
+    ctx.fillText('OVERLOAD!', WHEEL.cx, WHEEL.cy + r + 28);
+    ctx.globalAlpha = 1;
   }
 }
 
 function drawBulb() {
   const { cx, cy, r } = BULB;
-  const current = getCurrent();
-  const brightness = Math.min(current / 0.8, 1);
+  const current = getEffectiveCurrent();
+  // Perceptual curve over the full current range (0–10 A) so the bulb
+  // visibly dims and brightens with flow instead of saturating early
+  const brightness = Math.pow(Math.min(current / 8, 1), 0.6);
 
   // Wire from wheel to bulb
   ctx.strokeStyle = COL.wire;
@@ -809,10 +849,13 @@ function drawBulb() {
   ctx.fillStyle = '#fbbf24';
   ctx.fillText('= Power output', cx, cy - r - 7);
 
-  // Brightness percentage
-  if (brightness > 0.02) {
+  // Brightness percentage (or why it's dark)
+  ctx.font = '700 12px "Space Mono", monospace';
+  if (!wheelAttached()) {
+    ctx.fillStyle = COL.danger;
+    ctx.fillText('OFF — no load', cx, cy + r + 38);
+  } else if (brightness > 0.02) {
     ctx.fillStyle = COL.ink;
-    ctx.font = '700 12px "Space Mono", monospace';
     ctx.fillText(Math.round(brightness * 100) + '%', cx, cy + r + 38);
   }
 }
@@ -920,7 +963,31 @@ function frame(ts) {
   holeSize = sliderH.value / 100;
 
   const current = getCurrent();
-  wheelAngle -= current * 4 * dt;  // counter-clockwise: water hits top-left paddles
+  wheelAngle -= getEffectiveCurrent() * 4 * dt;  // counter-clockwise: water hits top-left paddles
+
+  // ── Overload: the wheel can't take max pressure through a wide-open hole ──
+  if (wheelAttached() && isOverload()) {
+    wheelFly.flying = true;
+    wheelFly.x = WHEEL.cx; wheelFly.y = WHEEL.cy;
+    wheelFly.vx = 230 + Math.random() * 70;
+    wheelFly.vy = -430;
+    wheelFly.spin = 22;
+    for (let k = 0; k < 26; k++) splashParticles.push(new SplashDrop(WHEEL.cx, WHEEL.cy - 10));
+  }
+  if (wheelFly.flying) {
+    wheelFly.vy += 720 * dt;
+    wheelFly.x += wheelFly.vx * dt;
+    wheelFly.y += wheelFly.vy * dt;
+    wheelAngle -= wheelFly.spin * dt;
+    if (wheelFly.x - WHEEL.r > W + 40 || wheelFly.y - WHEEL.r > H + 40) {
+      wheelFly.flying = false;
+      wheelFly.gone = true;
+    }
+  } else if (wheelFly.gone && !isOverload()) {
+    // Conditions are sane again — quietly reinstall the wheel
+    wheelFly.gone = false;
+    for (let k = 0; k < 12; k++) splashParticles.push(new SplashDrop(WHEEL.cx, WHEEL.cy - 20));
+  }
 
   // Clear
   ctx.fillStyle = COL.bg;

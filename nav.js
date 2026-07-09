@@ -96,7 +96,7 @@
     {
       id: 'about',
       label: 'About',
-      href: 'bloombot-modern.html',
+      href: 'about.html',
       items: [],
     },
   ];

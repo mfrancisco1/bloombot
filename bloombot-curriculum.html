@@ -249,7 +249,7 @@
 
 <!-- ── NAV ── -->
 <nav class="top-nav">
-  <a class="nav-brand" href="bloombot-modern.html">bloombot</a>
+  <a class="nav-brand" href="about.html">bloombot</a>
   <span class="nav-subtitle">Code Curriculum</span>
 </nav>
 
@@ -318,7 +318,7 @@
 
       <h4>Key ideas</h4>
       <p>Every codebase tells a story through its file structure. Bloombot is a <strong>static site</strong> — there is no database and no server-side rendering. Every page is a self-contained HTML file that the browser opens directly. This is the simplest possible web architecture, and understanding <em>why</em> it works (and where it breaks down) is your first architectural lesson.</p>
-      <p>You'll also encounter the concept of <strong>naming conventions</strong>. Notice that Bloombot uses two patterns: hyphenated names (<span class="file-ref">bloombot-modern.html</span>) for "structural" pages, and descriptive names with spaces (<span class="file-ref">bloombot - Lightning.html</span>) for "content" pages. This is a design choice — and arguably a mistake — that has real consequences for URLs and command-line usage.</p>
+      <p>You'll also encounter the concept of <strong>naming conventions</strong>. Notice that Bloombot uses two patterns: hyphenated names (<span class="file-ref">about.html</span>) for "structural" pages, and descriptive names with spaces (<span class="file-ref">bloombot - Lightning.html</span>) for "content" pages. This is a design choice — and arguably a mistake — that has real consequences for URLs and command-line usage.</p>
 
       <h4>Files to explore</h4>
       <ul>
@@ -378,7 +378,7 @@
       <span class="concept-chip chip-code">Coding</span>
 
       <h4>The anatomy of a Bloombot page</h4>
-      <p>Open <span class="file-ref">bloombot-modern.html</span> in a text editor. The first line — <code>&lt;!DOCTYPE html&gt;</code> — is a declaration that tells the browser to use modern HTML5 parsing rules. Everything else lives inside the <code>&lt;html&gt;</code> root element, split into two children: <code>&lt;head&gt;</code> (metadata the user never sees) and <code>&lt;body&gt;</code> (everything visible).</p>
+      <p>Open <span class="file-ref">about.html</span> in a text editor. The first line — <code>&lt;!DOCTYPE html&gt;</code> — is a declaration that tells the browser to use modern HTML5 parsing rules. Everything else lives inside the <code>&lt;html&gt;</code> root element, split into two children: <code>&lt;head&gt;</code> (metadata the user never sees) and <code>&lt;body&gt;</code> (everything visible).</p>
 
       <p>Inside the <code>&lt;head&gt;</code>, study these elements:</p>
       <ul>
@@ -476,7 +476,7 @@
     <div class="block-body">
       <h4>Task</h4>
       <ol>
-        <li>Open 3 different pages (<span class="file-ref">bloombot-modern.html</span>, <span class="file-ref">bloombot-i101.html</span>, <span class="file-ref">gear-generator.html</span>). Compare their <code>:root</code> blocks side by side. List which variables appear in all three and which are unique.</li>
+        <li>Open 3 different pages (<span class="file-ref">about.html</span>, <span class="file-ref">bloombot-i101.html</span>, <span class="file-ref">gear-generator.html</span>). Compare their <code>:root</code> blocks side by side. List which variables appear in all three and which are unique.</li>
         <li><strong>Refactor:</strong> Create a new file called <code>bloombot-tokens.css</code>. Move all shared custom properties into it. Then modify one page to use <code>&lt;link rel="stylesheet" href="bloombot-tokens.css"&gt;</code> instead of defining its own <code>:root</code>. Verify it still looks correct.</li>
         <li>In DevTools, experiment with changing <code>--cream</code> to <code>#0d1117</code> (a dark background) and <code>--ink</code> to <code>#e6edf3</code> (light text). How much of a "dark mode" do you get for free from the design token system? What breaks?</li>
         <li>Study the responsive breakpoint at the bottom of <span class="file-ref">bloombot-i101.html</span>: <code>@media (max-width:680px)</code>. What three things change? Resize your browser window to see them in action.</li>
@@ -868,7 +868,7 @@
       <ol>
         <li>Run <code>git log --oneline --graph</code> to see the project history. Then run <code>git diff HEAD~3..HEAD</code> to see what changed in the last three commits. Practice reading diffs — what was added (green), removed (red), and modified?</li>
         <li>Create a new branch (<code>git checkout -b my-experiment</code>), make a small change to any page, commit it, then switch back to <code>main</code>. Verify your change disappeared. Switch back to <code>my-experiment</code> — it's back. This is the fundamental Git workflow for safe experimentation.</li>
-        <li>Modify <span class="file-ref">app.py</span> to serve on port 3000 instead of 8000, and to open <code>bloombot-i101.html</code> instead of <code>bloombot-modern.html</code>. Test that it works. Then revert your changes with <code>git checkout app.py</code>.</li>
+        <li>Modify <span class="file-ref">app.py</span> to serve on port 3000 instead of 8000, and to open <code>bloombot-i101.html</code> instead of <code>about.html</code>. Test that it works. Then revert your changes with <code>git checkout app.py</code>.</li>
         <li><strong>Research &amp; write:</strong> Write a one-page proposal for adding a CI/CD pipeline to Bloombot using GitHub Actions. Your pipeline should: run an HTML validator on all HTML files, check that all internal links resolve to real files, and deploy to GitHub Pages only if both checks pass. You don't need to implement it — just describe the <code>.github/workflows/deploy.yml</code> file you'd create and what each step would do.</li>
       </ol>
     </div>
@@ -1103,7 +1103,7 @@
 <!-- ── FOOTER ── -->
 <footer>
   <p>bloombot code curriculum — a self-study guide for information science students</p>
-  <p>Built from the <a href="bloombot-modern.html">bloombot</a> repository &middot; 2026</p>
+  <p>Built from the <a href="about.html">bloombot</a> repository &middot; 2026</p>
 </footer>
 
 <script>

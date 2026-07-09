@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>bloombot — Matthew Francisco</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:     #1a1612;
+      --cream:   #f5f0e8;
+      --warm:    #e8dcc8;
+      --rust:    #c4541a;
+      --amber:   #e0662a;  /* bright rust — accent on dark surfaces */
+      --forest:  #2d5a27;
+      --slate:   #64748b;
+      --border:  #d1c4aa;
+      --card-bg: #fbf7ee;
+      --shadow:  rgba(26,22,18,0.10);
+
+      /* single accent — courses differentiated by number chip, not color */
+      --c101:  var(--rust);
+      --c341:  var(--rust);
+      --c549:  var(--rust);
+      --c554:  var(--rust);
+      --c453:  var(--rust);
+      --c400:  var(--rust);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--ink);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem; height: 56px;
+      border-bottom: 3px solid var(--rust);
+    }
+    .nav-brand {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.2rem; font-weight: 700;
+      color: var(--amber); text-decoration: none;
+      letter-spacing: -0.03em; white-space: nowrap;
+    }
+    .nav-links { display:flex; list-style:none; overflow:visible; }
+    .nav-links li { position:relative; }
+    .nav-links li>a { display:flex; align-items:center; gap:0.3rem; height:56px; padding:0 0.9rem; color:rgba(255,255,255,0.65); text-decoration:none; font-size:0.78rem; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; white-space:nowrap; transition:color 0.2s,background 0.2s; }
+    .nav-links li>a:hover { color:#fff; background:rgba(255,255,255,0.07); }
+    .nav-links li>a.active { color:var(--amber); }
+    .caret { font-size:0.55rem; opacity:0.5; }
+
+    /* ── HERO ── */
+    .hero {
+      background: var(--ink); color: #fff;
+      padding: 5rem 2rem 4rem;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background:
+        repeating-linear-gradient(0deg, transparent, transparent 39px,
+          rgba(255,255,255,0.035) 39px, rgba(255,255,255,0.035) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px,
+          rgba(255,255,255,0.035) 39px, rgba(255,255,255,0.035) 40px);
+    }
+    .hero-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr auto;
+      gap: 3rem; align-items: center; position: relative;
+    }
+    .hero-eyebrow {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72rem; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--amber);
+      margin-bottom: 1rem;
+    }
+    .hero-title {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 500; line-height: 1.05;
+      letter-spacing: -0.045em; margin-bottom: 1.5rem;
+    }
+    .hero-title span { color: var(--amber); display: block; }
+    .hero-bio {
+      font-size: 1.05rem; color: rgba(255,255,255,0.75);
+      max-width: 580px; line-height: 1.75; margin-bottom: 2rem;
+    }
+    .hero-tagline {
+      font-size: 0.9rem; color: rgba(255,255,255,0.45);
+      font-style: italic; margin-top: -1.25rem; margin-bottom: 2rem;
+      max-width: 480px;
+    }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+    .meta-chip {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 6px; padding: 0.4rem 0.8rem;
+      font-size: 0.8rem; font-weight: 500;
+      color: rgba(255,255,255,0.82); text-decoration: none;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .meta-chip:hover { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.28); }
+    .meta-chip .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--amber); flex-shrink: 0;
+    }
+    .hero-photo {
+      width: 200px; height: 200px; object-fit: cover;
+      border-radius: 12px; border: 3px solid var(--rust);
+      box-shadow: 8px 8px 0 var(--rust); display: block;
+    }
+
+    /* ── SHARED SECTION WRAPPER ── */
+    .section {
+      max-width: 1100px; margin: 0 auto;
+      padding: 4rem 2rem;
+    }
+    .section-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.68rem; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--slate);
+      margin-bottom: 0.4rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .section-label::after {
+      content: ''; flex: 1; height: 1px;
+      background: var(--border); max-width: 60px;
+    }
+    .section-heading {
+      font-size: clamp(1.5rem, 3.5vw, 2rem);
+      font-weight: 600; letter-spacing: -0.03em;
+      margin-bottom: 0.6rem;
+    }
+    .section-sub {
+      font-size: 0.95rem; color: var(--slate);
+      max-width: 620px; margin-bottom: 2.5rem; line-height: 1.6;
+    }
+
+    /* ── TEACHING ARC ── */
+    .arc-band {
+      background: var(--warm);
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 39px,
+          rgba(26,22,18,0.03) 39px, rgba(26,22,18,0.03) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px,
+          rgba(26,22,18,0.03) 39px, rgba(26,22,18,0.03) 40px);
+      border-top: 1.5px solid var(--border);
+      border-bottom: 1.5px solid var(--border);
+    }
+
+    /* progression row */
+    .arc-flow {
+      display: flex; align-items: center;
+      gap: 0; overflow-x: auto; scrollbar-width: none;
+      margin-bottom: 3rem;
+      background: var(--ink);
+      border-radius: 10px;
+      padding: 0;
+    }
+    .arc-flow::-webkit-scrollbar { display: none; }
+    .arc-step {
+      flex: 1; min-width: 130px;
+      padding: 1.1rem 1rem;
+      text-align: center;
+      border-right: 1px solid rgba(255,255,255,0.08);
+      position: relative;
+    }
+    .arc-step:last-child { border-right: none; }
+    .arc-step-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem; letter-spacing: 0.15em;
+      color: rgba(255,255,255,0.3);
+      text-transform: uppercase; margin-bottom: 0.3rem;
+    }
+    .arc-step-label {
+      font-size: 0.8rem; font-weight: 600;
+      color: rgba(255,255,255,0.85); line-height: 1.3;
+    }
+    .arc-arrow {
+      color: rgba(255,255,255,0.2);
+      font-size: 1rem; flex-shrink: 0;
+      padding: 0 0.1rem;
+    }
+
+    /* ── COURSE CARDS GRID ── */
+    .courses-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .course-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 0;
+      overflow: hidden;
+      text-decoration: none;
+      color: var(--ink);
+      display: flex; flex-direction: column;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .course-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--rust);
+    }
+
+    .course-card-top {
+      height: 3px;
+    }
+    .course-card-body {
+      padding: 1.4rem 1.5rem 1.5rem;
+      display: flex; flex-direction: column; gap: 0.5rem;
+      flex: 1;
+    }
+    .course-number {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem; letter-spacing: 0.15em;
+      text-transform: uppercase; font-weight: 700;
+      align-self: flex-start;
+      background: var(--warm);
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+    }
+    .course-title {
+      font-size: 1.05rem; font-weight: 700;
+      letter-spacing: -0.02em; line-height: 1.3;
+    }
+    .course-desc {
+      font-size: 0.83rem; color: var(--slate);
+      line-height: 1.55; margin-top: 0.25rem;
+    }
+    .course-tags {
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+      margin-top: auto; padding-top: 1rem;
+    }
+    .tag {
+      font-size: 0.68rem; font-weight: 600;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      background: var(--warm);
+      color: var(--slate);
+    }
+
+    /* ── ARTIFACT STRIP ── */
+    .artifact-band {
+      background: var(--ink);
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 39px,
+          rgba(255,255,255,0.03) 39px, rgba(255,255,255,0.03) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px,
+          rgba(255,255,255,0.03) 39px, rgba(255,255,255,0.03) 40px);
+    }
+    .artifact-band .section-label { color: rgba(255,255,255,0.35); }
+    .artifact-band .section-label::after { background: rgba(255,255,255,0.12); }
+    .artifact-band .section-heading { color: #fff; }
+    .artifact-band .section-sub { color: rgba(255,255,255,0.5); }
+
+    .artifact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    .artifact-card {
+      border: 1.5px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 1.25rem;
+      text-decoration: none; color: #fff;
+      display: flex; flex-direction: column; gap: 0.4rem;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative; overflow: hidden;
+    }
+    .artifact-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+      transform: scaleX(0); transform-origin: left;
+      transition: transform 0.25s ease;
+    }
+    .artifact-card:hover { background: rgba(255,255,255,0.05); }
+    .artifact-card:hover::before { transform: scaleX(1); }
+    .artifact-icon { line-height: 1; margin-bottom: 0.2rem; color: var(--amber); }
+    .artifact-icon svg { width: 26px; height: 26px; display: block; }
+    .artifact-title { font-size: 0.88rem; font-weight: 600; line-height: 1.3; }
+    .artifact-desc { font-size: 0.74rem; color: rgba(255,255,255,0.45); line-height: 1.45; margin-top: auto; }
+
+    /* ── MAKING / RESEARCH ── */
+    .making-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.9rem;
+    }
+    .making-item {
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      padding: 0.9rem 1rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      transition: border-color 0.2s;
+    }
+    .making-item:hover { border-color: var(--rust); }
+    .making-bullet {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--rust); flex-shrink: 0; margin-top: 0.45rem;
+    }
+    .making-text { font-size: 0.86rem; font-weight: 500; line-height: 1.45; }
+
+    /* ── MAKING GROUP LABELS ── */
+    .making-group-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--slate);
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── DIVIDER ── */
+    hr.div { border: none; border-top: 1.5px solid var(--border); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--ink);
+      background-image:
+        repeating-linear-gradient(90deg, transparent, transparent 39px,
+          rgba(255,255,255,0.03) 39px, rgba(255,255,255,0.03) 40px);
+      color: rgba(255,255,255,0.4);
+      text-align: center; padding: 2.5rem 2rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72rem; letter-spacing: 0.06em;
+      line-height: 2;
+    }
+    footer a { color: var(--amber); text-decoration: none; }
+
+    /* ── DROPDOWNS ── */
+    .dropdown { display:none; position:absolute; top:56px; left:0; background:#111; border:1px solid rgba(255,255,255,0.1); border-top:2px solid var(--rust); border-radius:0 0 8px 8px; min-width:200px; list-style:none; z-index:200; box-shadow:0 8px 24px rgba(0,0,0,0.4); }
+    .nav-links li:hover .dropdown { display:block; }
+    .dropdown li a { display:block; padding:0.6rem 1rem; font-size:0.78rem; color:rgba(255,255,255,0.65); border-bottom:1px solid rgba(255,255,255,0.06); white-space:nowrap; text-decoration:none; }
+    .dropdown li:last-child a { border-bottom:none; }
+    .dropdown li a:hover { color:#fff; background:rgba(255,255,255,0.07); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 680px) {
+      .hero-inner { grid-template-columns: 1fr; }
+      .hero-photo { display: none; }
+      .nav-links { display: none; }
+      .arc-flow { border-radius: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav id="main-nav" data-active="about"></nav>
+<script src="nav.js"></script>
+
+<!-- ═══ HERO ═══ -->
+<header class="hero">
+  <div class="hero-inner">
+    <div>
+      <p class="hero-eyebrow">Luddy School of Informatics, Computing &amp; Engineering · Indiana University</p>
+      <h1 class="hero-title">
+        Matthew<br>
+        <span>Francisco</span>
+      </h1>
+      <p class="hero-bio">
+        Director of Undergraduate Studies and Senior Lecturer, Department of Informatics, with two decades in technology education. From simulation and modeling research at Rensselaer Polytechnic Institute and into hands-on teaching across physical computing, 3D design, human-centered systems, and the cultural aspects of technology.
+      </p>
+      <div class="hero-meta">
+        <span class="meta-chip"><span class="dot"></span> Spring 2026 · M/W 12:30–2:00 PM</span>
+        <a class="meta-chip" href="cv.pdf" target="_blank">Curriculum Vitae</a>
+      </div>
+    </div>
+    <div>
+      <img class="hero-photo"
+        src="bloombot_files/unnamed_009.jpg"
+        alt="Matthew Francisco"
+        onerror="this.style.display='none'">
+    </div>
+  </div>
+</header>
+
+<!-- ═══ TEACHING ARC ═══ -->
+<div class="arc-band" id="teaching">
+  <div class="section">
+    <p class="section-label">Teaching</p>
+    <h2 class="section-heading">Teaching in Informatics</h2>
+    <p class="section-sub">Taught at Luddy over twelve years — six courses that move from foundations to frontier: systems thinking, hands-on electronics, ethical reasoning, educational design, advanced fabrication, and emergent AI practice.</p>
+
+    <!-- progression flow -->
+    <div class="arc-flow">
+      <div class="arc-step">
+        <div class="arc-step-num">Foundation</div>
+        <div class="arc-step-label">Informatics<br>&amp; Systems</div>
+      </div>
+      <div class="arc-arrow">›</div>
+      <div class="arc-step">
+        <div class="arc-step-num">Hands-On</div>
+        <div class="arc-step-label">Electronics<br>&amp; Making</div>
+      </div>
+      <div class="arc-arrow">›</div>
+      <div class="arc-step">
+        <div class="arc-step-num">Values</div>
+        <div class="arc-step-label">Ethics<br>&amp; Equity</div>
+      </div>
+      <div class="arc-arrow">›</div>
+      <div class="arc-step">
+        <div class="arc-step-num">Design</div>
+        <div class="arc-step-label">Ed Tech<br>&amp; Learning</div>
+      </div>
+      <div class="arc-arrow">›</div>
+      <div class="arc-step">
+        <div class="arc-step-num">Advanced</div>
+        <div class="arc-step-label">Prototyping<br>&amp; Fabrication</div>
+      </div>
+      <div class="arc-arrow">›</div>
+      <div class="arc-step">
+        <div class="arc-step-num">Frontier</div>
+        <div class="arc-step-label">LLMs in<br>Design</div>
+      </div>
+    </div>
+
+    <!-- course cards -->
+    <div class="courses-grid">
+
+      <!-- I 101 -->
+      <a class="course-card" href="bloombot-i101.html">
+        <div class="course-card-top" style="background: var(--c101);"></div>
+        <div class="course-card-body">
+          <div class="course-number" style="color: var(--c101);">INFO-I 101</div>
+          <div class="course-title">Introduction to Informatics</div>
+          <div class="course-desc">A hands-on introduction to informatics and computing — problem solving, information theory, web design, media computation, and a first look at programming. Designed to prepare students for deeper work across the Luddy School.</div>
+          <div class="course-tags">
+            <span class="tag">Networks</span>
+            <span class="tag">Ethics</span>
+            <span class="tag">Data</span>
+            <span class="tag">Security</span>
+            <span class="tag">Design</span>
+            <span class="tag">Lecture</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- I 341 -->
+      <a class="course-card" href="bloombot-prototyping.html">
+        <div class="course-card-top" style="background: var(--c341);"></div>
+        <div class="course-card-body">
+          <div class="course-number" style="color: var(--c341);">INFO-I 341</div>
+          <div class="course-title">Interactive Electronics Prototyping</div>
+          <div class="course-desc">Build a physical digital agent for a person, animal, plant, or space. Students draw on the full ecosystem of hobby and professional electronics — tools, materials, tutorials, maker culture — to develop a working prototype and a creative vision for what it could become.</div>
+          <div class="course-tags">
+            <span class="tag">Electronics</span>
+            <span class="tag">Physical Computing</span>
+            <span class="tag">Prototyping</span>
+            <span class="tag">Lab</span>
+            <span class="tag">Lecture</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- I 453 -->
+      <a class="course-card" href="bloombot - Ethics.html">
+        <div class="course-card-top" style="background: var(--c453);"></div>
+        <div class="course-card-body">
+          <div class="course-number" style="color: var(--c453);">INFO-I 453</div>
+          <div class="course-title">Computer and Information Ethics</div>
+          <div class="course-desc">Tools and practices for assessing the ethical and moral questions that emerge from computing and information systems. Students pick a real problem that technology has transformed or intensified — and spend the semester thinking rigorously about it.</div>
+          <div class="course-tags">
+            <span class="tag">Ethics</span>
+            <span class="tag">Equity</span>
+            <span class="tag">Policy</span>
+            <span class="tag">Lecture</span>
+            <span class="tag">Discussions</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- I 400 -->
+      <div class="course-card">
+        <div class="course-card-top" style="background: var(--c400);"></div>
+        <div class="course-card-body">
+          <div class="course-number" style="color: var(--c400);">INFO-I 400</div>
+          <div class="course-title">Explorations in Educational Technology</div>
+          <div class="course-desc">Design and test your own lesson plans for K–16 classrooms using programmable graphics, multiplayer virtual worlds, 3D modeling, physical computing, robotics, AI storytellers, and more. Educational technology as a site of computational thinking, political choice, and design practice.</div>
+          <div class="course-tags">
+            <span class="tag">Learning Design</span>
+            <span class="tag">Simulation</span>
+            <span class="tag">Ed Tech</span>
+            <span class="tag">Lab</span>
+            <span class="tag">Lecture</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- I 549 -->
+      <div class="course-card">
+        <div class="course-card-top" style="background: var(--c549);"></div>
+        <div class="course-card-body">
+          <div class="course-number" style="color: var(--c549);">INFO-I 549</div>
+          <div class="course-title">Advanced Prototyping</div>
+          <div class="course-desc">An advanced design studio for building, staging, and testing interactive, physical, and robotic systems. Prototyping here is socio-technical thinking with materials — mock-ups, Wizard-of-Oz techniques, and staged scenarios that explore how technologies, people, environments, and values interact.</div>
+          <div class="course-tags">
+            <span class="tag">3D Design</span>
+            <span class="tag">Fabrication</span>
+            <span class="tag">Advanced</span>
+            <span class="tag">Lab</span>
+            <span class="tag">Discussions</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- I 554 -->
+      <div class="course-card">
+        <div class="course-card-top" style="background: var(--c554);"></div>
+        <div class="course-card-body">
+          <div class="course-number" style="color: var(--c554);">INFO-I 554</div>
+          <div class="course-title">LLMs in Design Practice</div>
+          <div class="course-desc">Large language models as design material. How generative AI reshapes the practice of making, prototyping, and human-centered design — explored critically and hands-on.</div>
+          <div class="course-tags">
+            <span class="tag">AI</span>
+            <span class="tag">LLMs</span>
+            <span class="tag">Design</span>
+            <span class="tag">Frontier</span>
+            <span class="tag">Discussions</span>
+            <span class="tag">Workshops</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ARTIFACT GALLERY ═══ -->
+<div class="artifact-band" id="artifacts">
+  <div class="section">
+    <p class="section-label">Architecture for Learning</p>
+    <h2 class="section-heading">Educational Generators</h2>
+    <p class="section-sub">Simulations, tools, and games built to make ideas tangible. Each one runs locally in your browser — download it, open it, break it. They're designed as seeds: working code you can hand to an LLM and start tinkering from.</p>
+
+    <div class="artifact-grid">
+
+      <a class="artifact-card" href="webpage-main/schelling.html">
+        <style>.artifact-card:hover::before { background: var(--rust); } .artifact-card:hover { border-color: var(--rust); }</style>
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="1.5"/><path d="M9.2 3.5v17M14.8 3.5v17M3.5 9.2h17M3.5 14.8h17"/><circle cx="6.35" cy="6.35" r="1.2" fill="currentColor" stroke="none"/><circle cx="6.35" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="6.35" r="1.2" fill="currentColor" stroke="none"/><circle cx="17.65" cy="17.65" r="1.2"/><circle cx="12" cy="17.65" r="1.2"/><circle cx="17.65" cy="12" r="1.2"/></svg></div>
+        <div class="artifact-title">Schelling Segregation Model</div>
+        <div class="artifact-desc">How small preferences produce large-scale social patterns</div>
+      </a>
+
+      <a class="artifact-card" href="webpage-main/wild_boars.html">
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.7 13.6c1.2-.2 2-.9 2.7-1.9 1.2-1.9 3.6-3.1 6.6-3.1 3.6 0 6.7 1.9 7.3 4.7.3 1.5-.2 3-1.3 4"/><path d="M2.7 13.6c-.4.5-.3 1.2.2 1.5.5.4 1.2.3 1.7-.1"/><path d="M4.9 15.7c-.3.7-.9 1.1-1.6 1.1"/><path d="M4.6 15c1 1.6 2.7 2.7 4.9 3.1h5.6c.9 0 1.7-.2 2.4-.5"/><path d="M8.3 18.2v2.3M11.3 18.3v2.2M14.6 18.3v2.2M17.4 17.4l.4 3.1"/><path d="M10 8.7 9.3 6.4l2.2 1.1"/><path d="M12.8 8.5l.2-1.5M15.2 8.9l.4-1.4M17.3 10l.6-1.2"/><path d="M7.6 11.9v.01"/><path d="M19.3 13.6c1-.1 1.7.6 1.5 1.6"/></svg></div>
+        <div class="artifact-title">Wild Boars</div>
+        <div class="artifact-desc">Agent-based simulation of foraging, movement, and survival in a shared environment</div>
+      </a>
+
+      <a class="artifact-card" href="webpage-main/topology.html">
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="6" r="2"/><circle cx="18.5" cy="7" r="2"/><circle cx="8" cy="18" r="2"/><circle cx="17" cy="16.5" r="2"/><path d="M7.5 6.2l9 .7M6 8l1.6 8M9.9 17.6l5.1-.7M17.3 14.5l.9-5.5M7 7.5l8.6 7.6"/></svg></div>
+        <div class="artifact-title">Network Topology</div>
+        <div class="artifact-desc">Build and explore network structures interactively</div>
+      </a>
+
+      <a class="artifact-card" href="webpage-main/emoji_switch_moral_calculus.html">
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6.5" y="3.5" width="11" height="9.5" rx="1.8"/><path d="M6.5 8h11M9.8 3.5V8M14.2 3.5V8"/><circle cx="9.3" cy="15.3" r="1.4"/><circle cx="14.7" cy="15.3" r="1.4"/><path d="M11 17.5 6.3 21.5M13 17.5l4.7 4M12 13v1.5"/></svg></div>
+        <div class="artifact-title">Trolley Problem</div>
+        <div class="artifact-desc">Animated ethics — switch and push variants</div>
+      </a>
+
+      <a class="artifact-card" href="webpage-main/phishing_quiz.html">
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="16" cy="4" r="1.3"/><path d="M16 5.3v8.2a4.5 4.5 0 0 1-9 0v-1.2"/><path d="M7 12.3 4.9 14.5M7 12.3l2.9 1.5"/></svg></div>
+        <div class="artifact-title">Phishing Quiz</div>
+        <div class="artifact-desc">Spot the attack — gamified security awareness</div>
+      </a>
+
+      <a class="artifact-card" href="webpage-main/rsa_encryption.html">
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/><path d="M12 14.3v2.2"/></svg></div>
+        <div class="artifact-title">RSA Encryption</div>
+        <div class="artifact-desc">Step-by-step public-key cryptography, hands-on</div>
+      </a>
+
+      <a class="artifact-card" href="webpage-main/digital_footprint_three.html">
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="8" cy="8.5" rx="2.5" ry="3.7"/><ellipse cx="8.7" cy="15" rx="1.6" ry="1.1"/><ellipse cx="16" cy="12.5" rx="2.5" ry="3.7"/><ellipse cx="15.3" cy="19" rx="1.6" ry="1.1"/></svg></div>
+        <div class="artifact-title">Digital Footprint</div>
+        <div class="artifact-desc">Visualize the data trail of everyday online life</div>
+      </a>
+
+      <a class="artifact-card" href="webpage-main/conductivity.html">
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 6.5 13H11l-1 9L16.5 11H12l1-9Z"/></svg></div>
+        <div class="artifact-title">Conductivity</div>
+        <div class="artifact-desc">Electron behavior in conductors, semiconductors, insulators</div>
+      </a>
+
+      <a class="artifact-card" href="webpage-main/water_circuit.html">
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 4.5v9.5h6v-2M10.5 9V4.5"/><path d="M6 8.5h3"/><path d="M10.5 10.5c2.6.8 4.2 2.6 4.9 5"/><circle cx="17" cy="17.8" r="3.2"/><path d="M17 14.6v6.4M13.8 17.8h6.4M14.7 15.5l4.6 4.6M19.3 15.5l-4.6 4.6"/></svg></div>
+        <div class="artifact-title">Water Analogy</div>
+        <div class="artifact-desc">Voltage, current, and resistance through water pressure, flow, and pipe size</div>
+      </a>
+
+      <a class="artifact-card" href="webpage-main/oximeter_skin_tone.html">
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.3 3.5h5.4v9.7a2.7 2.7 0 0 1-5.4 0V3.5Z"/><path d="M11 6h2"/><path d="M8 17.7c.9 1.6 2.3 2.5 4 2.5s3.1-.9 4-2.5"/><path d="M16.8 8h1.3l.9-1.8 1.3 3.6.9-1.8h1"/></svg></div>
+        <div class="artifact-title">Oximeter &amp; Skin Tone</div>
+        <div class="artifact-desc">Bias in medical devices — a case study in design equity</div>
+      </a>
+
+      <a class="artifact-card" href="webpage-main/facebook2025.html">
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M9.5 6.5h5M9 10h6M9 12.5h6M9 15h4"/><path d="M10.5 18.8h3"/></svg></div>
+        <div class="artifact-title">Platform Evolution</div>
+        <div class="artifact-desc">Facebook &amp; Instagram across time — how interfaces shape practice</div>
+      </a>
+
+      <a class="artifact-card" href="webpage-main/password_analyzer.html">
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8.5" width="18" height="8" rx="2"/><circle cx="7" cy="12.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="10.4" cy="12.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="13.8" cy="12.5" r="1.1" fill="currentColor" stroke="none"/><path d="M17.5 10.8v3.4"/></svg></div>
+        <div class="artifact-title">Password Analyzer</div>
+        <div class="artifact-desc">Real-time cryptographic strength and crack-time estimation</div>
+      </a>
+
+      <a class="artifact-card" href="webpage-main/informatics_design_cycle.html">
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.7L20 8.5"/><path d="M20 4v4.5h-4.5"/><path d="M20 12a8 8 0 0 1-13.7 5.7L4 15.5"/><path d="M4 20v-4.5h4.5"/></svg></div>
+        <div class="artifact-title">Design Cycle</div>
+        <div class="artifact-desc">Interactive informatics design process explorer</div>
+      </a>
+
+      <a class="artifact-card" href="webpage-main/encoder_full.html">
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.8"/><path d="M12 3.5v3.2M12 17.3v3.2M3.5 12h3.2M17.3 12h3.2M6 6l2.2 2.2M18 6l-2.2 2.2M6 18l2.2-2.2M18 18l-2.2-2.2"/></svg></div>
+        <div class="artifact-title">Encoder Wheel</div>
+        <div class="artifact-desc">Robotics sensing and feedback — design to simulation</div>
+      </a>
+
+      <a class="artifact-card" href="webpage-main/hand.html">
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="19.3" r="2.1"/><circle cx="3.9" cy="13.4" r="1.3"/><circle cx="7.7" cy="6.4" r="1.3"/><circle cx="12" cy="4.8" r="1.3"/><circle cx="16.3" cy="6.4" r="1.3"/><circle cx="20.1" cy="13.4" r="1.3"/><path d="M10.3 18.1 5 14.2M11.2 17.4 8.1 7.6M12 17.2V6.1M12.8 17.4l3.1-9.8M13.7 18.1l5.3-3.9"/></svg></div>
+        <div class="artifact-title">Hand Skeleton</div>
+        <div class="artifact-desc">Force-directed graph of human hand anatomy</div>
+      </a>
+
+      <a class="artifact-card" href="webpage-main/triage.html">
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8.5v7M8.5 12h7"/></svg></div>
+        <div class="artifact-title">Triage</div>
+        <div class="artifact-desc">Emergency decision-making under constraint</div>
+      </a>
+
+      <a class="artifact-card" href="webpage-main/stem_diversity.html">
+        <div class="artifact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6.6" cy="8.4" r="2"/><circle cx="17.4" cy="8.4" r="2"/><circle cx="12" cy="6.6" r="2.3"/><path d="M8.2 19a3.8 3.8 0 0 1 7.6 0"/><path d="M3 19a3.7 3.7 0 0 1 4.2-3.7M21 19a3.7 3.7 0 0 0-4.2-3.7"/></svg></div>
+        <div class="artifact-title">STEM Diversity</div>
+        <div class="artifact-desc">Celebrating underrepresented contributors to science and engineering</div>
+      </a>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div>bloombot &nbsp;·&nbsp; Matthew Francisco &nbsp;·&nbsp; Luddy School of Informatics, Computing &amp; Engineering</div>
+  <div>Indiana University &nbsp;·&nbsp; <a href="cv.pdf" target="_blank">Curriculum Vitae</a> &nbsp;·&nbsp; francm@iu.edu</div>
+</footer>
+
+</body>
+</html>

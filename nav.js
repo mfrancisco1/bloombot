@@ -63,6 +63,12 @@
       ],
     },
     {
+      id: 'studio',
+      label: 'Studio',
+      href: 'bloombot-home.html',
+      items: [],
+    },
+    {
       id: 'about',
       label: 'About',
       href: 'bloombot-modern.html',
@@ -73,7 +79,7 @@
   // ─── Build HTML ───────────────────────────────────────────────
   function p(href) { return prefix + href; }
 
-  let html = `<a class="nav-brand" href="${p('bloombot-modern.html')}">bloombot</a>`;
+  let html = `<a class="nav-brand" href="${p('opening.html')}">bloombot</a>`;
   html += '<ul class="nav-links">';
 
   menus.forEach(function (menu) {

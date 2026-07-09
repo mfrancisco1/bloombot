@@ -9,6 +9,32 @@
   const nav = document.getElementById('main-nav');
   if (!nav) return;
 
+  // ─── Self-contained nav CSS ────────────────────────────────────
+  // Injected on every page so the nav renders identically everywhere,
+  // even on artifact pages that don't carry the site stylesheet.
+  // ID selectors win over any page-level .nav-* rules.
+  if (!document.getElementById('bb-nav-css')) {
+    const css = document.createElement('style');
+    css.id = 'bb-nav-css';
+    css.textContent = [
+      'nav#main-nav{position:sticky;top:0;z-index:100;background:#1a1612;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:56px;border-bottom:3px solid #c4541a;}',
+      "#main-nav .nav-brand{font-family:'Space Mono',monospace;font-size:1.2rem;font-weight:700;color:#e0662a;text-decoration:none;letter-spacing:-0.03em;white-space:nowrap;}",
+      '#main-nav .nav-links{display:flex;list-style:none;margin:0;padding:0;overflow:visible;}',
+      '#main-nav .nav-links li{position:relative;list-style:none;margin:0;padding:0;}',
+      '#main-nav .nav-links li>a{display:flex;align-items:center;gap:0.3rem;height:56px;padding:0 0.9rem;color:rgba(255,255,255,0.65);text-decoration:none;font-size:0.78rem;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;transition:color 0.2s,background 0.2s;}',
+      '#main-nav .nav-links li>a:hover{color:#fff;background:rgba(255,255,255,0.07);}',
+      '#main-nav .nav-links li>a.active{color:#e0662a;}',
+      '#main-nav .caret{font-size:0.55rem;opacity:0.5;}',
+      '#main-nav .dropdown{display:none;position:absolute;top:56px;left:0;background:#111;border:1px solid rgba(255,255,255,0.1);border-top:2px solid #c4541a;border-radius:0 0 8px 8px;min-width:200px;list-style:none;margin:0;padding:0;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.4);}',
+      '#main-nav .nav-links li:hover .dropdown{display:block;}',
+      '#main-nav .dropdown li a{display:block;height:auto;padding:0.6rem 1rem;font-size:0.78rem;color:rgba(255,255,255,0.65);border-bottom:1px solid rgba(255,255,255,0.06);white-space:nowrap;text-decoration:none;text-transform:none;letter-spacing:0;}',
+      '#main-nav .dropdown li:last-child a{border-bottom:none;}',
+      '#main-nav .dropdown li a:hover{color:#fff;background:rgba(255,255,255,0.07);}',
+      '@media(max-width:680px){#main-nav .nav-links{display:none;}}'
+    ].join('\n');
+    document.head.appendChild(css);
+  }
+
   // Detect path prefix: if nav.js is loaded as "../nav.js", we're one level deep
   const scripts = document.getElementsByTagName('script');
   let prefix = '';

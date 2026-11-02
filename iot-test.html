@@ -76,6 +76,7 @@ for (let i=0; i<3; i++) {
 function lamp(i,value) { const el=document.getElementById(`lamp${i}`); el.style.background=value?`rgb(${Math.round(80+175*value/255)},${Math.round(120+120*value/255)},175)`:'#39475a'; el.style.boxShadow=value?`0 0 ${Math.round(5+20*value/255)}px #65e3c2`:'none'; }
 document.getElementById('saveKey').onclick=()=>{ const key=document.getElementById('controlKey').value.trim(); if(key) { sessionStorage.setItem('iotControlKey',key); document.getElementById('controlKey').value=''; document.getElementById('message').textContent='Controls unlocked for this browser tab.'; } };
 async function sendLeds() {
+  if(location.protocol==='file:') { document.getElementById('message').textContent='Open https://bloombot.com/iot-test.html to control the LEDs.'; return; }
   const key=sessionStorage.getItem('iotControlKey');
   if(!key) { document.getElementById('message').textContent='Enter the control key to change LED brightness.'; return; }
   try {
@@ -123,7 +124,11 @@ async function refresh() {
     document.getElementById('connection').classList.remove('online');
   }
 }
-refresh(); setInterval(refresh,1000);
+async function poll() {
+  await refresh();
+  setTimeout(poll,1000);
+}
+poll();
 </script>
 </body>
 </html>

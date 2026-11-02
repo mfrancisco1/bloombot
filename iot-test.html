@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BloomBot | Pico Lab</title>
+  <style>
+    :root { color-scheme: dark; --bg:#080d19; --card:#121d2e; --line:#26364d; --ink:#edf4ff; --muted:#9fb0c8; --a:#65e3c2; --b:#ffae73; }
+    * { box-sizing: border-box; }
+    body { margin:0; color:var(--ink); background:radial-gradient(circle at 85% 0%,#18324a 0,transparent 36rem),var(--bg); font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; }
+    main { max-width:1120px; margin:auto; padding:32px 20px 72px; }
+    .eyebrow { color:var(--a); font-size:.75rem; font-weight:800; letter-spacing:.18em; text-transform:uppercase; }
+    header { display:flex; align-items:end; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:28px; }
+    h1 { font-size:clamp(2.2rem,6vw,4.7rem); line-height:1; margin:8px 0 10px; letter-spacing:-.055em; }
+    header p, .muted { color:var(--muted); margin:0; }
+    .status { display:flex; align-items:center; gap:9px; padding:10px 15px; border:1px solid var(--line); border-radius:999px; background:#132035; font-weight:700; }
+    .dot { width:9px; height:9px; border-radius:50%; background:#f29e68; box-shadow:0 0 12px #f29e68; }
+    .status.online .dot { background:var(--a); box-shadow:0 0 12px var(--a); }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+    .card { background:linear-gradient(145deg,#17263a,#111a2b); border:1px solid var(--line); border-radius:22px; padding:22px; box-shadow:0 18px 45px #0003; }
+    h2 { margin:0 0 6px; font-size:1.25rem; letter-spacing:-.02em; }
+    .sensorValue { font-size:2.5rem; font-weight:800; letter-spacing:-.06em; line-height:1.2; margin:8px 0; }
+    .sensorValue span { font-size:1rem; color:var(--muted); font-weight:500; letter-spacing:0; }
+    canvas { width:100%; height:180px; display:block; margin-top:10px; }
+    .buttonPanel { min-height:180px; display:flex; flex-direction:column; justify-content:space-between; border-radius:20px; padding:24px; transition:background .3s,color .3s,transform .25s; background:#244e72; color:#fff; }
+    .buttonPanel.active { transform:scale(1.015); }
+    .buttonPanel h2 { font-size:1.8rem; }
+    .buttonPanel .count { font-size:.9rem; font-weight:700; opacity:.85; }
+    .buttonPanel .state { font-size:1rem; font-weight:700; }
+    .full { grid-column:1/-1; }
+    .leds { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin-top:20px; }
+    .led { padding:18px; border:1px solid var(--line); background:#0e192a; border-radius:17px; }
+    .ledHeader { display:flex; align-items:center; justify-content:space-between; gap:8px; font-weight:800; }
+    .lamp { width:16px; height:16px; border-radius:50%; background:#39475a; box-shadow:0 0 0 #fff0; }
+    input[type=range] { width:100%; margin:24px 0 8px; accent-color:var(--a); cursor:pointer; }
+    .small { color:var(--muted); font-size:.86rem; }
+    .access { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:18px; }
+    input[type=password] { background:#081120; color:var(--ink); border:1px solid #47617c; border-radius:10px; padding:11px 13px; min-width:230px; font:inherit; }
+    button { background:var(--a); color:#061d1b; border:0; border-radius:10px; padding:11px 16px; font:inherit; font-weight:800; cursor:pointer; }
+    #message { color:var(--muted); font-size:.9rem; }
+    @media(max-width:760px) { .grid,.leds { grid-template-columns:1fr; } .full { grid-column:auto; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div><div class="eyebrow">BloomBot / Connected Lab</div><h1>Pico Pulse</h1><p>Two sensor streams. Two physical buttons. Three adjustable lights.</p></div>
+    <div class="status" id="connection"><span class="dot"></span><span id="connectionText">Waiting for data</span></div>
+  </header>
+  <div class="grid">
+    <section class="card"><h2>Analog sensor 1 <span class="small">GP26</span></h2><div class="sensorValue" id="value0">— <span>/ 4095</span></div><canvas id="chart0" aria-label="Sensor 1 history"></canvas></section>
+    <section class="card"><h2>Analog sensor 2 <span class="small">GP27</span></h2><div class="sensorValue" id="value1">— <span>/ 4095</span></div><canvas id="chart1" aria-label="Sensor 2 history"></canvas></section>
+    <section class="buttonPanel" id="panel0"><div><div class="eyebrow" style="color:inherit">Physical input</div><h2>Button 1</h2></div><div><div class="state" id="button0">Waiting</div><div class="count" id="count0">0 presses</div></div></section>
+    <section class="buttonPanel" id="panel1"><div><div class="eyebrow" style="color:inherit">Physical input</div><h2>Button 2</h2></div><div><div class="state" id="button1">Waiting</div><div class="count" id="count1">0 presses</div></div></section>
+    <section class="card full"><h2>Light controls</h2><p class="muted">Set each LED from off to full brightness. Changes reach the Pico on its next update.</p>
+      <div class="leds" id="leds"></div>
+      <div class="access"><label for="controlKey">Control key</label><input id="controlKey" type="password" placeholder="Enter key to enable sliders" autocomplete="off"><button id="saveKey" type="button">Unlock controls</button><span id="message">Viewing is open; changing LEDs requires the key.</span></div>
+    </section>
+  </div>
+</main>
+<script>
+// Replace with the URL printed by `npx wrangler deploy`. No trailing slash.
+const API_BASE = 'https://YOUR-WORKER.workers.dev';
+const palette = ['#244e72','#6549a9','#bb476b','#dd744c','#2b8d7b','#bd9154'];
+const leds = document.getElementById('leds');
+const sliders = [];
+let lastLeds = [0,0,0];
+let updateTimer;
+for (let i=0; i<3; i++) {
+  const box=document.createElement('div'); box.className='led';
+  box.innerHTML=`<div class="ledHeader"><span>LED ${i+1} · GP${i+2}</span><span class="lamp" id="lamp${i}"></span></div><input type="range" min="0" max="255" value="0" id="slider${i}" aria-label="LED ${i+1} brightness"><div class="small"><span id="level${i}">0</span> / 255</div>`;
+  leds.appendChild(box);
+  const slider=box.querySelector('input'); sliders.push(slider);
+  slider.addEventListener('input',()=>{ document.getElementById(`level${i}`).textContent=slider.value; lamp(i,+slider.value); clearTimeout(updateTimer); updateTimer=setTimeout(()=>{updateTimer=null;sendLeds();},180); });
+}
+function lamp(i,value) { const el=document.getElementById(`lamp${i}`); el.style.background=value?`rgb(${Math.round(80+175*value/255)},${Math.round(120+120*value/255)},175)`:'#39475a'; el.style.boxShadow=value?`0 0 ${Math.round(5+20*value/255)}px #65e3c2`:'none'; }
+document.getElementById('saveKey').onclick=()=>{ const key=document.getElementById('controlKey').value.trim(); if(key) { sessionStorage.setItem('iotControlKey',key); document.getElementById('controlKey').value=''; document.getElementById('message').textContent='Controls unlocked for this browser tab.'; } };
+async function sendLeds() {
+  const key=sessionStorage.getItem('iotControlKey');
+  if(!key) { document.getElementById('message').textContent='Enter the control key to change LED brightness.'; return; }
+  try {
+    const values=sliders.map(s=>+s.value);
+    const r=await fetch(`${API_BASE}/api/leds`,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},body:JSON.stringify({leds:values})});
+    if(!r.ok) throw new Error(r.status===401?'Incorrect control key':`HTTP ${r.status}`);
+    lastLeds=values;
+    document.getElementById('message').textContent='Brightness saved; waiting for Pico update.';
+  } catch(e) { document.getElementById('message').textContent=`Could not send: ${e.message}`; }
+}
+function draw(canvas,history,index,color) {
+  const dpr=window.devicePixelRatio||1, w=canvas.clientWidth, h=canvas.clientHeight;
+  if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)) { canvas.width=Math.round(w*dpr); canvas.height=Math.round(h*dpr); }
+  const ctx=canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle='#34475e'; ctx.lineWidth=1; for(let j=0;j<=4;j++){const y=8+(h-16)*j/4;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+  if(!history.length) return;
+  const points=history.slice(-300); ctx.strokeStyle=color; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.beginPath();
+  points.forEach((p,j)=>{const x=points.length===1?w/2:j*w/(points.length-1),y=h-8-(p.analog[index]/4095)*(h-16);j?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();
+}
+async function refresh() {
+  try {
+    const r=await fetch(`${API_BASE}/api/state`,{cache:'no-store'}); if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const state=await r.json(), sample=state.latest, online=sample&&Date.now()-sample.t<10000;
+    document.getElementById('connection').classList.toggle('online',!!online);
+    document.getElementById('connectionText').textContent=online?'Pico online':sample?'Pico offline':'Waiting for Pico';
+    if(sample) {
+      for(let i=0;i<2;i++) {
+        document.getElementById(`value${i}`).innerHTML=`${sample.analog[i]} <span>/ 4095</span>`;
+        const panel=document.getElementById(`panel${i}`); panel.style.background=palette[sample.presses[i]%palette.length];
+        panel.classList.toggle('active',sample.buttons[i]);
+        document.getElementById(`button${i}`).textContent=sample.buttons[i]?'Pressed now':'Released';
+        document.getElementById(`count${i}`).textContent=`${sample.presses[i]} ${sample.presses[i]===1?'press':'presses'}`;
+      }
+    }
+    draw(document.getElementById('chart0'),state.history||[],0,'#65e3c2');
+    draw(document.getElementById('chart1'),state.history||[],1,'#ffae73');
+    if(document.activeElement?.type!=='range' && !updateTimer && Array.isArray(state.leds)) {
+      lastLeds=state.leds;
+      state.leds.forEach((v,i)=>{ sliders[i].value=v; document.getElementById(`level${i}`).textContent=v; lamp(i,v); });
+    }
+  } catch(e) { document.getElementById('connectionText').textContent=`Service unavailable`; document.getElementById('connection').classList.remove('online'); }
+}
+refresh(); setInterval(refresh,1000);
+</script>
+</body>
+</html>

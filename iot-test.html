@@ -59,8 +59,8 @@
   </div>
 </main>
 <script>
-// Replace with the URL printed by `npx wrangler deploy`. No trailing slash.
-const API_BASE = 'https://YOUR-WORKER.workers.dev';
+// Deployed relay for bloombot.com.
+const API_BASE = 'https://bloombot-iot-test.bloombot.workers.dev';
 const palette = ['#244e72','#6549a9','#bb476b','#dd744c','#2b8d7b','#bd9154'];
 const leds = document.getElementById('leds');
 const sliders = [];
@@ -116,7 +116,12 @@ async function refresh() {
       lastLeds=state.leds;
       state.leds.forEach((v,i)=>{ sliders[i].value=v; document.getElementById(`level${i}`).textContent=v; lamp(i,v); });
     }
-  } catch(e) { document.getElementById('connectionText').textContent=`Service unavailable`; document.getElementById('connection').classList.remove('online'); }
+  } catch(e) {
+    document.getElementById('connectionText').textContent = location.protocol === 'file:'
+      ? 'Open the page on bloombot.com'
+      : `Service unavailable: ${e.message}`;
+    document.getElementById('connection').classList.remove('online');
+  }
 }
 refresh(); setInterval(refresh,1000);
 </script>
